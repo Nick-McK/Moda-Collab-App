@@ -1,0 +1,10 @@
+{
+    "name": "moda-collab",
+    "version": "0.0.1",
+    "description": "a mash-up collaborative clothing design program",
+    "dependencies": {
+        "express": "^4.17.2",
+        "mysql": "^2.18.1",
+        "socket.io": "^4.4.1"
+    }
+}
