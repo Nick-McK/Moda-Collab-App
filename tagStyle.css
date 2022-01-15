@@ -1,0 +1,46 @@
+body {
+    background-color: rgb(32, 32, 32);
+}
+h1 {
+    display: center;
+    text-align: center;
+    font-size: 96px;
+    color: green;
+}
+.tagContainer {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 10px;
+    position: relative; left: 10%; right: 15%;
+}
+
+.tags {
+    flex: 50%;
+    padding: 10px;
+}
+.tags img {
+    width: 710px;
+    height: 410px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+/* Make the image we are hovering over move up */
+.tags img:hover {
+    /* filter: blur(5px); */
+    transform: translateY(-5px);
+    transition: 0.5s;
+}
+/* When we hover over the tags container blur all the other images except the one we are hovering over */
+.tagContainer:hover .tags img:not(:hover) {
+    filter: blur(3px);
+}
+#animal {
+    object-fit: cover;
+}
+#photo {
+    object-fit: cover;
+}
+#games {
+    object-fit: cover;
+}
+
