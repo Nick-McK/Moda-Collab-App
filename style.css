@@ -1,0 +1,22 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: white;
+}
+
+/*Button CSS*/
+
+.btn{
+   text-align: right;
+    left: 45px;
+	top: 60px;
+    border: none;
+    background-color: inherit;
+    font-size: 16px;
+    cursor: pointer;
+    display: inline-block;
+}
+.btn:hover {background: #eee;}
+
+.sign_in{color: black;}
+.register{color: black;}
