@@ -1,3 +1,6 @@
+var socketPath = window.location.pathname + "socket.io";
+var socket = io({path: socketPath});
+
 var canvas = document.getElementById("whiteboard");
 var ctx = canvas.getContext('2d');
 var prevX = 0,
@@ -30,8 +33,6 @@ function draw() {
     ctx.lineWidth = "1px"; // make this a var to change line thickness
     ctx.stroke();
     ctx.closePath();
-
-    console.log(ctx)
 }   
 
 function getCoords(e, action) {
@@ -54,6 +55,7 @@ function getCoords(e, action) {
 
         case 'up':
             drawFlag = false;
+            sendData(); // need to figure out when we want to send data, currently on line up
         break;
 
         case 'move':
@@ -65,5 +67,21 @@ function getCoords(e, action) {
 }
 
 function sendData() {
+    var content = canvas.toDataURL();
+    var data = {image: content, date: Date.now()};
 
+    // not needed now
+    // var jsonString = JSON.stringify(data);
+
+    socket.emit('canvasUpdate', (data));
 }
+
+// this is to represent the current client design
+var img = new Image;
+
+// when update comes in 
+socket.on('canvasUpdate', (data) => {
+    img.onload = () => {ctx.drawImage(img, 0, 0);};
+    img.src = data;
+    ctx.drawImage(img, 0, 0);       // this brakes everything
+});

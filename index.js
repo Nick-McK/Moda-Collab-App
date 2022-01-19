@@ -8,7 +8,7 @@ const io = new Server(server);
 const connectedUsers = [];
 var loggedInUsers = [];
 
-var mysql = require('mysql');
+const mysql = require('mysql');
 // fill in the values below when database is created
 var conn = mysql.createConnection({
     host: "",
@@ -31,7 +31,7 @@ conn.connect(function(err) {
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
-
+// might need to add more of the above for other files?
 
 // console log on user connection
 io.on('connection', (socket) => {
