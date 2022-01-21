@@ -5,8 +5,14 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 
+const path = require('path');
+
+
 const connectedUsers = [];
 var loggedInUsers = [];
+
+// this allows it to access the other files
+app.use(express.static('../moda-collab-app'));
 
 const mysql = require('mysql');
 // fill in the values below when database is created
@@ -29,18 +35,20 @@ conn.connect(function(err) {
 
 // route handler / that gets called when load website home, returns index.html webpage REPLACE WITH LOGIN/SIGNUP FILENAME
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
+    res.sendFile(__dirname + '/login.html'); //path should probably be to the landing page one I get the sockets/server refactored
 });
 // might need to add more of the above for other files?
 
 // console log on user connection
 io.on('connection', (socket) => {
     console.log('a user connected');
-    connectedUsers.add(socket); // add connected clients socket id to list
+    connectedUsers.push(socket); // add connected clients socket id to list
     // when user logs in/registers, the following occurs
     socket.on('login', (details) => {
         // convert pass to sha-256
-        details.pass = shaConversion(details.pass);
+        console.log(details);
+        
+        // details.pass = shaConversion(details.pass);
 
         var res = login(socket, details);
         // might be a better way to do this, with app?
@@ -50,7 +58,7 @@ io.on('connection', (socket) => {
 
     socket.on('register', (details) => {
         // convert pass to sha-256
-        details.pass = shaConversion(details.pass);
+        // details.pass = shaConversion(details.pass);
 
         var res = register(socket, details);
         if (res) {
@@ -77,7 +85,7 @@ function login(socket, details) {
     });
 
     // if match, add to login list - return success
-    loggedInUsers.add([socket, details.user]);
+    loggedInUsers.push([socket, details.user]);
     return true;
 }
 
@@ -99,20 +107,20 @@ function register(socket, details) {
 
 // encrypts input to sha-256, code taken from
 // https://stackoverflow.com/questions/18338890/are-there-any-sha-256-javascript-implementations-that-are-generally-considered-t/48161723#48161723
-function shaConversion(input) {
-    // encode as UTF-8
-    const msgBuffer = new TextEncoder().encode(input);                    
+// function shaConversion(input) {
+//     // encode as UTF-8
+//     const msgBuffer = new TextEncoder().encode(input);                    
 
-    // hash the message
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+//     // hash the message
+//     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
 
-    // convert ArrayBuffer to Array
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
+//     // convert ArrayBuffer to Array
+//     const hashArray = Array.from(new Uint8Array(hashBuffer));
 
-    // convert bytes to hex string                  
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-}
+//     // convert bytes to hex string                  
+//     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+//     return hashHex;
+// }
 
 function createDb() {
     // creates the different tables
@@ -128,7 +136,7 @@ function createDb() {
    conn.query('SHOW TABLES LIKE "users"', (err) => {
        if (err)
         conn.query(createTable, (error) => {
-            if (error) throw error;
+            if (error);
         });
     });
 
@@ -146,7 +154,7 @@ function createDb() {
     conn.query('SHOW TABLES LIKE "userDetails"', (err) => {
         if (err)
          conn.query(createTable, (error) => {
-             if (error) throw error;
+             if (error);
          });
      });
      return;

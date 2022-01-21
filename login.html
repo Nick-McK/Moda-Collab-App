@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
+    <script src="socket.io/socket.io.js"></script>
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 	 <link rel="stylesheet" href="login.css">
@@ -19,13 +21,12 @@
 	<div class="header1">
 	Moda Lab - Login
 	</div>
-  <form class="form-horizontal" action="" method="post">
     <div class="form-group">
       <div class="col-sm-10">
 	  <div class="bText">
 	  Enter username
 	  </div>
-        <input type="username" class="form-control forums" name="username" required>
+        <input type="username" id="username" class="form-control forums" name="username" required>
       </div>
     </div>
     <div class="form-group">
@@ -33,23 +34,37 @@
 		<div class="bText">
 	  Enter password
 	  </div>	  
-        <input type="password" class="form-control forums" name="pass" required>
+        <input type="password" id="password" class="form-control forums" name="pass" required>
       </div>
     </div>
 	  <div class="col-sm-10">
 	  <div class="text-center">
-	<button type="submit" class="btn btn-dark" style="width: 100%; margin-top: 20;">Sign in</button>
+	<button class="btn btn-dark" style="width: 100%; margin-top: 20;" onclick="sendData();">Sign in</button>
 	</div>
 	
 	<p class="infoText">Create an account by clicking <a href="register.html">here</a></p>
 	</div>
 	</div>
-  </form>
   <div class="col">
   <img class="sideImg" id="post_img" src="street2.jpg" alt="Moda Lab">
   </div>
   </div>
   </div>
+  <script>
+    // sets up socket clientside
+    var socketPath = window.location.pathname + "socket.io";
+    var socket = io({path: socketPath});
+
+    // gets user and pass values and passes them to server via socket
+    function sendData() {
+      var user = document.getElementById('username').value;
+      var pass = document.getElementById('password').value;
+
+      socket.emit('login', {user: user, pass: pass});
+    }
+
+  </script>
+
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
