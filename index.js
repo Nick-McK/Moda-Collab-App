@@ -4,10 +4,13 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
+<<<<<<< Updated upstream
 
 const path = require('path');
 
 
+=======
+>>>>>>> Stashed changes
 const connectedUsers = [];
 var loggedInUsers = [];
 
