@@ -1,0 +1,273 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: rgb(31, 29, 29);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Text CSS */
+p{
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 16px;
+    color: white;
+}
+
+h2{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: white;
+    font-weight: 500%;
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+/* Landing page text CSS */
+.comp_txt {
+    overflow:hidden;
+    text-decoration: none;
+}
+
+.comp_txt h2 {
+    font-size: 60px;
+    position: fixed;
+    margin-left: 20px;
+    top: 150px;
+}
+
+.comp_txt p {
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 30px;
+    position: fixed;
+    margin-left: 20px;
+    top: 470px;
+    font-weight: lighter;
+    
+}
+
+/* Landing page buttons CSS */
+.topnav {
+  overflow: hidden;
+  background-color: black;
+  border-bottom: 0;
+  text-decoration: none;
+}
+
+.topnav img {
+  width: 150;
+  height: 75;
+  margin-left: 20;
+  position: fixed;
+  top: 20px;
+}
+
+.topnav a {
+  float: right;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.start_button button{
+  border: none;
+  background-color: whitesmoke;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 20px;
+  text-decoration: none;
+  margin-left: 20px;
+  cursor: pointer;
+  position: fixed;
+  top: 630px;
+  transition-duration: 0.4s;
+}
+
+.start_button button:hover{
+    color: white;
+    background-color: inherit;
+    border: 2px solid white;
+}
+
+/* Button CSS for collab room */
+.collabBtn{
+    color: white;
+    background-color: transparent;
+    border: none;
+    padding: 10px;
+    margin-top: 3.5vh;
+    text-align: center;
+}
+
+/* CSS for upper and lower section of collab room */
+.collabRoomHeaderFooter{
+    background-color: black;
+    width: 100%;
+    height: 12.5%;
+}
+
+
+
+
+
+/* Homepage css stuff */
+
+.roundBtn {
+  text-align: center;
+  color: white;
+  padding: 20px;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  border-radius: 12px;
+}
+
+.collabContainer {
+  top: 0;
+  left: 0;
+  position: fixed;
+  height: 100vh;
+  width: 100vw;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+/* If the browser doesn't support backdrop filters then set it to none */
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+  .collabContainer {
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+  }
+}
+
+.collabContainer.show {
+  display: flex;
+}
+.collabContainer.hide {
+  display: none;
+}
+
+.collabContent {
+  width: 500px;
+  height: 500px;
+  max-width: 100%;
+  padding: 30px 50px;
+  margin: 0;
+  border-radius: 12px;
+  background-color: #0000f3;
+}
+.collabContent h1, p {
+  color: rgb(0, 0, 0);
+}
+#close {
+  position: fixed;
+  top: 8%;
+  right: 1%;
+  background-color: transparent;
+}
+#startCollaborating, #addCollaborators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+}
+
+.promptContainer {
+  top: 40%;
+  position: fixed;
+  height: 200px;
+  width: 400px;
+  border-radius: 12px;
+  background-color: red;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.promptContent {
+  padding: 30px 50px;
+  max-width: 100%;
+  margin: 0;
+}
+
+
+.homeHeader {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 8%;
+  background-color: black;
+}
+.homeFooter {
+  display: grid;
+  grid-template-columns: 10% 10% 10% 10%;
+  grid-column-gap: 4%;
+  justify-content: space-around;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 8%;
+  background-color: black;
+  color: white;
+  text-align: center;
+}
+
+.footer_item {
+  align-self: center;
+}
+
+.feed {
+  display: grid;
+  background-color: black;
+  margin-left: 100;
+  margin-right: 100;
+  margin-top: 150px;
+  padding: 10;
+  padding-bottom: 10%;
+  grid-column-gap: 100px;
+  grid-row-gap: 100px;
+  grid-template-columns: 22em 22em 22em;
+  text-align: center;
+}
+
+.post {
+  display: grid;
+  grid-template-rows: 25em 2em;
+  grid-gap: 1px;
+}
+
+.grid-item {
+  background-color: white;
+}
+
+.flex-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  background: white;
+}
+
+#logo {
+  width: 150;
+  height: 75;
+  margin-left: 20;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+#post_img {
+  margin-top: .5em;
+  width: 21em;
+  height: 24em
+}
