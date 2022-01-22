@@ -1,0 +1,96 @@
+<html>   <!-- can remove the width and height from here and body as long as the 100%s go in the main css -->
+    <head>
+        <link type="css" rel="stylesheet" href="moda-collab-app/style.css"></link>
+        <script src="socket.io/socket.io.js"></script>
+        
+    </head>
+    <!-- Add img styling to external css -->
+    <div class="headerFooter">
+        <button class="collabBtn" style="margin-left: 5vh;">
+            <img src="assets/icons/floppy-disk-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"></img>
+            <t style="font-size: 1vh;">Save Design</t>
+        </button>
+        <button class="collabBtn">
+            <img src="assets/icons/trash-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"></img>
+            <t style="font-size: 1vh;">Delete Design</t>
+        </button>
+        <button class="collabBtn">
+            <img src="assets/icons/file-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"></img>
+            <t style="font-size: 1vh;">Load Design</t>
+        </button>
+
+        <!-- A way to display the participants-->
+        <!-- Might want to make all sizes dependant on window size -->
+        <table align="right" style="color: white; margin-left: auto; margin-right: 5%; width:auto; display: inline-flex; margin-top: 2.5vh;">
+            <tr>
+                <td style="background-color: #c9cecf; text-align: center; border-right: 2vw solid black; padding: 0.5vw;">
+                    <img src="assets/icons/person-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"> </img>
+                    participant 1
+                </td>
+
+                <td style="background-color: #c9cecf; text-align: center; border-right: 2vw solid black; padding: 0.5vw;">
+                    <img src="assets/icons/person-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"> </img>
+                    participant 2
+                </td>
+
+                <td style="background-color: #c9cecf; text-align: center; border-right: 2vw solid black; padding: 0.5vw;">
+                    <img src="assets/icons/person-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"> </img>
+                    participant 3
+                </td>
+
+                <td style="background-color: #c9cecf; text-align: center; border-right: 2vw solid black; padding: 0.5vw;">
+                    <img src="assets/icons/person-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"> </img>
+                    participant 4
+                </td>
+            </tr>
+        </table>
+
+    </div>
+    <body>
+        <canvas id="whiteboard" height="75%" width="100%"></canvas>
+        <div id="toolSelect">
+            <!-- This is for the tools -->
+        </div>
+        <script src="collab_room_clientside.js"></script>       <!-- Links to clientside js code -->
+    </body>
+    <div class="headerFooter">
+        <table style="width: 100%; border: 1px solid white";>
+            <tr>
+                <td style="width: 20vw;" align="center">
+                    <button class="collabBtn">
+                        <img src="assets/icons/archive-inverted.png" style="height:5vh; width: auto; display: block;" align="center"></img>
+                        Browse Templates
+                    </button>
+                </td>
+
+                <td style="width: 20vw;" align="center">
+                    <button class="collabBtn">
+                        <img src="assets/icons/archive-box-inverted.png" style="height:5vh; width: auto; display: block;" align="center"></img>
+                        Import Templates
+                    </button>
+                </td>
+
+                <td style="width: 20vw;" align="center">
+                    <button class="collabBtn">
+                        <img src="assets/icons/x-inverted.png" style="height:5vh; width: auto; display: block;" align="center"></img>
+                        Exit Call
+                    </button>
+                </td>
+
+                <td style="width: 20vw;" align="center">
+                    <button class="collabBtn">
+                        <img src="assets/icons/camera-inverted.png" style="height:5vh; width: auto; display: block;" align="center"></img>
+                        Add Images
+                    </button>
+                </td>
+
+                <td style="width: 20vw;" align="center">
+                    <button class="collabBtn">
+                        <img src="assets/icons/plus-inverted.png" style="height:5vh; width: auto; display: block;" align="center"></img>
+                        Invite Users
+                    </button>
+                </td>
+            </tr>
+        </table>
+    </div>
+</html>
