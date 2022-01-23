@@ -1,39 +1,39 @@
 <html>
 
   <head>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/public/style.css">
   </head>
 
   <body>
 <!-- This is a popup that lets you start collaborating with others -->
     <div class="collabContainer" id="_collabContainer">
-      <div class="collabContent">
-          <h1>Collaborators List</h1>
-          <p>John Doe</p>
-          <p>Jane Doe</p>
-          <p>More shit</p>
+      <div class="collabContent" id="_collabContent">
           <button class="roundBtn" id="startCollaborating">Start</button>
           <button class="roundBtn" id="addCollaborators">Add Collaborators</button>
-        <button class="roundBtn" id="close">Close</button>
+          <button class="roundBtn" id="close"">
+            <img src="/icons/x-inverted.png" style="height:3vh; width:auto; display: flex"/>
+          </button>
       </div>
     </div>
 
     <div class="promptContainer" id="_promptContainer">
       <div class="promptContent">
-        <h1>What would you like the chat to be called?</h1>
-        <span>
-          <input id="promptAnswer" type="text"/>
-          <input class="roundBtn" id="promptButton" type="button" value="submit"/>
-        </span>
+        <form action ="/collab_room">
+          <h1>What would you like the chat to be called?</h1>
+          <span>
+            <input id="promptAnswer" type="text" name="roomName"/>
+            <button class="roundBtn" id="promptButton" type="submit" formmethod="post">Start Collab'ing</button>
+          </span>
+        </form>
       </div>
     </div>
 
     <div class="homeHeader">
-      <img id="logo" src="logo.png" alt="Moda Lab">
+      <img id="logo" src="/icons/logo.png" alt="Moda Lab">
     </div>
     <div class="feed">
       <div class="post">
-        <div class="grid-item"> <img id="post_img" src="logo.png" alt="Moda Lab"></div>
+        <div class="grid-item"> <img id="post_img" src="/icons/logo.png" alt="Moda Lab"></div>
         <div class="flex-container">
           <div>1</div>
           <div>1</div>
@@ -41,7 +41,7 @@
         </div>
       </div>
       <div class="post">
-        <div class="grid-item"> <img id="post_img" src="logo.png" alt="Moda Lab"></div>
+        <div class="grid-item"> <img id="post_img" src="/icons/logo.png" alt="Moda Lab"></div>
         <div class="flex-container">
           <div>1</div>
           <div>1</div>
@@ -49,7 +49,7 @@
         </div>
       </div>
       <div class="post">
-        <div class="grid-item"> <img id="post_img" src="logo.png" alt="Moda Lab"></div>
+        <div class="grid-item"> <img id="post_img" src="/icons/logo.png" alt="Moda Lab"></div>
         <div class="flex-container">
           <div>1</div>
           <div>1</div>

@@ -1,7 +1,7 @@
 body {
     margin: 0;
     padding: 0;
-    background-color: rgb(31, 29, 29);
+    background-color: rgb(29, 29, 29);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -144,40 +144,44 @@ button:hover {
   justify-content: center;
 }
 /* If the browser doesn't support backdrop filters then set it to none */
+/* Add darkening around the borders of the popup so that its easier to tell where it starts and the background ends */
 @supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
   .collabContainer {
-      -webkit-backdrop-filter: blur(4px);
-      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
   }
 }
 
-.collabContainer.show {
-  display: flex;
-}
-.collabContainer.hide {
-  display: none;
-}
-
 .collabContent {
-  width: 500px;
-  height: 500px;
+  width: 650px;
+  height: 800px;
   max-width: 100%;
   padding: 30px 50px;
   margin: 0;
   border-radius: 12px;
-  background-color: #0000f3;
+  background-color: rgb(29, 29, 29);
 }
-.collabContent h1, p {
+.collabRoom {
   color: rgb(0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* padding: 0;
+  margin: 0; */
+  font-size: 24px;
 }
 #close {
   position: fixed;
   top: 8%;
   right: 1%;
+  padding: 5px 5px;
   background-color: transparent;
 }
 #startCollaborating, #addCollaborators {
-  display: flex;
+  position: relative;
+  top: 88%;
+  left: 30%;
+  display: inline-block;
   align-items: center;
   justify-content: center;
   
