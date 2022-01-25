@@ -74,9 +74,9 @@ const whiteboard = document.getElementById("whiteboard");
 if (whiteboard != null) {
     let user = prompt("what is your name?");
     let roomName = getRoom();
-    let someData = {user: user, room: roomName}
+    let data = {user: user, room: roomName}
     console.log("user", user);
-    socket.emit("joined", (someData));
+    socket.emit("joined", (data));
 
 }
 
@@ -91,9 +91,7 @@ function sendData() {
     
 
     //Get room
-    let path = location.pathname;
-    let room = path.split("/")[2];
-    console.log("roomName", room);
+    let room = getRoom();
 
     var data = {image: content, date: Date.now(), roomName: room};
     console.log("room in data", data.roomName)

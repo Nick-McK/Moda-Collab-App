@@ -24,9 +24,22 @@ let rooms = {};
 let users = {};
 
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname + "/Homepage.html"));
-});
+    res.sendFile(path.join(__dirname + "/landing_page.html"));
+})
 
+app.get("/account/login", (req, res) => {
+    res.sendFile(path.join(__dirname + "/login.html"))
+})
+
+app.get("/account/register", (req, res) => {
+    res.sendFile(path.join(__dirname + "/register.html"));
+})
+
+app.get("/home", (req, res) => {
+    res.sendFile(path.join(__dirname + "/Homepage.html"));
+})
+
+// DO SOMETHING WITH THIS WHERE WE CHECK IF THE PERSON IS LOGGED IN AND IF THEY ARE THEN THEY CAN GO TO THIS PAGE
 // app.get("/collab_room", (req, res) => {
 //     res.sendFile(path.join(__dirname + "/collab_room.html"));
 // });
@@ -64,10 +77,10 @@ const ctx = canvas.getContext("2d");
 // When we connect give every use the rooms available
 io.on('connect', (socket) => {
 
-    socket.on("joined", (someData) => {
-        console.log("user", someData.user);
-        users[socket.id] = someData.user;
-        socket.join(someData.room);
+    socket.on("joined", (data) => {
+        console.log("user", data.user);
+        users[socket.id] = data.user;
+        socket.join(data.room);
         console.log("users", users);
     })
 
@@ -80,9 +93,6 @@ io.on('connect', (socket) => {
             io.emit("roomNames", roomList);
         }
     });
-
-    socket.emit("chatMessage", "hello World")
-
     
     // Whiteboard stuff
     connectedUsers.push(socket);

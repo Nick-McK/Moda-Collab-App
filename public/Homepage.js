@@ -30,8 +30,6 @@ startCollab.addEventListener("click", () => {
 })
 
 
-
-
 // Collaboration menu start and add collaborators buttons
 socket.on("connect", () => {
     
@@ -57,13 +55,6 @@ socket.on("roomNames", (roomList) => {
         recordedRooms.push(room);
     }
 })
-
-
-
-
-// socket.on("collabTime", () => {
-//     window.location = "/collab_room.html";
-// })
     
 
 addCollab.onclick = () => {
