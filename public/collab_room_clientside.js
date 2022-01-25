@@ -1,5 +1,7 @@
-var socketPath = window.location.pathname + "socket.io";
-var socket = io({path: socketPath});
+// var socketPath = window.location.pathname + "socket.io";
+// var socket = io({path: socketPath});
+const socket = io();
+
 
 var canvas = document.getElementById("whiteboard");
 var ctx = canvas.getContext('2d');
@@ -66,22 +68,52 @@ function getCoords(e, action) {
     }
 }
 
+// Get room fucntion which takes in the room name when we create it from the server, then loop through them all and when that room == location.pathname we have our room
+const whiteboard = document.getElementById("whiteboard");
+
+if (whiteboard != null) {
+    let user = prompt("what is your name?");
+    let roomName = getRoom();
+    let someData = {user: user, room: roomName}
+    console.log("user", user);
+    socket.emit("joined", (someData));
+
+}
+
+function getRoom() {
+    let path = location.pathname;
+    let room = path.split("/")[2]
+    return room;
+}
+
 function sendData() {
     var content = canvas.toDataURL();
-    var data = {image: content, date: Date.now()};
+    
+
+    //Get room
+    let path = location.pathname;
+    let room = path.split("/")[2];
+    console.log("roomName", room);
+
+    var data = {image: content, date: Date.now(), roomName: room};
+    console.log("room in data", data.roomName)
 
     // not needed now
     // var jsonString = JSON.stringify(data);
 
-    socket.emit('canvasUpdate', (data));
+    socket.emit("canvasUpdate", (data));
 }
 
 // this is to represent the current client design
 var img = new Image;
 
 // when update comes in 
-socket.on('canvasUpdate', (data) => {
+socket.on("canvasUpdate", (data) => {
     img.onload = () => {ctx.drawImage(img, 0, 0);};
     img.src = data;
     ctx.drawImage(img, 0, 0);       // this brakes everything
 });
+
+socket.on("chatMessage", data => {
+    console.log(data);
+})
