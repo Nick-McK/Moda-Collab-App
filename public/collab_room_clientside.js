@@ -3,70 +3,120 @@
 const socket = io();
 
 
-var canvas = document.getElementById("whiteboard");
-var ctx = canvas.getContext('2d');
-var prevX = 0,
-currX = 0,
-prevY = 0,
-currY = 0;
-
-var drawFlag = false;
-
-
-// might want to update these when window is resized
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight * 0.75;  // might want to make this value modular if we want to change the height of the header and footer
-
-
+let canvas = new fabric.Canvas("whiteboard");
+canvas.setHeight(window.innerHeight * 0.75);
+canvas.setWidth(window.innerWidth);
+canvas.backgroundColor = "#c9cecf";
 
 // maybe add in an init for the start stuff
+var rectCounter = 0;
+var recentObj;
+var obj;
 
+function changeTool(res) {
+    console.log(res);
+    switch (res) {
+        case 'RECTANGLE':
+            obj = new fabric.Rect({
+                left:100,
+                top:100,
+                fill:'red',
+                width: 20,
+                height: 20
+            });
+            canvas.add(obj).renderAll();
+            recentObj = obj;
+            
+            socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
+            break;
+        case 'CIRCLE':
+        case 'LINE':
+            artCanvas.setFigure(res);
+            artCanvas.setMode(ArtCanvas.Mode.FIGURE);
+            break;
+        
+        case 'IMAGE':
+            // Open Windows Explorer
+            artCanvas.drawImage('/public/assets/icons/person.png');
+            break;
+        
+        case 'CLEAR':
+            artCanvas.clear();
+            break;
 
-// make getCoords find the current mouse position in relation to the canvas
-canvas.addEventListener("mousedown", function (e) {getCoords(e, 'down')});
-canvas.addEventListener("mouseup", function (e) {getCoords(e, 'up')});
-canvas.addEventListener("mousemove", function (e) {getCoords(e, 'move')});
-
-function draw() {
-    ctx.beginPath();
-    ctx.moveTo(prevX, prevY);
-    ctx.lineTo(currX, currY);
-    ctx.strokeStyle = "black"; // make this a var to change line colour
-    ctx.lineWidth = "1px"; // make this a var to change line thickness
-    ctx.stroke();
-    ctx.closePath();
-}   
-
-function getCoords(e, action) {
-    var x = e.clientX;
-    var y = e.clientY;
-
-    prevX = currX;
-    prevY = currY;
-
-    // gets the new x and y in relation to the canvas
-    currX = x - canvas.offsetLeft;
-    currY = y - canvas.offsetTop;
-
-
-    // switch case allows for expansion later
-    switch (action) {
-        case 'down':
-            drawFlag = true;
-        break;
-
-        case 'up':
-            drawFlag = false;
-            sendData(); // need to figure out when we want to send data, currently on line up
-        break;
-
-        case 'move':
-            if (drawFlag) {
-                draw();
-            }
+        default:
+            artCanvas.setMode(res);
             break;
     }
 }
+
+
+canvas.on('object:modified', function () {
+    // for some reason id wouldn't carry over to server through "change" object
+    socket.emit('canvasUpdate', {"change":canvas.getActiveObject(), "type": 'mod', "id": canvas.getActiveObject().id});
+});
+
+function deleteItem() {
+    obj = canvas.getActiveObject();
+    socket.emit('canvasUpdate', {'change' : obj.id, 'type': 'remove'});
+    canvas.remove(obj);
+}
+
+// when update comes in 
+socket.on('canvasUpdate', (data) => {
+
+    switch (data.type) {
+        case 'add':
+            if (data.type = 'rect') {
+                console.log(canvas._objects);
+                var rect = new fabric.Rect({
+                    left:data.change.left,
+                    top:data.change.top,
+                    fill:data.change.fill,
+                    width: data.change.width,
+                    height: data.change.height,
+                    id: data.change.id
+                });           
+                canvas.add(rect);
+            };
+
+        break;
+        case 'remove':
+            for (var i in canvas._objects) {
+                if (canvas._objects[i].id == data.change) {
+                    canvas.remove(canvas._objects[i]);      //might need to change this to active Object
+                }
+            };
+            
+        break;
+        case 'mod':
+            console.log(data.change);
+            for (var i in canvas._objects) {
+                if (canvas._objects[i].id == data.id) {
+                    var oriObj = canvas._objects[i];
+                    var newObj = data.change;
+                    oriObj.left = newObj.left;
+                    oriObj.top = newObj.top;
+                    oriObj.setCoords(); //this is needed, trust me
+
+                    // future proofing, might need more
+                    oriObj.fill = newObj.fill;
+                    oriObj.width = newObj.width;
+                    oriObj.height = newObj.height;
+                    oriObj.scaleX = newObj.scaleX;
+                    oriObj.scaleY = newObj.scaleY;
+                }
+            }
+        break;
+    }
+   canvas.renderAll();
+});
+
+// this is server assigned id given when client creates obj
+socket.on('idUpdate', (data) => {
+    recentObj.id = data;
+    console.log(data);
+});
 
 // Get room fucntion which takes in the room name when we create it from the server, then loop through them all and when that room == location.pathname we have our room
 const whiteboard = document.getElementById("whiteboard");
@@ -80,6 +130,7 @@ if (whiteboard != null) {
 
 }
 
+// NEED TO COMBINE THIS
 function getRoom() {
     let path = location.pathname;
     let room = path.split("/")[2]
