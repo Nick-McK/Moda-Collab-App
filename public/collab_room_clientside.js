@@ -41,6 +41,18 @@ function changeTool(res) {
                 height: 20
             });
         break;
+        case 'DRAW':
+            // console.log(canvas.isDrawingMode)
+            // canvas.isDrawingMode = true;
+            // canvas.freeDrawingBrush.width = 5;
+            // canvas.freeDrawingBrush.color = '#00aeff';
+            // console.log(canvas.isDrawingMode)
+
+            // if (canvas.isDrawingMode)
+            //     !canvas.isDrawingMode;
+            // else 
+            //     canvas.isDrawingMode;
+        break;
         case 'LINE':
             break;
         
@@ -71,6 +83,7 @@ function deleteItem() {
 // when update comes in 
 socket.on('canvasUpdate', (data) => {
     var addObj;
+    console.log(data.change);
     switch (data.type) {
         case 'add':
             if (data.change.type == 'rect') {
@@ -126,8 +139,13 @@ socket.on('canvasUpdate', (data) => {
                     oriObj.height = newObj.height;
                     oriObj.scaleX = newObj.scaleX;
                     oriObj.scaleY = newObj.scaleY;
+                    oriObj.angle = newObj.angle;
                 }
             }
+        break;
+        case 'deleteDesign':
+            canvas.remove(...canvas.getObjects());
+            canvas.renderAll();
         break;
     }
    canvas.renderAll();
@@ -170,3 +188,12 @@ function sendData() {
 socket.on("chatMessage", data => {
     console.log(data);
 })
+
+
+
+// Below is the code pertaining to the buttons in the header
+function deleteDesign() {
+    socket.emit('canvasUpdate', {type: "deleteDesign"});
+    canvas.remove(...canvas.getObjects());
+    canvas.renderAll();
+}

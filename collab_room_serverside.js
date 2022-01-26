@@ -29,6 +29,10 @@ var recentDate = new Date(2022, 01, 01);  // this date has already passed
 var roomNo = 1;
 var roomName = "room"+roomNo;
 
+var objIdCounter = 0;   // need to find a way to make this room specific
+// it breaks things if we add it in under io.on connection. It starts at 0 for each user, being the same accross the entire room
+
+
 io.on('connection', (socket) => {
     console.log('a user connected at socket: ' + socket.id);
     connectedUsers.push(socket); // add connected clients socket id to list
@@ -43,7 +47,6 @@ io.on('connection', (socket) => {
     }
 
 
-    var objIdCounter = 0;
     
     // Create an image object to store the most up to date design
     // var img = new Image;
@@ -58,8 +61,8 @@ io.on('connection', (socket) => {
         switch (data.type) {
             case 'add':
             data.change.id = objIdCounter;
-            objIdCounter++;
             socket.emit('idUpdate', data.change.id);
+            objIdCounter++;
             break;
             case 'remove':
 

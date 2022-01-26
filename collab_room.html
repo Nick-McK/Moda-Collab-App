@@ -13,7 +13,7 @@
             <img src="/public/assets/icons/floppy-disk-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"></img>
             <t style="font-size: 1vh;">Save Design</t>
         </button>
-        <button class="collabBtn">
+        <button class="collabBtn" onclick="deleteDesign()">
             <img src="/public/assets/icons/trash-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"></img>
             <t style="font-size: 1vh;">Delete Design</t>
         </button>
@@ -60,7 +60,7 @@
             <table>
                 <tr>
                     <td>
-                        <button id="pen" onclick="changeTool('HAND')">Pen</button>
+                        <button id="draw" onclick="changeTool('DRAW')">Draw</button>
                     </td>
                     <td>
                         <button id="figures" onclick="changeTool('ERASER')">Eraser</button>
