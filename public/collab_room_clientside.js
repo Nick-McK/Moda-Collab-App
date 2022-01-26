@@ -42,11 +42,18 @@ function changeTool(res) {
             });
         break;
         case 'DRAW':
-            // console.log(canvas.isDrawingMode)
+            // console.log(canvas.isDrawingMod)
+            canvas.isDrawingMode = !canvas.isDrawingMode;
             // canvas.isDrawingMode = true;
             // canvas.freeDrawingBrush.width = 5;
             // canvas.freeDrawingBrush.color = '#00aeff';
             // console.log(canvas.isDrawingMode)
+           canvas.on("mouse:up", function() {
+                // find a way to store paths
+                obj = canvas._objects[canvas._objects.length-1];
+                canvas.isDrawingMode = false;
+            });
+            
 
             // if (canvas.isDrawingMode)
             //     !canvas.isDrawingMode;
@@ -63,11 +70,16 @@ function changeTool(res) {
         default:
             break;
     }
-    canvas.add(obj).renderAll();
-    recentObj = obj;
-    socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
+    if (obj) {
+        canvas.add(obj).renderAll();
+        recentObj = obj;
+        socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
+    }
 }
 
+canvas.on('selection:created', function() {
+    console.log(this._objects[0]);
+})
 
 canvas.on('object:modified', function () {
     // for some reason id wouldn't carry over to server through "change" object
@@ -192,8 +204,26 @@ socket.on("chatMessage", data => {
 
 
 // Below is the code pertaining to the buttons in the header
+function saveDesign() {
+    socket.emit('saveDesign', {design: JSON.stringify(canvas)})
+    socket.on('saveDesignResponse', (res) => {
+        if (res)
+            alert("Saved Design");
+        else
+            alert("error");
+    });
+}
+
+
 function deleteDesign() {
     socket.emit('canvasUpdate', {type: "deleteDesign"});
     canvas.remove(...canvas.getObjects());
     canvas.renderAll();
+}
+
+function loadDesign() {
+    socket.emit('loadDesign', {name: "designTest.JSON"});   // need some kind of explorer here
+    socket.on('loadDesignResponse', (data) => {
+        canvas.loadFromJSON(data);
+    });
 }

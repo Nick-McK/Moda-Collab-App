@@ -4,11 +4,13 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
+const fs = require('fs');
 
 const path = require('path');
 
 // This is a server side canvas thing
 const { createCanvas, loadImage, Image } = require('canvas');
+const e = require('express');
 
 
 const connectedUsers = [];
@@ -79,6 +81,22 @@ io.on('connection', (socket) => {
         //     if (connectedUsers[i] == socket) continue;   //Ignore if it is the user that sent the data
         //     connectedUsers[i].emit('canvasUpdate', currentCanvas);
         // }
+    });
+
+    socket.on('saveDesign', (data) => {
+        fs.writeFile('designTest.json', data.design, (err) => {
+            socket.emit('saveDesignResponse', (!err));
+            if (err) {
+                throw err;
+            }
+        });
+    });
+
+    socket.on('loadDesign', (data) => {
+        fs.readFile(data.name, 'utf-8', (err, data) => {
+            if (err) throw err;
+            socket.emit('loadDesignResponse', data);
+        });
     });
 });
 
