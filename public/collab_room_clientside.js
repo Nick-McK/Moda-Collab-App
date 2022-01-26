@@ -14,7 +14,6 @@ var recentObj;
 var obj;
 
 function changeTool(res) {
-    console.log(res);
     switch (res) {
         case 'RECTANGLE':
             obj = new fabric.Rect({
@@ -24,30 +23,37 @@ function changeTool(res) {
                 width: 20,
                 height: 20
             });
-            canvas.add(obj).renderAll();
-            recentObj = obj;
-            
-            socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
             break;
         case 'CIRCLE':
+            obj = new fabric.Circle({
+                left:100,
+                top:100,
+                fill:'red',
+                radius: 20
+            });
+            break;
+        case 'TRIANGLE':
+            obj = new fabric.Triangle({
+                left:100,
+                top:100,
+                fill:'red',
+                width: 20,
+                height: 20
+            });
+        break;
         case 'LINE':
-            artCanvas.setFigure(res);
-            artCanvas.setMode(ArtCanvas.Mode.FIGURE);
             break;
         
         case 'IMAGE':
             // Open Windows Explorer
-            artCanvas.drawImage('/public/assets/icons/person.png');
             break;
         
-        case 'CLEAR':
-            artCanvas.clear();
-            break;
-
         default:
-            artCanvas.setMode(res);
             break;
     }
+    canvas.add(obj).renderAll();
+    recentObj = obj;
+    socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
 }
 
 
@@ -64,12 +70,11 @@ function deleteItem() {
 
 // when update comes in 
 socket.on('canvasUpdate', (data) => {
-
+    var addObj;
     switch (data.type) {
         case 'add':
-            if (data.type = 'rect') {
-                console.log(canvas._objects);
-                var rect = new fabric.Rect({
+            if (data.change.type == 'rect') {
+                addObj = new fabric.Rect({
                     left:data.change.left,
                     top:data.change.top,
                     fill:data.change.fill,
@@ -77,9 +82,26 @@ socket.on('canvasUpdate', (data) => {
                     height: data.change.height,
                     id: data.change.id
                 });           
-                canvas.add(rect);
-            };
+            } else if (data.change.type == 'triangle') {
+                addObj = new fabric.Triangle({
+                    left: data.change.left,
+                    top: data.change.top,
+                    fill: data.change.fill,
+                    width:  data.change.width,
+                    height:  data.change.height,
+                    id: data.change.id
+                });
+            } else if (data.change.type == 'circle') {
+                addObj = new fabric.Circle({
+                    left: data.change.left,
+                    top: data.change.top,
+                    fill: data.change.fill,
+                    radius: data.change.radius,
+                    id: data.change.id
+                });
+            }
 
+            canvas.add(addObj);
         break;
         case 'remove':
             for (var i in canvas._objects) {
@@ -90,7 +112,6 @@ socket.on('canvasUpdate', (data) => {
             
         break;
         case 'mod':
-            console.log(data.change);
             for (var i in canvas._objects) {
                 if (canvas._objects[i].id == data.id) {
                     var oriObj = canvas._objects[i];
@@ -115,7 +136,6 @@ socket.on('canvasUpdate', (data) => {
 // this is server assigned id given when client creates obj
 socket.on('idUpdate', (data) => {
     recentObj.id = data;
-    console.log(data);
 });
 
 // Get room fucntion which takes in the room name when we create it from the server, then loop through them all and when that room == location.pathname we have our room
@@ -138,30 +158,14 @@ function getRoom() {
 }
 
 function sendData() {
-    var content = canvas.toDataURL();
-    
-
     //Get room
     let room = getRoom();
 
-    var data = {image: content, date: Date.now(), roomName: room};
+    var data = {date: Date.now(), roomName: room};
     console.log("room in data", data.roomName)
-
-    // not needed now
-    // var jsonString = JSON.stringify(data);
 
     socket.emit("canvasUpdate", (data));
 }
-
-// this is to represent the current client design
-var img = new Image;
-
-// when update comes in 
-socket.on("canvasUpdate", (data) => {
-    img.onload = () => {ctx.drawImage(img, 0, 0);};
-    img.src = data;
-    ctx.drawImage(img, 0, 0);       // this brakes everything
-});
 
 socket.on("chatMessage", data => {
     console.log(data);
