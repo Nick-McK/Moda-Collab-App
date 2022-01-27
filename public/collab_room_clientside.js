@@ -14,6 +14,11 @@ var recentObj;
 var obj;
 
 function changeTool(res) {
+    // Disable draw if other tool is selected
+    if (res != 'DRAW') {
+        canvas.isDrawingMode = false;
+    }
+
     switch (res) {
         case 'RECTANGLE':
             obj = new fabric.Rect({
@@ -42,23 +47,20 @@ function changeTool(res) {
             });
         break;
         case 'DRAW':
-            // console.log(canvas.isDrawingMod)
             canvas.isDrawingMode = !canvas.isDrawingMode;
-            // canvas.isDrawingMode = true;
-            // canvas.freeDrawingBrush.width = 5;
-            // canvas.freeDrawingBrush.color = '#00aeff';
-            // console.log(canvas.isDrawingMode)
-           canvas.on("mouse:up", function() {
-                // find a way to store paths
-                obj = canvas._objects[canvas._objects.length-1];
-                canvas.isDrawingMode = false;
-            });
             
+            var drawFlag = false;
+            var stack;
 
-            // if (canvas.isDrawingMode)
-            //     !canvas.isDrawingMode;
-            // else 
-            //     canvas.isDrawingMode;
+            canvas.on("mouse:down", function () {
+                drawFlag = true;
+                stack = [];
+            })
+            canvas.on("mouse:move", function () {
+                if (drawFlag)
+                    stack.push(canvas.getPointer());
+            })
+            canvas.on("path:created", (e) => sendPath(e, stack));
         break;
         case 'LINE':
             break;
@@ -90,6 +92,14 @@ function deleteItem() {
     obj = canvas.getActiveObject();
     socket.emit('canvasUpdate', {'change' : obj.id, 'type': 'remove'});
     canvas.remove(obj);
+}
+
+function sendPath(e, stack) {
+    if (e) {
+       recentObj = e;
+       socket.emit('canvasUpdate', {"change": {stack: stack, id: null}, "type" : "add"});}
+       delete stack;
+       drawFlag = false;
 }
 
 // when update comes in 
@@ -124,8 +134,17 @@ socket.on('canvasUpdate', (data) => {
                     radius: data.change.radius,
                     id: data.change.id
                 });
+            } else {    // this should cover both path and polyline
+                // on other clients, free drawing is recreated as a polyline
+                canvas.isDrawingMode = true;
+                addObj = new fabric.Polyline(data.change.stack, {
+                    stroke: 'black',
+                    fill: null,
+                    id: data.change.id
+                });
+                canvas.isDrawingMode = false;
             }
-
+            console.log(addObj)
             canvas.add(addObj);
         break;
         case 'remove':
@@ -165,7 +184,10 @@ socket.on('canvasUpdate', (data) => {
 
 // this is server assigned id given when client creates obj
 socket.on('idUpdate', (data) => {
-    recentObj.id = data;
+    if (recentObj.path)         // this might've broken some stuff
+        recentObj.path.id = data;
+    else 
+        recentObj.id = data;
 });
 
 // Get room fucntion which takes in the room name when we create it from the server, then loop through them all and when that room == location.pathname we have our room
