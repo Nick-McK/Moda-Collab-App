@@ -98,6 +98,10 @@ io.on('connection', (socket) => {
             socket.emit('loadDesignResponse', data);
         });
     });
+
+    socket.on('importTemplate', (data) => {
+        socket.broadcast.to(roomName).emit('importTemplate', data);
+    })
 });
 
 // http server listens on port 3000

@@ -3,7 +3,7 @@
         <link type="css" rel="stylesheet" href="/public/style.css"></link>
         <!-- <script src="/node_modules/art-canvas/build/ArtCanvas.js"></script> -->
         <script src="/node_modules/fabric/dist/fabric.min.js"></script>
-        <script src="/node_modules/uuid/dist/umd/uuidv1.min.js"></script>
+        <script src="/node_modules/uuid/dist/umd/uuidv1.min.js"></script>   <!--Dont think we use this anymore-->
         <script src="/socket.io/socket.io.js"></script>
         
     </head>
@@ -54,6 +54,33 @@
             <canvas id="whiteboard"></canvas>
         <!-- </div> -->
         
+        <div id="colourThicknessSelect" style="z-index: 3; top: 8%; position: absolute;background-color: white; border: 3px solid black;">
+            <table>
+                <!--Get someone good at css and html to create drop down for colours-->
+                <!--Might want to make one for fill too-->
+                <tr style="display: inline-block;">
+                    <td>
+                        <button style="background-color: #FF0000; height: 25px; width:25px" onclick="changeColour('#FF0000')"></button>
+                    </td>
+                    <td>
+                        <button style="background-color: #008000; height: 25px; width:25px" onclick="changeColour('#008000')"></button>
+                    </td>
+                    <td>
+                        <button style="background-color: #0000FF; height: 25px; width:25px" onclick="changeColour('#0000FF')"></button>
+                    </td>
+                    <td>
+                        <button style="background-color: #FFFF00; height: 25px; width:25px" onclick="changeColour('#FFFF00')"></button>
+                    </td>
+                </tr>
+                <tr style="display: inline-block;">
+                    <td>
+                        <input type="text" placeholder="Enter pt size" id="ptSize">
+                        <input type="text" placeholder="Enter line width" id="lineWidth">
+                    </td>
+                </tr>
+                    
+            </table>
+        </div>
 
         <div id="toolSelect" style="background-color: white; border: 3px solid black; position: absolute; top: 40%; z-index: 3;">
             <!-- This is for the tools -->
@@ -113,7 +140,7 @@
     
                     <td style="width: 20vw;" align="center">
                         <button class="collabBtn">
-                            <img src="/public/assets/icons/archive-box-inverted.png" style="height:5vh; width: auto; display: block;" align="center"></img>
+                            <img src="/public/assets/icons/archive-box-inverted.png" style="height:5vh; width: auto; display: block;" align="center" onclick="importTemplate()"></img>
                             Import Templates
                         </button>
                     </td>
