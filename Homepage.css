@@ -1,13 +1,10 @@
-body {
-  background-color: black;
-}
 
 .header {
   position: fixed;
   top: 0;
   width: 100%;
   height: 15%;
-  background-color: black;
+  background-color: inherit;
 }
 
 .footer {
@@ -20,7 +17,7 @@ body {
   bottom: 0;
   width: 100%;
   height: 15%;
-  background-color: black;
+  background-color: inherit;
   color: white;
   text-align: center;
 }
@@ -31,7 +28,7 @@ body {
 
 .feed {
   display: grid;
-  background-color: black;
+  background-color: inherit;
   margin-left: 100;
   margin-right: 100;
   margin-top: 150px;
@@ -53,12 +50,25 @@ body {
   background-color: white;
 }
 
-.flex-container {
-  display: flex;
-  flex-direction: row;
+.post-bar {
+  display: grid;
+  grid-template-columns: 7em 7em 7em;
   justify-content: space-around;
-  background: white;
+  background-color: white;
+  text-align: center;
 }
+
+.post_img {
+  margin-top: .5em;
+  width: 21em;
+  height: 24em;
+}
+
+.bar_img{
+  width: 2em;
+  height: 2em;
+}
+
 
 #logo {
   width: 150;
@@ -66,10 +76,6 @@ body {
   margin-left: 20;
   position: fixed;
   top: 20px;
+  transition: width 1s, height 1s;
 }
 
-#post_img {
-  margin-top: .5em;
-  width: 21em;
-  height: 24em
-}
