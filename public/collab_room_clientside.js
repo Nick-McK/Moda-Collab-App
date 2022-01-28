@@ -339,13 +339,14 @@ socket.on("chatMessage", data => {
 // Below is the code pertaining to the buttons in the header
 function saveDesign() {
     socket.emit('saveDesign', {design: JSON.stringify(canvas)})
-    socket.on('saveDesignResponse', (res) => {
-        if (res)
-            alert("Saved Design");
-        else
-            alert("error");
-    });
 }
+
+socket.on('saveDesignResponse', (res) => {
+    if (res)
+        alert("Saved Design");
+    else
+        alert("error");
+});
 
 function deleteDesign() {
     socket.emit('canvasUpdate', {type: "deleteDesign"});

@@ -134,7 +134,7 @@ io.on('connect', (socket) => {
     });
 
     socket.on("saveDesign", (data) => {
-        fs.writeFile("designTest.json", data.design, (err) => {
+        fs.writeFile("designsTemp/designTest.json", data.design, (err) => {
             socket.emit("saveDesignResponse", (!err));
             if (err) {
                 throw err;
@@ -143,7 +143,7 @@ io.on('connect', (socket) => {
     });
 
     socket.on('loadDesign', (data) => {
-        fs.readFile(data.name, 'utf-8', (err, data) => {
+        fs.readFile('designsTemp/' + data.name, 'utf-8', (err, data) => {
             if (err) throw err;
             io.to(roomName).emit('loadDesignResponse', data);
         });
