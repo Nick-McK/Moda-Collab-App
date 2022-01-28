@@ -10,6 +10,7 @@ const router = express.Router();
 
 const path = require("path");
 const { createCanvas, Image } = require("canvas");
+const { fstat } = require("fs");
 
 // Use files from within the file structure
 app.use(express.static(__dirname)); // Serves html files
@@ -71,20 +72,29 @@ app.get("/collab_room/:roomName", (req, res) => {
 })
 
 const connectedUsers = [];
-const canvas = createCanvas(1000,1000);
+const canvas = createCanvas(2000,2000);
 const ctx = canvas.getContext("2d");
+
+let objIdCounter = 0;
+let roomName; // Used to assign the users room to a global variable to be used outside of just the join update
 
 // When we connect give every use the rooms available
 io.on('connect', (socket) => {
+
+    console.log("A user connected", socket.id);
+    connectedUsers.push(socket);
+
+    // Use session to save the users socket and add them to the room when they click join room
 
     socket.on("joined", (data) => {
         console.log("user", data.user);
         users[socket.id] = data.user;
         socket.join(data.room);
         console.log("users", users);
+        roomName = data.room;
     })
 
-    console.log("A user connected", socket.id);
+    
     let roomList = new Array();
     Object.keys(rooms).forEach(room => {
         if (!roomList.includes(room)) {
@@ -100,12 +110,50 @@ io.on('connect', (socket) => {
     let img = new Image;
 
     socket.on("canvasUpdate", (data) => {
-        img.onload = () => { ctx.drawImage(img, 0, 0); }
-        img.src = data.image;
-        console.log("room", data.roomName);
-        socket.to(data.roomName).emit("canvasUpdate", canvas.toDataURL());
-        
+        // img.onload = () => { ctx.drawImage(img, 0, 0); }
+        // img.src = data.image;
+        // console.log("room", data.roomName);
+        // socket.to(data.roomName).emit("canvasUpdate", canvas.toDataURL());
+
+        switch(data.type) {
+            case "add":
+                data.change.id = objIdCounter;
+                socket.emit("idUpdate", data.change.id);
+                objIdCounter++;
+                break;
+            case "remove":
+                break
+            case "mod":
+                break
+        }
+
+        console.log("roomName to console", roomName);
+        socket.broadcast.to(roomName).emit("canvasUpdate", data);
+ 
     });
+
+    socket.on("saveDesign", (data) => {
+        fs.writeFile("designTest.json", data.design, (err) => {
+            socket.emit("saveDesignResponse", (!err));
+            if (err) {
+                throw err;
+            }
+        });
+    });
+
+    socket.on("loadDesign", (data) => {
+        fs.readFile(data.name, "utf-8", (err, data) => {
+            if (err) throw err;
+            socket.emit("loadDesignResponse", data);
+        });
+    });
+
+    socket.on("importTemplate", (data) => {
+        socket.broadcast.to(data.room).emit("importTemplate", data);
+    });
+
+
+
 });
 
 
