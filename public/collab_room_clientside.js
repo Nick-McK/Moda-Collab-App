@@ -2,7 +2,6 @@
 // var socket = io({path: socketPath});
 const socket = io();
 
-
 let canvas = new fabric.Canvas("whiteboard");
 canvas.setHeight(window.outerHeight * 0.75);
 canvas.setWidth(window.outerWidth);
@@ -14,6 +13,7 @@ var obj;
 var colour = 'black';
 var pt = 40;
 var lineWidth = 1;
+var fontFamily = "Times New Roman";
 
 const ptInput = document.getElementById('ptSize');
 ptInput.setAttribute('size', ptInput.getAttribute('placeholder').length);
@@ -36,6 +36,25 @@ lineWidthInput.addEventListener('focusout', function () {
     lineWidth = lineWidthInput.value;
     canvas.freeDrawingBrush.width = parseInt(lineWidth);
     console.log(lineWidth)
+    if (canvas.getActiveObject()) {
+        // not sure if line is a type but just in case
+        if (canvas.getActiveObject().get('type') == 'path' || canvas.getActiveObject().get('type') == 'polyline' || canvas.getActiveObject().get('type') == 'line') 
+            canvas.getActiveObject().set("strokeWidth", parseInt(lineWidth));
+        canvas.renderAll();
+        canvas.fire('object:modified')
+    }
+});
+
+const fontFamilyInput = document.getElementById('font');
+fontFamilyInput.addEventListener('change', function () {
+    fontFamily = fontFamilyInput.value;
+    if (canvas.getActiveObject()) {
+        if (canvas.getActiveObject().get('type') == 'textbox') {
+            canvas.getActiveObject().set('fontFamilty', fontFamily);
+            canvas.renderAll();
+            canvas.fire('object:modified')
+        }
+    }
 });
 
 function changeColour(col) {
@@ -117,7 +136,7 @@ function changeTool(res) {
                 left: 100, 
                 top:100,
                 fontSize: pt,
-                fontFamily: "Times New Roman"       // should make this changable
+                fontFamily: fontFamily
             });
         break;
         default:
@@ -199,7 +218,6 @@ socket.on('canvasUpdate', (data) => {
                     top: data.change.top,
                     id: data.change.id
                 });
-                // addObj = new fabric.Textbox();
             } else {    // this should cover both path and polyline
                 // on other clients, free drawing is recreated as a polyline
                 canvas.isDrawingMode = true;
@@ -241,9 +259,11 @@ socket.on('canvasUpdate', (data) => {
                     oriObj.set("scaleY", newObj.scaleY);
                     oriObj.set("angle", newObj.angle);
                     oriObj.set("stroke", newObj.stroke);
+                    oriObj.set("strokeWidth", newObj.strokeWidth);
                     oriObj.set("text", newObj.text);
                     oriObj.set("fontSize", newObj.fontSize);
                     oriObj.set("fontFamily", newObj.fontFamily);
+                    
                 }
             }
         break;
@@ -323,15 +343,27 @@ function loadDesign() {
 }
 
 // Below is code for buttons in footer
-function importTemplate(template) {
+function importTemplate(template, dontEmit) {
     var source = "./public/assets/templates/blank-t-shirt.png"  //hardcoded for now
-    socket.emit('importTemplate', "./public/assets/templates/blank-t-shirt.png")
-    canvas.setBackgroundImage(source, canvas.renderAll.bind(canvas), {backgroundImageStretch: true});
-    canvas.renderAll();
+    fabric.Image.fromURL(source, function (img) {
+        console.log(img)
+        img.scaleToHeight(canvas.getHeight());
+        if (!dontEmit) {
+            socket.emit('importTemplate', "./public/assets/templates/blank-t-shirt.png")
+        }
+        console.log(img)
+        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+            top: canvas.getCenter().top,
+            left: canvas.getCenter().left,
+            originX: 'center',
+            originY: 'center'
+        });
+        canvas.renderAll();
+    })
 }
 
 
 
 socket.on('importTemplate', (data) => {
-    canvas.setBackgroundImage(data, canvas.renderAll.bind(canvas), {backgroundImageStretch: true});
+    importTemplate( "" , true); // figure out solution for the first param later
 })
