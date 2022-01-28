@@ -16,8 +16,18 @@ var lineWidth = 1;
 var fontFamily = "Times New Roman";
 
 const ptInput = document.getElementById('ptSize');
-ptInput.setAttribute('size', ptInput.getAttribute('placeholder').length);
+ptInput.setAttribute('size', ptInput.getAttribute('placeholder').length);   // Modifies the size of the inputbox to fit the placeholder text
+// Event listeners for either a focus out (selecting the desired obj) or enter
 ptInput.addEventListener('focusout', function () {
+    setPtSize();
+});
+ptInput.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        setPtSize();
+    }
+});
+
+function setPtSize() {
     pt = parseInt(ptInput.value);
     console.log(pt)
     if (canvas.getActiveObject()) {
@@ -28,13 +38,23 @@ ptInput.addEventListener('focusout', function () {
 
         }
     }
-});
+}
 
 const lineWidthInput = document.getElementById('lineWidth');
 lineWidthInput.setAttribute('size', lineWidthInput.getAttribute('placeholder').length);
 lineWidthInput.addEventListener('focusout', function () {
+    setLineWidth();
+});
+lineWidthInput.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        setLineWidth();
+    }
+})
+
+function setLineWidth() {
     lineWidth = lineWidthInput.value;
     canvas.freeDrawingBrush.width = parseInt(lineWidth);
+    console.log(canvas.getActiveObject())
     console.log(lineWidth)
     if (canvas.getActiveObject()) {
         // not sure if line is a type but just in case
@@ -43,14 +63,14 @@ lineWidthInput.addEventListener('focusout', function () {
         canvas.renderAll();
         canvas.fire('object:modified')
     }
-});
+}
 
 const fontFamilyInput = document.getElementById('font');
 fontFamilyInput.addEventListener('change', function () {
     fontFamily = fontFamilyInput.value;
     if (canvas.getActiveObject()) {
         if (canvas.getActiveObject().get('type') == 'textbox') {
-            canvas.getActiveObject().set('fontFamilty', fontFamily);
+            canvas.getActiveObject().set('fontFamily', fontFamily);
             canvas.renderAll();
             canvas.fire('object:modified')
         }
@@ -108,21 +128,8 @@ function changeTool(res) {
         case 'DRAW':
 
             canvas.isDrawingMode = !canvas.isDrawingMode;
-            
-            var drawFlag = false;
-            var stack;
+            // had to make the listeners global because more would be made each time this section is called
 
-            // there might be a build up of listeners
-            canvas.on("mouse:down", function () {
-                drawFlag = true;
-                stack = [];
-            })
-            canvas.on("mouse:move", function () {
-                if (drawFlag)
-                    stack.push(canvas.getPointer());
-            })
-            canvas.on("path:created", (e) => {sendPath(e, stack);
-            console.log("eher")});
         break;
         case 'LINE':        //gonna work on setting the coords through user input
             obj = new fabric.Line([50, 10, 200, 150], {
@@ -144,15 +151,37 @@ function changeTool(res) {
             break;
     }
     if (obj) {
-        console.log("we have obk")
         canvas.add(obj).renderAll();
         recentObj = obj;
         socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
     }
 }
 
+
+// this is for free drawing
+var drawFlag = false;
+var stack;
+
+canvas.on("mouse:down", function () {
+    if (canvas.isDrawingMode) {
+        drawFlag = true;
+        stack = [];
+    }
+})
+canvas.on("mouse:move", function () {
+    if (drawFlag)
+        stack.push(canvas.getPointer());
+})
+canvas.on("path:created", function (e) {
+    sendPath(e, stack)    // without a canvas.off, this creates multiple listeners
+    console.log(typeof e);
+    // canvas.off('path:created', e);
+    // canvas.__eventListeners["path:created"] = [];
+});
+// end of free drawing code
+
 canvas.on('selection:created', function() {
-    console.log(this._objects[0]);
+    console.log(canvas.getActiveObject());
 })
 
 canvas.on('object:modified', function () {
@@ -161,19 +190,39 @@ canvas.on('object:modified', function () {
 });
 
 function deleteItem() {
-    obj = canvas.getActiveObject();
-    socket.emit('canvasUpdate', {'change' : obj.id, 'type': 'remove'});
-    canvas.remove(obj);
+    obj = canvas.getActiveObjects();    // use Objects for group deletion
+    ids = [];   // list to store id of each obj
+
+    // get each obj id
+    for (var i in obj) {
+        ids.push(obj[i].id);
+    }
+
+    // emit deleted ids
+    socket.emit('canvasUpdate', {'change' : ids, 'type': 'remove'});
+
+    // remove each obj
+    for (var i in obj) {
+        canvas.remove(obj[i]);
+    }
+    
     obj = null;     // Without this, the removed line will be re-added on next time draw is selected
 }
+
+document.onkeydown =  function (e) {        // This might cause issues for using the delete key anywhere else on the page
+    if (e.key === 'Delete') {
+        deleteItem();
+    }
+};
 
 function sendPath(e, stack) {
     if (e) {
        recentObj = e;
        //   TO IMPLEMENT A LINE THICKNESS FOR FREE DRAW, ADD 'LINEWIDTH: LINEWIDTH VAR'
-       socket.emit('canvasUpdate', {"change": {stack: stack, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add"});}
-       delete stack;
-       drawFlag = false;
+       socket.emit('canvasUpdate', {"change": {stack: stack, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add"});
+    }
+    delete stack;
+    drawFlag = false;
 }
 
 // when update comes in 
@@ -250,11 +299,14 @@ socket.on('canvasUpdate', (data) => {
             canvas.add(addObj);
         break;
         case 'remove':
-            for (var i in canvas._objects) {
-                if (canvas._objects[i].id == data.change) {
-                    canvas.remove(canvas._objects[i]);      //might need to change this to active Object
+            console.log(data.change)
+            for (var i in data.change) {
+                for (var j in canvas._objects) {
+                    if (canvas._objects[j].id == data.change[i]) {
+                        canvas.remove(canvas._objects[j]);      //might need to change this to active Object
+                    }
                 }
-            };
+            }
             
         break;
         case 'mod':
