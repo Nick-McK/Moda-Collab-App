@@ -121,7 +121,8 @@ function changeTool(res) {
                 if (drawFlag)
                     stack.push(canvas.getPointer());
             })
-            canvas.on("path:created", (e) => sendPath(e, stack));
+            canvas.on("path:created", (e) => {sendPath(e, stack);
+            console.log("eher")});
         break;
         case 'LINE':        //gonna work on setting the coords through user input
             obj = new fabric.Line([50, 10, 200, 150], {
@@ -143,6 +144,7 @@ function changeTool(res) {
             break;
     }
     if (obj) {
+        console.log("we have obk")
         canvas.add(obj).renderAll();
         recentObj = obj;
         socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
@@ -162,6 +164,7 @@ function deleteItem() {
     obj = canvas.getActiveObject();
     socket.emit('canvasUpdate', {'change' : obj.id, 'type': 'remove'});
     canvas.remove(obj);
+    obj = null;     // Without this, the removed line will be re-added on next time draw is selected
 }
 
 function sendPath(e, stack) {
@@ -221,9 +224,23 @@ socket.on('canvasUpdate', (data) => {
             } else {    // this should cover both path and polyline
                 // on other clients, free drawing is recreated as a polyline
                 canvas.isDrawingMode = true;
+
+                // this is if we want other clients to create instance of path instead of polyline
+                // var test = ["M"];
+                // for (var i in data.change.stack) {
+                //     console.log(data.change.stack[i]['x'])
+                //     test.push(data.change.stack[i]['x'] + " " + data.change.stack[i]['y'] + " L")
+                // }
+                // test = test.join(' ');
+                // test = test.slice(0, -1) + 'z';
+
+
+
                 addObj = new fabric.Polyline(data.change.stack, {
                     strokeWidth: parseInt(data.change.lineWidth),
                     stroke: data.change.stroke,
+                    strokeLineJoin: 'round',
+                    strokeLineCap: 'round',
                     fill: null,
                     id: data.change.id
                 });
@@ -241,6 +258,7 @@ socket.on('canvasUpdate', (data) => {
             
         break;
         case 'mod':
+            console.log("mod")
             for (var i in canvas._objects) {
                 if (canvas._objects[i].id == data.id) {
                     var oriObj = canvas._objects[i];
@@ -337,10 +355,12 @@ function deleteDesign() {
 
 function loadDesign() {
     socket.emit('loadDesign', {name: "designTest.JSON"});   // need some kind of explorer here
-    socket.on('loadDesignResponse', (data) => {
-        canvas.loadFromJSON(data);
-    });
+
 }
+
+socket.on('loadDesignResponse', (data) => {
+    canvas.loadFromJSON(data);
+});
 
 // Below is code for buttons in footer
 function importTemplate(template, dontEmit) {

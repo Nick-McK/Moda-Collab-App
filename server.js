@@ -5,6 +5,7 @@ const server = http.createServer(app);
 const {Server} = require("socket.io");
 const io = new Server(server);
 const router = express.Router();
+const fs = require("fs");
 
 // Probably use session cookies from express.session to save the session and get users
 
@@ -141,10 +142,10 @@ io.on('connect', (socket) => {
         });
     });
 
-    socket.on("loadDesign", (data) => {
-        fs.readFile(data.name, "utf-8", (err, data) => {
+    socket.on('loadDesign', (data) => {
+        fs.readFile(data.name, 'utf-8', (err, data) => {
             if (err) throw err;
-            socket.emit("loadDesignResponse", data);
+            io.to(roomName).emit('loadDesignResponse', data);
         });
     });
 
