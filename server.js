@@ -7,7 +7,10 @@ const io = new Server(server);
 const router = express.Router();
 const fs = require("fs");
 
+const mysql = require("mysql");
+
 // Probably use session cookies from express.session to save the session and get users
+const session = require("express-session")
 
 const path = require("path");
 const { createCanvas, Image } = require("canvas");
@@ -17,10 +20,28 @@ const { fstat } = require("fs");
 app.use(express.static(__dirname)); // Serves html files
 app.use(express.static(__dirname + "/public")); //serving style sheets and js files
 app.use(express.static(__dirname + "/public/assets")); // different assets for pages
-
+// Used for parsing request types like POST and GET etc.
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
+app.use(session({
+    secret: "secret",
+    resave: true,
+    saveUninitialized: true,
+    
+}))
+
+// Database connection using mySQL version 5 (I think)
+let con = mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "modacollab",
+    database: "moda collab"
+})
+con.connect((err) => {
+    if (err) throw err;
+    console.log("connected to database");
+})
 
 let rooms = {};
 let users = {};
@@ -36,6 +57,53 @@ app.get("/account/login", (req, res) => {
 app.get("/account/register", (req, res) => {
     res.sendFile(path.join(__dirname + "/register.html"));
 })
+
+app.post("/account/tags", (req, res) => {
+    // Get the username and password from the inputs on register page
+    let userCheck = req.body.username;
+    let passCheck1 = req.body.pass1;
+    let passCheck2 = req.body.pass2;
+    // If the three fields have text in them (probably dont need this since they are all required fields but just to be safe)
+    if (userCheck && passCheck1 && passCheck2) {
+        // If password 1 and password 2 are matching then insert into the database and take to the tags page
+        if (passCheck1 == passCheck2) {
+            con.query("INSERT INTO users (username, password) VALUES (?, ?)", [req.body.username, req.body.pass1], (err, result) => {
+                if (err) throw err;
+                console.log("inserted into table users the username: " + req.body.username + " and password: " + req.body.pass1);
+                res.sendFile(path.join(__dirname + "/tags.html"));
+            });
+        } else {
+            // Do some error handling and tell them to make sure that password 1 and password 2 match
+        }
+    }
+})
+
+app.post("/home", (req, res) => {
+    const username = req.body.username;
+    const password = req.body.password;
+
+    console.log("user", username);
+    console.log("pass", password);
+
+    con.query("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, result) => {
+        if (err) throw err;
+        console.log("we retrieved", result);
+
+        if (result.length > 0) {
+        
+        // Returns a set of keys from the result that we can then loop over then we can get certain column details
+        Object.keys(result).forEach((key) => {
+            console.log("rowname", result[key].username)
+            if (result[key].username == username && result[key].password == password) {
+                res.sendFile(path.join(__dirname + "/Homepage.html"));
+            }
+        });
+        } else {
+            res.send("you dont have an account");
+        }
+    });
+})
+
 
 app.get("/home", (req, res) => {
     res.sendFile(path.join(__dirname + "/Homepage.html"));
