@@ -1,0 +1,185 @@
+
+.header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 8%;
+  background-color: inherit;
+}
+/* Can either use this or footer1 whichever looks better */
+.footer {
+  display: grid;
+  grid-template-columns: 10% 10% 10% 10%;
+  grid-column-gap: 4%;
+  justify-content: space-around;
+  position: fixed;
+  margin-left: -2%;
+  bottom: 0;
+  width: 100%;
+  height: 8%;
+  background-color: inherit;
+  color: white;
+  text-align: center;
+}
+
+.footer1 {
+  display: flex;
+  justify-content: center;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 8%;
+  background-color: inherit;
+  color: white;
+}
+
+.footer_item {
+  align-self: center;
+}
+
+.feed {
+  display: grid;
+  background-color: inherit;
+  margin-left: 100;
+  margin-right: 100;
+  margin-top: 150px;
+  padding: 10;
+  padding-bottom: 10%;
+  grid-column-gap: 100px;
+  grid-row-gap: 100px;
+  grid-template-columns: 22em 22em 22em;
+  text-align: center;
+}
+
+.post {
+  display: grid;
+  grid-template-rows: 25em 2em;
+  grid-gap: 1px;
+}
+
+.grid-item {
+  background-color: white;
+}
+
+.post-bar {
+  display: grid;
+  grid-template-columns: 7em 7em 7em;
+  justify-content: space-around;
+  background-color: white;
+  text-align: center;
+}
+
+.post_img {
+  margin-top: .5em;
+  width: 21em;
+  height: 24em;
+}
+
+.bar_img{
+  width: 2em;
+  height: 2em;
+}
+
+
+#logo {
+  width: 150;
+  height: 75;
+  margin-left: 20;
+  position: fixed;
+  top: 20px;
+  transition: width 1s, height 1s;
+}
+
+.roundBtn_noBorder {
+  text-align: center;
+  background-color: transparent;
+  border: none;
+  color: white;
+  padding: 20px;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  border-radius: 12px;
+}
+.roundBtn {
+  text-align: center;
+  background-color: transparent;
+  color: white;
+  padding: 20px;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  border-radius: 12px;
+}
+
+.collabContainer {
+  top: 0;
+  left: 0;
+  position: fixed;
+  height: 100vh;
+  width: 100vw;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+/* If the browser doesn't support backdrop filters then set it to none */
+/* Add darkening around the borders of the popup so that its easier to tell where it starts and the background ends */
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+  .collabContainer {
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+  }
+}
+
+.collabContent {
+  width: 650px;
+  height: 800px;
+  max-width: 100%;
+  padding: 30px 50px;
+  margin: 0;
+  border-radius: 12px;
+  background-color: rgb(29, 29, 29);
+}
+.collabRoom {
+  color: rgb(0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* padding: 0;
+  margin: 0; */
+  font-size: 24px;
+}
+#close {
+  position: fixed;
+  top: 8%;
+  right: 1%;
+  padding: 5px 5px;
+  border: none;
+  background-color: transparent;
+}
+#startCollaborating, #addCollaborators {
+  position: relative;
+  top: 88%;
+  left: 30%;
+  display: inline-block;
+  align-items: center;
+  justify-content: center;
+  
+}
+
+.promptContainer {
+  top: 40%;
+  position: fixed;
+  height: 200px;
+  width: 400px;
+  border-radius: 12px;
+  background-color: red;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.promptContent {
+  padding: 30px 50px;
+  max-width: 100%;
+  margin: 0;
+}
