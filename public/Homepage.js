@@ -4,6 +4,7 @@ const socket = io();
 const collabContainer = document.getElementById("_collabContainer");
 const promptContainer = document.getElementById("_promptContainer");
 const promptBtn = document.getElementById("promptButton");
+const closePrompt = document.getElementById("promptClose");
 let promptAnswer = document.getElementById("promptAnswer");
 const btnOpen = document.getElementById("collaborate");
 const btnClose = document.getElementById("close");
@@ -29,6 +30,10 @@ startCollab.addEventListener("click", () => {
     promptContainer.style.display = "flex";
 })
 
+closePrompt.onclick = () => {
+    promptContainer.style.disaply = "none";
+}
+
 
 // Collaboration menu start and add collaborators buttons
 socket.on("connect", () => {
@@ -38,13 +43,15 @@ socket.on("connect", () => {
 let recordedRooms = new Array();
 // Adding rooms to the collab menu
 socket.on("roomNames", (roomList) => {
+
+    console.log("rooms", roomList);
     for (let room of roomList) {
         const collabContent = document.getElementById("_collabContent");
         let roomDiv = document.createElement("div");
         let roomLink = document.createElement("a");
-        let linkTitle = document.createTextNode("Join");
+        let linkTitle = document.createTextNode(room);
         roomDiv.classList.add("collabRoom");
-        roomDiv.innerHTML = room;
+        roomDiv.appendChild(roomLink);
 
         roomLink.appendChild(linkTitle);
         roomLink.href = "/collab_room/" + room;
