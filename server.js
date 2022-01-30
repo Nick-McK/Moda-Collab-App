@@ -15,6 +15,9 @@ const session = require("express-session")
 const path = require("path");
 const { createCanvas, Image } = require("canvas");
 const { fstat } = require("fs");
+const { handle } = require("express/lib/application");
+const { Console } = require("console");
+const { forEach } = require("lodash");
 
 // Use files from within the file structure
 app.use(express.static(__dirname)); // Serves html files
@@ -38,10 +41,11 @@ let con = mysql.createConnection({
     password: "modacollab",
     database: "moda collab"
 })
-con.connect((err) => {
-    if (err) throw err;
-    console.log("connected to database");
-})
+
+// con.connect((err) => {
+//     if (err) throw err;
+//     console.log("connected to database");
+// })
 
 let rooms = {};
 let users = {};
@@ -114,7 +118,25 @@ app.get("/home", (req, res) => {
 //     res.sendFile(path.join(__dirname + "/collab_room.html"));
 // });
 
+let roomList = new Array();
+
+// Abstracted this because it is duplicated
+function handleRoomCreation() {
+    Object.keys(rooms).forEach(room => {
+        console.log("this is the room thing")
+        console.log(room);
+
+        if (!roomList.find(r => { return r.roomName === room; })) {
+            roomList.push({roomName: room, objects: [], objIdCounter: 0, background: ''});
+            console.log("roomList", roomList);
+            io.emit("roomNames", roomList.map(function (ro) {return ro.roomName}));
+        }
+
+    });
+}
 // Handles the post event which takes us to the collab_room that we create
+
+// this only runs when collab room is entered
 app.post("/collab_room", (req, res) => {
     if (rooms[req.body.roomName] != null) {
         return res.redirect("/");   // This closes the collab menu currently, figure out way to keep it open
@@ -124,14 +146,8 @@ app.post("/collab_room", (req, res) => {
     res.redirect("/collab_room/" + req.body.roomName);
     // This is duplicated lower down, for some reason when using only 1 the rooms dont load until a refresh or
     // They only load when you create them and are lost when refreshed
-    let roomList = new Array();
-    Object.keys(rooms).forEach(room => {
-        if (!roomList.includes(room)) {
-            roomList.push(room);
-            console.log("roomList", roomList);
-            io.emit("roomNames", roomList);
-        }
-    });
+    // handleRoomCreation();
+
 })
 
 
@@ -144,7 +160,6 @@ const connectedUsers = [];
 const canvas = createCanvas(2000,2000);
 const ctx = canvas.getContext("2d");
 
-let objIdCounter = 0;
 let roomName; // Used to assign the users room to a global variable to be used outside of just the join update
 
 // When we connect give every use the rooms available
@@ -161,45 +176,110 @@ io.on('connect', (socket) => {
         socket.join(data.room);
         console.log("users", users);
         roomName = data.room;
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                for (var j in roomList[i].objects) {
+                    socket.emit('canvasUpdate', {change: roomList[i].objects[j], type: "add"}); 
+                }
+
+                if (roomList[i].background) {
+                    socket.emit("importTemplate", roomList[i].background);
+                }
+            }
+        }
+        // for (var i in roomName.objects) {
+        //     socket.emit('canvasUpdate', {change: roomName.objects[i], type: "add"});
+        // };
     })
 
-    
-    let roomList = new Array();
-    Object.keys(rooms).forEach(room => {
-        if (!roomList.includes(room)) {
-            roomList.push(room);
-            console.log("roomList", roomList);
-            io.emit("roomNames", roomList);
-        }
-    });
-    
+    socket.on('giveRooms', () => {
+        socket.emit('roomNames', roomList.map(function (ro) {return ro.roomName}));
+    })
+
+    // let roomList = new Array();
+    handleRoomCreation();
+
     // Whiteboard stuff
     connectedUsers.push(socket);
 
-    let img = new Image;
-
     socket.on("canvasUpdate", (data) => {
-        // img.onload = () => { ctx.drawImage(img, 0, 0); }
-        // img.src = data.image;
-        // console.log("room", data.roomName);
-        // socket.to(data.roomName).emit("canvasUpdate", canvas.toDataURL());
-
         switch(data.type) {
+            // each type of call is sent in a slightly different way
             case "add":
-                data.change.id = objIdCounter;
-                socket.emit("idUpdate", data.change.id);
-                objIdCounter++;
+                addObj(data.change);
+                
                 break;
             case "remove":
+                removeObj(data.change);
+
                 break
             case "mod":
-                break
+                data.change.id = data.id;
+                modObj(data.change);
+
+                break;
+            case "deleteDesign":
+                deleteDesign();
+
+                break;
         }
 
         console.log("roomName to console", roomName);
-        socket.broadcast.to(roomName).emit("canvasUpdate", data);
+        socket.to(roomName).emit("canvasUpdate", data);
  
     });
+
+    function addObj(data, ignore, loadDesign) {
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                data.id = roomList[i].objIdCounter;
+                roomList[i].objects.push(data);
+                roomList[i].objIdCounter++;
+
+                if (loadDesign) {
+                    io.to(roomList[i].roomName).emit('canvasUpdate', {change: data, type: "add"});            
+                }
+            }
+        }
+
+        if (!ignore) {
+            socket.emit("idUpdate", data.id);
+        }
+    }
+
+    function removeObj(data) {
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                for (var j in roomList[i].objects) {
+                    if (roomList[i].objects[j].id == data) {
+                        delete roomList[i].objects[j];
+                    }
+                }
+            }
+        }
+    }
+
+    function modObj(data) {
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                for (var j in roomList[i].objects) {
+                    if (roomList[i].objects[j].id == data.id) {
+                        roomList[i].objects[j] = data;
+                        roomList[i].objects[j].id = data.id;
+                    }
+                }
+            }
+        }
+    }
+
+    function deleteDesign() {
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                roomList[i].background = false;
+                roomList[i].objects = [];
+            }
+        }
+    }
 
     socket.on("saveDesign", (data) => {
         fs.writeFile("designsTemp/designTest.json", data.design, (err) => {
@@ -210,15 +290,43 @@ io.on('connect', (socket) => {
         });
     });
 
+
+    // Maybe make it so it removes all other objects when load design is called
     socket.on('loadDesign', (data) => {
         fs.readFile('designsTemp/' + data.name, 'utf-8', (err, data) => {
             if (err) throw err;
             io.to(roomName).emit('loadDesignResponse', data);
+
+            deleteDesign();     // remove previous design
+            io.to(roomName).emit("canvasUpdate", {type: "deleteDesign"}); // tell clients to remove previous design
+
+
+            //find out how to get the objects from the json file
+            var objs = JSON.parse(data).objects
+
+            for (var i in objs) {
+                addObj(objs[i], true, true);
+            }
+            
+            for (var i in roomList) {
+                if (roomList[i].roomName == roomName) {
+                    if (JSON.parse(data).backgroundImage) {
+                        roomList[i].background = JSON.parse(data).backgroundImage;
+                        io.to(roomList[i].roomName).emit("importTemplate", roomList[i].background);
+                    }
+                    roomList[i].background = data;
+                }
+            }
         });
     });
 
     socket.on("importTemplate", (data) => {
-        socket.broadcast.to(data.room).emit("importTemplate", data);
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                roomList[i].background = data;
+                socket.to(roomList[i].roomName).emit("importTemplate", data);
+            }
+        }
     });
 
 

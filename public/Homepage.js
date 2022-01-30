@@ -13,6 +13,7 @@ const addCollab = document.getElementById("addCollaborators");
 
 // Events for handling opening and closing the collaboration menu
 btnOpen.onclick =  () => {
+    socket.emit('giveRooms');
     if (collabContainer.style.display == "flex") {
         collabContainer.style.display = "none";
         promptContainer.style.display = "none"; // Set the prompt container to hide if we close the collab menu
@@ -39,6 +40,10 @@ closePrompt.onclick = () => {
 socket.on("connect", () => {
     
 });
+
+function getRooms() {
+    
+}
 
 let recordedRooms = new Array();
 // Adding rooms to the collab menu
