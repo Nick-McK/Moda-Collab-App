@@ -2,6 +2,7 @@ body {
     margin: 0;
     padding: 0;
     background-color: black;
+    
 }
 
 /* Text CSS */
@@ -21,6 +22,7 @@ h2{
 .comp_txt {
     overflow:hidden;
     text-decoration: none;
+    display: flex;
 }
 
 .comp_txt h2 {
@@ -53,8 +55,8 @@ h2{
   width: 150;
   height: 75;
   margin-left: 20;
-  position: fixed;
-  top: 20px;
+  position:fixed;
+  top: 0;
 }
 
 .topnav a {
