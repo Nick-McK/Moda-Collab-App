@@ -114,7 +114,25 @@ button:hover {
 .collabRoomHeaderFooter{
     width: 100%;
     height: 12.5%;
-    position: absolute;
+    position: fixed;
+    /* overflow:hidden; */
+}
+
+/* Users in the top right of the collab rooms */
+.participants {
+  padding: 5px;
+  margin-top: 1.75%;
+  float: right;
+  font-size: 24px;
+  color: white;
+
+}
+/* Images for users */
+.participants img {
+  height: 4vh;
+  width: auto;
+  background-color: transparent;
+  display: block;
 }
 
 #colourThicknessSelect{

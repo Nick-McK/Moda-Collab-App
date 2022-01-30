@@ -440,6 +440,26 @@ const whiteboard = document.getElementById("whiteboard");
 if (whiteboard != null) {
     socket.emit("joined");
 }
+let roomParticipants = new Array();
+// Add in a button that you can click to bring up a window to show all users in a room 
+socket.on("users", (roomData) => {
+    const collabRoomHeader = document.getElementById("collabRoomHeader");
+    for (let user of roomData.usernames) {
+        console.log("user is", user);
+
+        let userDiv = document.createElement("div");
+        let username = document.createTextNode(user);
+        let userImg = document.createElement("img");
+
+        userImg.src = "/assets/icons/person-inverted.png";
+        userDiv.appendChild(userImg).src = "/assets/icons/person-inverted.png";
+        userDiv.classList.add("participants");
+        
+        userDiv.appendChild(username);
+        
+        collabRoomHeader.prepend(userDiv);
+    }
+})
 
 function getRoom() {
     let path = location.pathname;

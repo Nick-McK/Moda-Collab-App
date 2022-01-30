@@ -37,10 +37,10 @@ let con = mysql.createConnection({
     database: "moda collab"
 })
 
-// con.connect((err) => {
-//     if (err) throw err;
-//     console.log("connected to database");
-// })
+con.connect((err) => {
+    if (err) throw err;
+    console.log("connected to database");
+})
 
 let options = {
     host: "localhost",
@@ -135,7 +135,9 @@ app.post("/home", (req, res) => {
     const sid = req.session.id;
 
     con.query("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, result) => {
-        if (err) throw err;
+        if (err) {
+            throw err;
+        }
         if (result.length > 0) {
             result.find((user, index) => {
                 if (user.username == username && user.password == password) {
@@ -208,7 +210,6 @@ let roomToJoin;
 
 app.get("/collab_room/:roomName", (req, res) => {
     // console.log("rooms", rooms);
-    console.log("user is being added to the room", req.session.username);
     // users[req.sessionID] = req.session.username;
     sessionID = req.session.id;
     sessionUser = req.session.username;
@@ -225,6 +226,8 @@ const ctx = canvas.getContext("2d");
 
 let roomName; // Used to assign the users room to a global variable to be used outside of just the join update
 
+let usersInRoom;
+let usersSocketMap = new Map();
 // When we connect give every use the rooms available
 io.on('connect', (socket) => {
 
@@ -256,14 +259,21 @@ io.on('connect', (socket) => {
     // Use session to save the users socket and add them to the room when they click join room
 
     socket.on("joined", () => {
-        console.log("user this", sessionUser);
+       
+        usersSocketMap.set(socket.id, sessionID);
+
+        console.log("socketMap", usersSocketMap);
+
         users[sessionID] = sessionUser;
+        console.log("users", users);
+        rooms[roomToJoin].users[sessionID] = sessionUser;
+        console.log("rooms", rooms)
         socket.join(roomToJoin);
         
-        let userKeys = Object.keys(users); // Pass this to the client and we can loop through to find the usernames
-        console.log("usey", userKeys);
+        let userVals = Object.values(users); // Pass this to the client and we can loop through to find the usernames
+        
         roomName = roomToJoin;
-        socket.emit("users", {users});
+        socket.emit("users", {usernames: userVals, sessionID: sessionID, room: roomToJoin});
 
 
         for (var i in roomList) {
