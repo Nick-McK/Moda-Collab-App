@@ -219,11 +219,7 @@ io.on('connect', (socket) => {
 
                 break;
             case "deleteDesign":
-                for (var i in roomList) {
-                    if (roomList[i].roomName == roomName) {
-                        roomList[i].objects = [];
-                    }
-                }
+                deleteDesign();
 
                 break;
         }
@@ -276,6 +272,15 @@ io.on('connect', (socket) => {
         }
     }
 
+    function deleteDesign() {
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                roomList[i].background = false;
+                roomList[i].objects = [];
+            }
+        }
+    }
+
     socket.on("saveDesign", (data) => {
         fs.writeFile("designsTemp/designTest.json", data.design, (err) => {
             socket.emit("saveDesignResponse", (!err));
@@ -291,6 +296,11 @@ io.on('connect', (socket) => {
         fs.readFile('designsTemp/' + data.name, 'utf-8', (err, data) => {
             if (err) throw err;
             io.to(roomName).emit('loadDesignResponse', data);
+
+            deleteDesign();     // remove previous design
+            io.to(roomName).emit("canvasUpdate", {type: "deleteDesign"}); // tell clients to remove previous design
+
+
             //find out how to get the objects from the json file
             var objs = JSON.parse(data).objects
 

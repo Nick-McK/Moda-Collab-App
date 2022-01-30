@@ -354,6 +354,7 @@ socket.on('canvasUpdate', (data) => {
                         data.change.path[i] = {x: data.change.path[i][1], y: data.change.path[i][2]};
                     }
 
+                    // this needs more attributes because there are more possible modifications when it has been placed before a user joins
                     addObj = new fabric.Polyline(data.change.path, {
                         strokeWidth: parseInt(data.change.strokeWidth),
                         stroke: data.change.stroke,
@@ -363,6 +364,8 @@ socket.on('canvasUpdate', (data) => {
                         angle: data.change.angle,
                         scaleX: data.change.scaleX,
                         scaleY: data.change.scaleY,
+                        height: data.change.height,
+                        width: data.change.width,
                         left: data.change.left,
                         top: data.change.top,
                         id: data.change.id
@@ -416,6 +419,7 @@ socket.on('canvasUpdate', (data) => {
         break;
         case 'deleteDesign':
             canvas.remove(...canvas.getObjects());
+            canvas.backgroundImage = false; // remove any possible background image
             canvas.renderAll();
         break;
     }
@@ -483,6 +487,7 @@ socket.on('saveDesignResponse', (res) => {
 function deleteDesign() {
     socket.emit('canvasUpdate', {type: "deleteDesign"});
     canvas.remove(...canvas.getObjects());
+    canvas.backgroundImage = false; // remove any possible background image
     canvas.renderAll();
 }
 
