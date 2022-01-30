@@ -90,44 +90,65 @@
             <table>
                 <tr>
                     <td>
-                        <button id="draw" onclick="changeTool('DRAW')">Draw</button>
+                        <button id="draw" onclick="changeTool('DRAW')">
+                            <img src="/public/assets/icons/pencil-line.png"></img>
+                        </button>
                     </td>
                     <td>
-                        <button id="figures" onclick="changeTool('ERASER')">Eraser</button>
+                        <button id="figures" onclick="changeTool('ERASER')">
+                            <img src="/public/assets/icons/eraser.png"></img>
+                        </button>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <button id="text" onclick="changeTool('TEXT')">Text</button>
+                        <button id="text" onclick="changeTool('TEXT')">
+                            <img src="/public/assets/icons/text-t.png"></img>
+                        </button>
                     </td>
                     <td>
-                        <button id="transform" onclick="changeTool('TRANSFORM')">Transform</button>
+                        <button id="transform" onclick="changeTool('TRANSFORM')">
+                        
+                            Transform
+                        </button>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <button id="triangle" onclick="changeTool('TRIANGLE')">Triangle</button>
+                        <button id="triangle" onclick="changeTool('TRIANGLE')">
+                            <img src="/public/assets/icons/triangle.png"></img>
+                        </button>
                     </td>
                     <td>
-                        <button id="rectangle" onclick="changeTool('RECTANGLE')">Rectangle</button>
+                        <button id="rectangle" onclick="changeTool('RECTANGLE')">
+                            <img src="/public/assets/icons/rectangle.png"></img>
+                        </button>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <button id="circle" onclick="changeTool('CIRCLE')">Circle</button>
+                        <button id="circle" onclick="changeTool('CIRCLE')">
+                            <img src="/public/assets/icons/circle.png"></img>
+                        </button>
                     </td>
                     <td>
-                        <button id="line" onclick="changeTool('LINE')">Line</button>
+                        <button id="line" onclick="changeTool('LINE')">
+                            <img src="/public/assets/icons/line-segment.png"></img>
+                        </button>
+
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <button id="image" onclick="changeTool('IMAGE')">Image</button>
+                        <button id="image" onclick="changeTool('IMAGE')">
+                            <img src="/public/assets/icons/image.png"></img>
+                        </button>
                     </td>
                     <td>
-                        <button id="delete" onclick="deleteItem()">Delete</button>
+                        <button id="delete" onclick="deleteItem()">
+                            <img src="/public/assets/icons/trash-simple.png"></img>
+                        </button>
                     </td>
-                </tr>
             </table>
         </div>
 
@@ -150,7 +171,7 @@
     
                     <td style="width: 20vw;" align="center">
                         <button class="collabBtn">
-                            <img src="/public/assets/icons/x-inverted.png" align="center"></img>
+                            <img src="/public/assets/icons/x-inverted.png" align="center" onclick="leaveRoom()"></img>
                             Exit Call
                         </button>
                     </td>

@@ -443,22 +443,30 @@ if (whiteboard != null) {
 let roomParticipants = new Array();
 // Add in a button that you can click to bring up a window to show all users in a room 
 socket.on("users", (roomData) => {
+    console.log(roomData.usernames);
     const collabRoomHeader = document.getElementById("collabRoomHeader");
     for (let user of roomData.usernames) {
-        console.log("user is", user);
+        if (!document.getElementById(user)) {       // makes sure there is no duplicates
+            console.log("user is", user);
 
-        let userDiv = document.createElement("div");
-        let username = document.createTextNode(user);
-        let userImg = document.createElement("img");
+            let userDiv = document.createElement("div");
+            let username = document.createTextNode(user);
+            let userImg = document.createElement("img");
 
-        userImg.src = "/assets/icons/person-inverted.png";
-        userDiv.appendChild(userImg).src = "/assets/icons/person-inverted.png";
-        userDiv.classList.add("participants");
-        
-        userDiv.appendChild(username);
-        
-        collabRoomHeader.prepend(userDiv);
+            userImg.src = "/assets/icons/person-inverted.png";
+            userDiv.appendChild(userImg).src = "/assets/icons/person-inverted.png";
+            userDiv.classList.add("participants");
+            userDiv.id = user;
+            
+            userDiv.appendChild(username);
+            
+            collabRoomHeader.prepend(userDiv);
+        }
     }
+});
+
+socket.on("userLeave", (data) => {
+    document.getElementById(data.username).remove();
 })
 
 function getRoom() {
@@ -547,3 +555,8 @@ function importTemplate(template, dontEmit) {
 socket.on('importTemplate', (data) => {
     importTemplate( "" , true); // figure out solution for the first param later
 })
+
+function leaveRoom() {
+    socket.emit("leaveRoom");
+    window.location.replace("localhost:3000/homepage.html");    // this doesn't work
+}

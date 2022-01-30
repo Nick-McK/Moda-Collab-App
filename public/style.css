@@ -159,6 +159,11 @@ button:hover {
   color: black;
 }
 
+#toolSelect table tr td button img {
+  width: 50px;
+  height: auto;
+}
+
 .collabBtn img{
   height: 5vh;
   width: auto;

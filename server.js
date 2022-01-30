@@ -270,10 +270,12 @@ io.on('connect', (socket) => {
         console.log("rooms", rooms)
         socket.join(roomToJoin);
         
-        let userVals = Object.values(users); // Pass this to the client and we can loop through to find the usernames
+        
+        // use rooms[roomToJoin].users instead of users to get only users in the given room
+        let userVals = Object.values(rooms[roomToJoin].users); // Pass this to the client and we can loop through to find the usernames
         
         roomName = roomToJoin;
-        socket.emit("users", {usernames: userVals, sessionID: sessionID, room: roomToJoin});
+        io.to(roomToJoin).emit("users", {usernames: userVals, sessionID: sessionID, room: roomToJoin});     //do we need to send session and room?
 
 
         for (var i in roomList) {
@@ -429,7 +431,11 @@ io.on('connect', (socket) => {
         }
     });
 
-
+    socket.on("leaveRoom" , () => {
+        socket.leave(roomName);
+        io.to(roomToJoin).emit("userLeave", {username: rooms[roomName].users[sessionID]}); // allow other clients to update participants
+        delete rooms[roomName].users[sessionID];
+    });
 
 });
 
