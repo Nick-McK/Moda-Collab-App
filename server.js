@@ -7,10 +7,12 @@ const io = new Server(server);
 const router = express.Router();
 const fs = require("fs");
 
-const mysql = require("mysql");
-
-// Probably use session cookies from express.session to save the session and get users
 const session = require("express-session")
+const {v4: uuidv4} = require("uuid");
+const mysql = require("mysql");
+const MySQLStore = require("express-mysql-session")(session)
+
+
 
 const path = require("path");
 const { createCanvas, Image } = require("canvas");
@@ -27,13 +29,6 @@ app.use(express.static(__dirname + "/public/assets")); // different assets for p
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
-app.use(session({
-    secret: "secret",
-    resave: true,
-    saveUninitialized: true,
-    
-}))
-
 // Database connection using mySQL version 5 (I think)
 let con = mysql.createConnection({
     host: "localhost",
@@ -46,6 +41,58 @@ let con = mysql.createConnection({
 //     if (err) throw err;
 //     console.log("connected to database");
 // })
+
+let options = {
+    host: "localhost",
+    port: "3306",
+    user: "root",
+    password: "modacollab",
+    database: "moda collab",
+    schema: {
+        tableNamme: "sessions",
+        columnNames: {
+            session_id: "session_id",
+            expires: "expires",
+            data: "data"
+        }
+    }
+}
+
+
+const sessionStore = new MySQLStore(options, con);
+
+
+app.use(session({
+    genid: (req) => {
+        return uuidv4();
+    },
+    secret: "secret",
+    resave: false,
+    saveUninitialized: false,
+    store: sessionStore,
+    cookie: {
+        maxAge: 60000, // 1000 * 60 * 60 * 24 Sets the cookie to last for 1 day. (Set to 60000 for testing)
+        sameSite: true,
+    }
+}));
+
+// These are used to modify the session table in the database
+// Probably use these to retrive session data like after we log in/use to authenticate users which is faster than database
+
+// sessionStore.destroy(sid, (error) => {
+    
+// })
+
+// sessionStore.get(sid, (error, session) => {
+
+// })
+
+// sessionStore.set(sid, session, (error) => {
+
+// })
+
+
+
 
 let rooms = {};
 let users = {};
@@ -85,24 +132,29 @@ app.post("/account/tags", (req, res) => {
 app.post("/home", (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
-
-    console.log("user", username);
-    console.log("pass", password);
+    const sid = req.session.id;
 
     con.query("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, result) => {
         if (err) throw err;
-        console.log("we retrieved", result);
-
         if (result.length > 0) {
-        
-        // Returns a set of keys from the result that we can then loop over then we can get certain column details
-        Object.keys(result).forEach((key) => {
-            console.log("rowname", result[key].username)
-            if (result[key].username == username && result[key].password == password) {
-                res.sendFile(path.join(__dirname + "/Homepage.html"));
-            }
-        });
+            result.find((user, index) => {
+                if (user.username == username && user.password == password) {
+                    // Session stuff
+                    req.session.username = username;
+                    req.session.loggedIn = true;
+                    console.log("welcome", req.session.username, " here is your session id ", req.session);
+                    console.log()
+                    console.log("and the id: ", sid);
+
+                    
+                    
+                    res.sendFile(path.join(__dirname + "/Homepage.html"));
+                    
+                }
+                    
+            })
         } else {
+            req.session.loggedIn = false;
             res.send("you dont have an account");
         }
     });
@@ -139,7 +191,7 @@ function handleRoomCreation() {
 // this only runs when collab room is entered
 app.post("/collab_room", (req, res) => {
     if (rooms[req.body.roomName] != null) {
-        return res.redirect("/");   // This closes the collab menu currently, figure out way to keep it open
+        return res.redirect("/home");   // This closes the collab menu currently, figure out way to keep it open
     }
     rooms[req.body.roomName] = {users: {} };
     console.log(rooms);
@@ -149,10 +201,21 @@ app.post("/collab_room", (req, res) => {
     // handleRoomCreation();
 
 })
-
+// Gobal session variable to add to the users list in rooms in sockets
+let sessionID;
+let sessionUser;
+let roomToJoin;
 
 app.get("/collab_room/:roomName", (req, res) => {
     // console.log("rooms", rooms);
+    console.log("user is being added to the room", req.session.username);
+    // users[req.sessionID] = req.session.username;
+    sessionID = req.session.id;
+    sessionUser = req.session.username;
+    roomToJoin = req.params.roomName;
+    
+    console.log("users in room: ", req.params.roomName, " are: ", users)
+    
     res.sendFile(__dirname + "/collab_room.html");
 })
 
@@ -165,17 +228,44 @@ let roomName; // Used to assign the users room to a global variable to be used o
 // When we connect give every use the rooms available
 io.on('connect', (socket) => {
 
+    // app.get("/collab_room/:roomName", (req, res) => {
+    //     // console.log("rooms", rooms);
+    //     console.log("user ", req.session.username, " is being added to the room", req.params.roomName);
+    //     users[socket.id] = req.session.username;
+    //     console.log("path", req.params.roomName);
+    //     socket.join(req.params.roomName);
+    //     console.log("users in room: ", req.params.roomName, " are: ", users)
+    //     console.log()
+    //     console.log(req.session);
+        
+    //     socket.on("joined", (data) => {
+    //         users[req.sessionID] = req.session.username;
+    //         socket.join(req.params.roomName);
+    //     })
+
+
+    //     console.log(rooms);
+
+
+    //     res.sendFile(__dirname + "/collab_room.html");
+    // })
+
     console.log("A user connected", socket.id);
     connectedUsers.push(socket);
 
     // Use session to save the users socket and add them to the room when they click join room
 
-    socket.on("joined", (data) => {
-        console.log("user", data.user);
-        users[socket.id] = data.user;
-        socket.join(data.room);
-        console.log("users", users);
-        roomName = data.room;
+    socket.on("joined", () => {
+        console.log("user this", sessionUser);
+        users[sessionID] = sessionUser;
+        socket.join(roomToJoin);
+        
+        let userKeys = Object.keys(users); // Pass this to the client and we can loop through to find the usernames
+        console.log("usey", userKeys);
+        roomName = roomToJoin;
+        socket.emit("users", {users});
+
+
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
                 for (var j in roomList[i].objects) {

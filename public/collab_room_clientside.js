@@ -438,12 +438,7 @@ socket.on('idUpdate', (data) => {
 const whiteboard = document.getElementById("whiteboard");
 
 if (whiteboard != null) {
-    let user = prompt("what is your name?");
-    let roomName = getRoom();
-    let data = {user: user, room: roomName}
-    console.log("user", user);
-    socket.emit("joined", (data));
-
+    socket.emit("joined");
 }
 
 function getRoom() {
