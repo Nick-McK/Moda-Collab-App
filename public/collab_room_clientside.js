@@ -558,5 +558,5 @@ socket.on('importTemplate', (data) => {
 
 function leaveRoom() {
     socket.emit("leaveRoom");
-    window.location.replace("localhost:3000/homepage.html");    // this doesn't work
+    window.location.href = "/home";
 }
