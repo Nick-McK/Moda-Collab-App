@@ -5,8 +5,8 @@ const socket = io();
 
 // Create the canvas and set its attributes
 let canvas = new fabric.Canvas("whiteboard");
-canvas.setHeight(window.outerHeight * 0.75);
-canvas.setWidth(window.outerWidth);
+canvas.setHeight(window.innerHeight * 0.75);
+canvas.setWidth(window.outerWidth); // this can ignore console being open
 canvas.backgroundColor = "#c9cecf";
 
 // maybe add in an init for the start stuff
