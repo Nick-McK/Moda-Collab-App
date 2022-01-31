@@ -6,20 +6,12 @@ const {Server} = require("socket.io");
 const io = new Server(server);
 const router = express.Router();
 const fs = require("fs");
-
 const session = require("express-session")
 const {v4: uuidv4} = require("uuid");
 const mysql = require("mysql");
 const MySQLStore = require("express-mysql-session")(session)
-
-
-
 const path = require("path");
-const { createCanvas, Image } = require("canvas");
-const { fstat } = require("fs");
-const { handle } = require("express/lib/application");
-const { Console } = require("console");
-const { forEach } = require("lodash");
+
 
 // Use files from within the file structure
 app.use(express.static(__dirname)); // Serves html files
@@ -29,6 +21,9 @@ app.use(express.static(__dirname + "/public/assets")); // different assets for p
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
+
+
+
 // Database connection using mySQL version 5 (I think)
 let con = mysql.createConnection({
     host: "localhost",
@@ -36,7 +31,7 @@ let con = mysql.createConnection({
     password: "modacollab",
     database: "moda collab"
 })
-
+// Connect to the database and give an error if there are any errors, keep this
 con.connect((err) => {
     if (err) throw err;
     console.log("connected to database");
@@ -61,8 +56,7 @@ let options = {
 
 const sessionStore = new MySQLStore(options, con);
 
-
-app.use(session({
+const sessionMiddleware = session({
     genid: (req) => {
         return uuidv4();
     },
@@ -71,10 +65,21 @@ app.use(session({
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
-        maxAge: 60000, // 1000 * 60 * 60 * 24 Sets the cookie to last for 1 day. (Set to 60000 for testing)
+        maxAge: 300000, // 1000 * 60 * 60 * 24 Sets the cookie to last for 1 day. (Set to 60000 for testing)
         sameSite: true,
     }
-}));
+})
+
+// This is socket session middleware that lets us use sessions with the socket library
+app.use(sessionMiddleware);
+// Use is from express and we are telling the socket library to use the following middleware
+// We cant write to the session data from socket using this -> we can use a library called express-socket.io-session to write from socket to the session.
+io.use((socket, next) => {
+    sessionMiddleware(socket.request, socket.request.res || {}, next);
+})
+
+
+
 
 // These are used to modify the session table in the database
 // Probably use these to retrive session data like after we log in/use to authenticate users which is faster than database
@@ -92,8 +97,6 @@ app.use(session({
 // })
 
 
-
-
 let rooms = {};
 let users = {};
 
@@ -108,6 +111,10 @@ app.get("/account/login", (req, res) => {
 app.get("/account/register", (req, res) => {
     res.sendFile(path.join(__dirname + "/register.html"));
 })
+
+app.get("/account/tags", (req,res) => {
+    res.sendFile(__dirname + "/tags.html");
+});
 
 app.post("/account/tags", (req, res) => {
     // Get the username and password from the inputs on register page
@@ -148,6 +155,12 @@ app.post("/home", (req, res) => {
                     console.log()
                     console.log("and the id: ", sid);
 
+                    sessionStore.set(req.session.id, req.session, (error) => {
+                        if (error) throw error;
+
+                        console.log("session stored");
+                    })
+
                     
                     
                     res.sendFile(path.join(__dirname + "/Homepage.html"));
@@ -167,28 +180,19 @@ app.get("/home", (req, res) => {
     res.sendFile(path.join(__dirname + "/Homepage.html"));
 })
 
-// DO SOMETHING WITH THIS WHERE WE CHECK IF THE PERSON IS LOGGED IN AND IF THEY ARE THEN THEY CAN GO TO THIS PAGE
-// app.get("/collab_room", (req, res) => {
-//     res.sendFile(path.join(__dirname + "/collab_room.html"));
-// });
-
 let roomList = new Array();
 
 // Abstracted this because it is duplicated
+// Get the keys for the rooms which will give us room names this is then passed to the client to be drawn onto the available rooms to join list in the homepage
 function handleRoomCreation() {
     Object.keys(rooms).forEach(room => {
-        console.log("this is the room thing")
-        console.log(room);
-
         if (!roomList.find(r => { return r.roomName === room; })) {
             roomList.push({roomName: room, objects: [], objIdCounter: 0, background: ''});
             console.log("roomList", roomList);
             io.emit("roomNames", roomList.map(function (ro) {return ro.roomName}));
         }
-
     });
 }
-// Handles the post event which takes us to the collab_room that we create
 
 // this only runs when collab room is entered
 app.post("/collab_room", (req, res) => {
@@ -208,6 +212,9 @@ let sessionID;
 let sessionUser;
 let roomToJoin;
 
+let usersSocketMap = new Map();
+let sessionMap = new Map();
+
 app.get("/collab_room/:roomName", (req, res) => {
     // console.log("rooms", rooms);
     // users[req.sessionID] = req.session.username;
@@ -221,15 +228,15 @@ app.get("/collab_room/:roomName", (req, res) => {
 })
 
 const connectedUsers = [];
-const canvas = createCanvas(2000,2000);
-const ctx = canvas.getContext("2d");
 
 let roomName; // Used to assign the users room to a global variable to be used outside of just the join update
 
 let usersInRoom;
-let usersSocketMap = new Map();
 // When we connect give every use the rooms available
-io.on('connect', (socket) => {
+io.sockets.on('connect', (socket) => {
+
+    console.log("socket sessionID", socket.request.session.id)
+
 
     // app.get("/collab_room/:roomName", (req, res) => {
     //     // console.log("rooms", rooms);
@@ -240,7 +247,7 @@ io.on('connect', (socket) => {
     //     console.log("users in room: ", req.params.roomName, " are: ", users)
     //     console.log()
     //     console.log(req.session);
-        
+    
     //     socket.on("joined", (data) => {
     //         users[req.sessionID] = req.session.username;
     //         socket.join(req.params.roomName);
@@ -260,7 +267,7 @@ io.on('connect', (socket) => {
 
     socket.on("joined", () => {
        
-        usersSocketMap.set(socket.id, sessionID);
+        usersSocketMap.set(sessionID, socket.id);
 
         console.log("socketMap", usersSocketMap);
 
@@ -289,14 +296,11 @@ io.on('connect', (socket) => {
                 }
             }
         }
-        // for (var i in roomName.objects) {
-        //     socket.emit('canvasUpdate', {change: roomName.objects[i], type: "add"});
-        // };
-    })
+    });
 
     socket.on('giveRooms', () => {
         socket.emit('roomNames', roomList.map(function (ro) {return ro.roomName}));
-    })
+    });
 
     // let roomList = new Array();
     handleRoomCreation();
@@ -432,15 +436,26 @@ io.on('connect', (socket) => {
     });
 
     socket.on("leaveRoom" , () => {
+        // app.get("/home", (req, res) => {
+        //     io.to(roomName).emit("userLeave", ({username: rooms[roomName].users[req.session.id]}));
+        //     console.log("username leaving in app", rooms[roomName].users[req.session.id]);
+        //     delete rooms[roomName].users[sessionID];
+        //     res.redirect("/home");
+        // })
+
+        
+
+
         socket.leave(roomName);
-        io.to(roomToJoin).emit("userLeave", {username: rooms[roomName].users[sessionID]}); // allow other clients to update participants
-        delete rooms[roomName].users[sessionID];
+        console.log("")
+        console.log("username leaving", rooms[roomToJoin].users[socket.request.session.id])
+        io.to(roomName).emit("userLeave", {username: rooms[roomToJoin].users[socket.request.session.id]}); // allow other clients to update participants
+        delete rooms[roomName].users[socket.request.session.id];
+        
     });
-
 });
-
 
 app.use(router);
 server.listen(3000, () => {
     console.log("Listening on port *: 3000")
-})
+});
