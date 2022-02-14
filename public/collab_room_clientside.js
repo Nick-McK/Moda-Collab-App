@@ -438,7 +438,12 @@ socket.on('idUpdate', (data) => {
 const whiteboard = document.getElementById("whiteboard");
 
 if (whiteboard != null) {
-    socket.emit("joined");
+
+    console.log("pathname", getRoom());
+
+    let data = {roomName: getRoom()}
+
+    socket.emit("joined", (data));
 }
 let roomParticipants = new Array();
 // Add in a button that you can click to bring up a window to show all users in a room 
@@ -466,6 +471,7 @@ socket.on("users", (roomData) => {
 });
 
 socket.on("userLeave", (data) => {
+    console.log("username", data.username);
     document.getElementById(data.username).remove();
 })
 

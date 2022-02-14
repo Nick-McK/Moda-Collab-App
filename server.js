@@ -208,9 +208,7 @@ app.post("/collab_room", (req, res) => {
 
 })
 // Gobal session variable to add to the users list in rooms in sockets
-let sessionID;
-let sessionUser;
-let roomToJoin;
+
 
 let usersSocketMap = new Map();
 let sessionMap = new Map();
@@ -218,9 +216,7 @@ let sessionMap = new Map();
 app.get("/collab_room/:roomName", (req, res) => {
     // console.log("rooms", rooms);
     // users[req.sessionID] = req.session.username;
-    sessionID = req.session.id;
-    sessionUser = req.session.username;
-    roomToJoin = req.params.roomName;
+    
     
     console.log("users in room: ", req.params.roomName, " are: ", users)
     
@@ -235,7 +231,7 @@ let usersInRoom;
 // When we connect give every use the rooms available
 io.sockets.on('connect', (socket) => {
 
-    console.log("socket sessionID", socket.request.session.id)
+    console.log("socket sessionID", socket.request.session)
 
 
     // app.get("/collab_room/:roomName", (req, res) => {
@@ -265,24 +261,25 @@ io.sockets.on('connect', (socket) => {
 
     // Use session to save the users socket and add them to the room when they click join room
 
-    socket.on("joined", () => {
+    socket.on("joined", (data) => {
        
-        usersSocketMap.set(sessionID, socket.id);
+        usersSocketMap.set(socket.request.session.id, socket.id);
 
         console.log("socketMap", usersSocketMap);
+        console.log("session username", socket.request.session.username);
 
-        users[sessionID] = sessionUser;
+        users[socket.request.session.id] = socket.request.session.username;
         console.log("users", users);
-        rooms[roomToJoin].users[sessionID] = sessionUser;
+        rooms[data.roomName].users[socket.request.session.id] = socket.request.session.username;
         console.log("rooms", rooms)
-        socket.join(roomToJoin);
+        socket.join(data.roomName);
         
         
         // use rooms[roomToJoin].users instead of users to get only users in the given room
-        let userVals = Object.values(rooms[roomToJoin].users); // Pass this to the client and we can loop through to find the usernames
+        let userVals = Object.values(rooms[data.roomName].users); // Pass this to the client and we can loop through to find the usernames
         
-        roomName = roomToJoin;
-        io.to(roomToJoin).emit("users", {usernames: userVals, sessionID: sessionID, room: roomToJoin});     //do we need to send session and room?
+        roomName = data.roomName;
+        io.to(roomName).emit("users", {usernames: userVals, sessionID: socket.request.session.id, room: roomName});     //do we need to send session and room?
 
 
         for (var i in roomList) {
@@ -436,20 +433,11 @@ io.sockets.on('connect', (socket) => {
     });
 
     socket.on("leaveRoom" , () => {
-        // app.get("/home", (req, res) => {
-        //     io.to(roomName).emit("userLeave", ({username: rooms[roomName].users[req.session.id]}));
-        //     console.log("username leaving in app", rooms[roomName].users[req.session.id]);
-        //     delete rooms[roomName].users[sessionID];
-        //     res.redirect("/home");
-        // })
-
         
-
-
         socket.leave(roomName);
         console.log("")
-        console.log("username leaving", rooms[roomToJoin].users[socket.request.session.id])
-        io.to(roomName).emit("userLeave", {username: rooms[roomToJoin].users[socket.request.session.id]}); // allow other clients to update participants
+        console.log("leaving room:", rooms[roomName],"username leaving", rooms[roomName].users[socket.request.session.id])
+        io.to(roomName).emit("userLeave", {username: rooms[roomName].users[socket.request.session.id]}); // allow other clients to update participants
         delete rooms[roomName].users[socket.request.session.id];
         
     });

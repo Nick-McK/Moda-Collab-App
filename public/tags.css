@@ -34,6 +34,19 @@ h1 {
 .tagContainer:hover .tags img:not(:hover) {
     filter: blur(3px);
 }
+
+.header {
+    display: flex;
+    top: 0;
+    width: 100%;
+    height: 8%;
+    position: fixed;
+    background-color: black;
+}
+
+
+
+
 #animal {
     object-fit: cover;
 }
