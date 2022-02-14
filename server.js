@@ -11,6 +11,7 @@ const {v4: uuidv4} = require("uuid");
 const mysql = require("mysql");
 const MySQLStore = require("express-mysql-session")(session)
 const path = require("path");
+const res = require("express/lib/response");
 
 
 // Use files from within the file structure
@@ -194,13 +195,22 @@ function handleRoomCreation() {
     });
 }
 
+// app.get("/collab_room/verify/:roomName", (req, res) => {
+
+// }) 
+    
+
+
+
+
 // this only runs when collab room is entered
 app.post("/collab_room", (req, res) => {
     if (rooms[req.body.roomName] != null) {
         return res.redirect("/home");   // This closes the collab menu currently, figure out way to keep it open
     }
-    rooms[req.body.roomName] = {users: {} };
+    rooms[req.body.roomName] = {users: {}, roomPass: {}};
     console.log(rooms);
+    rooms[req.body.roomName].roomPass = req.body.roomPass;
     res.redirect("/collab_room/" + req.body.roomName);
     // This is duplicated lower down, for some reason when using only 1 the rooms dont load until a refresh or
     // They only load when you create them and are lost when refreshed
@@ -259,10 +269,20 @@ io.sockets.on('connect', (socket) => {
     console.log("A user connected", socket.id);
     connectedUsers.push(socket);
 
+    
+
     // Use session to save the users socket and add them to the room when they click join room
 
     socket.on("joined", (data) => {
-       
+
+        console.log("roompass", data.roomPass);
+
+        // rooms[data.roomName].roomPass = data.roomPass;
+
+        console.log("room password", rooms[data.roomName].roomPass);
+
+
+        
         usersSocketMap.set(socket.request.session.id, socket.id);
 
         console.log("socketMap", usersSocketMap);
@@ -294,6 +314,13 @@ io.sockets.on('connect', (socket) => {
             }
         }
     });
+
+    socket.on("verify", (data) => {
+        console.log("password for the room", data.password);
+        if (data.password == rooms[data.roomName].roomPass) {
+            socket.emit("redirect", (roomName));
+        }
+    })
 
     socket.on('giveRooms', () => {
         socket.emit('roomNames', roomList.map(function (ro) {return ro.roomName}));
