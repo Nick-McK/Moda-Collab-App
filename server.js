@@ -9,7 +9,9 @@ const fs = require("fs");
 const session = require("express-session")
 const {v4: uuidv4} = require("uuid");
 const mysql = require("mysql");
-const MySQLStore = require("express-mysql-session")(session)
+const MySQLStore = require("express-mysql-session")(session);
+//const mongoose = require("mongoose");
+//const mongoURL = 'mongodb://localhost:27017/Designs';
 const path = require("path");
 const res = require("express/lib/response");
 
@@ -22,8 +24,15 @@ app.use(express.static(__dirname + "/public/assets")); // different assets for p
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
+//connects to mongodb for storing designs
+/*
+mongoose.connect(mongoURL, (err) =>{
+    if(err) throw err;
+    console.log("Connected to MongoDB")
+});
 
-
+let designs = mongoose.connection;
+*/
 
 // Database connection using mySQL version 5 (I think)
 let con = mysql.createConnection({
@@ -417,7 +426,13 @@ io.sockets.on('connect', (socket) => {
             if (err) {
                 throw err;
             }
-        });
+        }); 
+        
+        //saves design data to database
+        //Throws error "Cannot create property '_id'"
+        //find out how to fix
+        
+        //designs.collection("Design").insertOne(data.design);
     });
 
 
