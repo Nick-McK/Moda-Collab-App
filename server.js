@@ -14,6 +14,8 @@ const MySQLStore = require("express-mysql-session")(session);
 //const mongoURL = 'mongodb://localhost:27017/Designs';
 const path = require("path");
 const res = require("express/lib/response");
+const { profile } = require("console");
+const fileUpload = require("express-fileupload");
 
 
 // Use files from within the file structure
@@ -88,6 +90,10 @@ io.use((socket, next) => {
     sessionMiddleware(socket.request, socket.request.res || {}, next);
 })
 
+app.use(fileUpload({
+    debug: true,
+}));
+
 
 
 
@@ -148,6 +154,7 @@ app.post("/account/tags", (req, res) => {
 
 app.post("/home", (req, res) => {
     const username = req.body.username;
+
     const password = req.body.password;
     const sid = req.session.id;
 
@@ -189,6 +196,40 @@ app.post("/home", (req, res) => {
 app.get("/home", (req, res) => {
     res.sendFile(path.join(__dirname + "/Homepage.html"));
 })
+
+app.get("/profile", (req, res) => {
+    res.sendFile(path.join(__dirname + "/profile.html"));
+})
+
+// Maybe make post request to profile page for x user for PP upload
+app.post("/profile", (req, res) => {
+    let uploadPath;
+
+    console.log("asasdfasdf", req.files);
+
+    if (!req.files) {
+        return res.status(400).send("No files were uploaded");
+    }
+
+    
+
+
+    uploadPath = __dirname + "/server/" + req.files.profilePic.name;
+
+    console.log("upload path", uploadPath);
+
+    req.files.profilePic.mv(uploadPath, (err) => {
+        if (err)
+            return res.status(500).send(err);
+
+        console.log("file uploaded");
+
+        res.send("file uploaded");
+    });
+    
+    // res.sendFile(path.join(__dirname + "/profile.html"));
+});
+
 
 let roomList = new Array();
 
@@ -367,6 +408,13 @@ io.sockets.on('connect', (socket) => {
         socket.to(roomName).emit("canvasUpdate", data);
  
     });
+
+    socket.on("NewProfilePic", profilePic => {
+        console.log("proffff", profilePic);
+        con.query("INSERT INTO user_details (profilePicture) VALUES = ?", [profilePic], (err, result) => {
+            console.log("profile pic added", result);
+        })
+    })
 
     function addObj(data, ignore, loadDesign) {
         for (var i in roomList) {

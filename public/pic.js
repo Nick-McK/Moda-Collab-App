@@ -1,3 +1,4 @@
+const socket = io();
 const imgDiv = document.querySelector('profile_pic');
 const img = document.querySelector('#photo');
 const file = document.querySelector('#file');
@@ -15,7 +16,13 @@ file.addEventListener('change', function(){
             img.setAttribute('src', reader.result);
         });
 
+        
+
         reader.readAsDataURL(chosenFile);
-        console.log(reader.result);
+        let data = reader.result
+        // Once the picture is loaded emit to the server to save in database
+        reader.onload = () => {
+            socket.emit("NewProfilePic", data);
+        }  
     }
 });
