@@ -173,15 +173,29 @@ function changeTool(res) {
 var drawFlag = false;
 var stack;  // Stack of points for the line to be recreated on other clients
 
-canvas.on("mouse:down", function () {
+canvas.on("mouse:down", function (opt) {
     if (canvas.isDrawingMode) {
         drawFlag = true;
         stack = [];
+    } else { // this is for panning, refer the mouse:wheel listener for reference to tutorial
+        this.isDragging = true;
+        // this.selection = false;
+        this.lastPosX = opt.e.clientX;
+        this.lastPosY = opt.e.clientY;
     }
 });
-canvas.on("mouse:move", function () {
+canvas.on("mouse:move", function (opt) {
     if (drawFlag)
         stack.push(canvas.getPointer());
+    else if (this.isDragging && !canvas.getActiveObject()) { // this is for panning, refer the mouse:wheel listener for reference to tutorial
+        var e = opt.e;
+        var view = this.viewportTransform;
+        view[4] += e.clientX - this.lastPosX;
+        view[5] += e.clientY - this.lastPosY;
+        this.requestRenderAll();
+        this.lastPosX = e.clientX;
+        this.lastPosY = e.clientY;
+    }
 });
 canvas.on("path:created", function (e) {
     sendPath(e, stack)    // send the 
@@ -196,6 +210,43 @@ function sendPath(e, stack) {
     drawFlag = false;
 }
 // end of free drawing code
+
+
+canvas.on('mouse:up', function(opt) {
+    this.setViewportTransform(this.viewportTransform);
+    this.isDragging = false;
+    // this.selection = true;
+});
+
+// Code for Zoom and Panning taken from fabricjs.com tutorial: http://fabricjs.com/fabric-intro-part-5#pan_zoom
+canvas.on("mouse:wheel", function(options) {
+    var delta = options.e.deltaY;
+    var zoom = canvas.getZoom();
+    zoom *= 0.999 ** delta;
+    if (zoom > 20) zoom = 20;
+    if (zoom < 0.01) zoom = 0.01;
+    canvas.zoomToPoint({x: options.e.offsetX, y: options.e.offsetY}, zoom);
+    options.e.preventDefault();
+    options.e.stopPropagation();
+    var view = this.viewportTransform;
+    if (zoom < 400 / 1000) {
+        view[4] = 200 - 1000 * zoom / 2;
+        view[5] = 200 - 1000 * zoom / 2;
+    } else {
+        if (view[4] >= 0) {
+            view[4] = 0;
+        } else if (view[4] < canvas.getWidth() - 1000 * zoom) {
+            view [4] = canvas.getWidth() - 1000 * zoom;
+        }
+        if (view[5] >= 0) {
+            view[5] = 0;
+        } else if (view[5] < canvas.getHeight() - 1000 * zoom) {
+            view[5] = canvas.getHeight() - 1000 * zoom;
+        }
+    }
+})
+
+
 
 // Emits to canvas whenever a change is made to any object so other clients can update
 canvas.on('object:modified', function () {

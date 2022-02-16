@@ -55,29 +55,28 @@
         
         <div id="colourThicknessSelect">
             <table>
-                <!--Get someone good at css and html to create drop down for colours-->
-                <!--Might want to make one for fill too-->
                 <tr style="display: inline-block;">
                     <td>
-                        <button style="background-color: #FF0000; height: 25px; width:25px" onclick="changeColour('#FF0000')"></button>
+                        <label for="colourselect"> Colour: </label>
+                        <input type="color" id="colourselect" value="#000000" onchange="changeColour(document.getElementById('colourselect').value)">
                     </td>
-                    <td>
-                        <button style="background-color: #008000; height: 25px; width:25px" onclick="changeColour('#008000')"></button>
-                    </td>
-                    <td>
-                        <button style="background-color: #0000FF; height: 25px; width:25px" onclick="changeColour('#0000FF')"></button>
-                    </td>
-                    <td>
-                        <button style="background-color: #FFFF00; height: 25px; width:25px" onclick="changeColour('#FFFF00')"></button>
-                    </td>
-                </tr>
-                <tr style="display: inline-block;">
+                
                     <td>
                         <input type="text" placeholder="Enter pt size" id="ptSize">
                         <input type="text" placeholder="Enter line width" id="lineWidth">
                         <select id="font">
-                            <option value="Times New Romnan">Times New Roman</option>
+                            <option value="Times New Roman">Times New Roman</option>
                             <option value="Comic Sans MS">Comic Sans MS</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Tahoma">Tahoma</option>
+                            <option value="Trebuchet MS">Trebuchet MS</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Brush Script MT">Brush Script MT</option>
+
                         </select>
                     </td>
                 </tr>
