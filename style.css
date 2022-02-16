@@ -5,6 +5,14 @@ body {
     
 }
 
+h1{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: white;
+    font-weight: 600%;
+    text-align: center;
+    
+}
+
 /* Text CSS */
 p{
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
@@ -16,6 +24,12 @@ h2{
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     color: white;
     font-weight: 500%;
+}
+
+h3{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: white;
+    font-weight: 300%;
 }
 
 /* Landing page text CSS */
@@ -117,4 +131,48 @@ h2{
   width: 50px;
   height: 50px;
   color: black;
+}
+
+/* Profile Page CSS */
+/*
+.profile_pic img {
+    height: 200px;
+}
+*/
+
+.profile_pic img{
+    height: 200px;
+}
+
+.profile_pic {
+    height:200px;
+    width:200px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%); 
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid grey;
+}
+    
+
+
+#file{
+    display:none;
+}
+
+#uploadBtn{
+    height: 40px;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    transform: translateX(-50%);
+    left: 50%;
+    text-align: center;
+    background: white;
+    line-height: 30px;
+    font-size: 15px;
+    cursor: pointer;
+    
 }
