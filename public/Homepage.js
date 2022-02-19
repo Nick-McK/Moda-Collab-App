@@ -12,6 +12,13 @@ const btnClose = document.getElementById("close");
 const startCollab = document.getElementById("startCollaborating");
 const addCollab = document.getElementById("addCollaborators");
 
+const addPost = document.getElementById("addPost");
+const addPostContainer = document.getElementById("addPostContainer");
+const closePosts = document.getElementById("closePosts");
+
+let postTags = document.getElementById("postTags");
+let tagOptions = document.querySelectorAll("select");
+
 // Events for handling opening and closing the collaboration menu
 btnOpen.onclick =  () => {
     socket.emit('giveRooms');
@@ -26,32 +33,37 @@ btnOpen.onclick =  () => {
 btnClose.onclick = () => {
     collabContainer.style.display = "none";
     promptContainer.style.display = "none";
+    addPostContainer.style.display = "none";
 }
 
 startCollab.addEventListener("click", () => {
     promptContainer.style.display = "flex";
 })
 
-// passPrompt.onclick = () => {
-//     let pass = prompt("What would you like the room password to be?");
+addPost.onclick = () => {
 
-//     let room = promptAnswer.value;
+    if (addPostContainer.style.display == "flex") {
+        addPostContainer.style.display = "none";
+    } else {
+        addPostContainer.style.display = "flex";
+    }
+}
+// Needs to be seeperate button for some reason
+closePosts.onclick = () => {
+    addPostContainer.style.display = "none";
+}
 
-//     let data = {roomName: room, roomPass: pass}
+console.log("asdasd", document.querySelectorAll("option"));
 
-//     console.log("roomPass", data.roomPass);
-//     socket.emit("joined", data);
-//     promptContainer.style.disaply = "none";
-// }
-
-
-// Collaboration menu start and add collaborators buttons
-socket.on("connect", () => {
-    
-});
-
-function getRooms() {
-    
+// Select multiple tags without having to hold CTRL
+window.onmousedown = (e) => {
+    let el = e.target;
+    // If the element has a tag of option and the select tag has multiple attribute
+    if (el.tagName.toLowerCase() == "option" && el.parentNode.hasAttribute("multiple")) {
+        e.preventDefault();
+        if(el.hasAttribute("selected")) el.removeAttribute("selected");
+        else el.setAttribute("selected", "");
+    }
 }
 
 let recordedRooms = new Array();

@@ -35,11 +35,46 @@
         </form>
       </div>
     </div>
+
+    <div class="collabContainer" id="addPostContainer">
+      <div class="postContent">
+        <section class="postImage">
+          <img src="/public/assets/tagAssets/games.jpg"/>
+          <input type="file" id="file" name="postImage" style="display: none"/>
+          <input type="submit" value="Accept" style="display: none"/>
+          <label for="file" id="upload">Select Design</label>
+          <label for="submit" id="accept">Accept</label>
+        </section>
+
+        <section class="postInfo">
+          <form class="postData" id="_postData">
+            <!-- Can change to input instead of textareas, but textarea is needed for the caption -->
+            <!-- <input type="text" name="postName" id="postName" placeholder="Give the post a name!" style="width: 100%"/> -->
+            <!-- <input type="text" name="postCaption" id="postCaption" placeholder="Write a caption for the post (max 2200 characters)" maxlength="2200"/> -->
+            <textarea form="_postData" maxlength="100" rows="1" cols="87" placeholder="Give your post a name! (max 100 characters)"></textarea>>
+            <textarea form="_postData" maxlength="2200" rows="10" cols="87" placeholder="Write a caption for your post. (max 2200 characters)"></textarea>>
+            <select id="postTags" size="2" multiple>
+              <option value="streetware">streetware</option>
+              <option value="indie">indie</option>
+            </select>
+
+            
+
+            <input type="submit" class="roundBtn" id="post" value="Post!"/>
+          </form>
+        </section>
+        
+
+        <button class="roundBtn_noBorder" id="closePosts">
+          <img src="/icons/x-inverted.png" style="height: 4vh; width: auto; display: flex"/>
+        </button>
+      </div>
+    </div>
   
     <div class="header">
         <div class = "topnav">
             <img id="logo" src="public/assets/icons/logo.png" alt="Moda Lab">
-            <a href = "public/pic.js" target = "_self"> Profile </a>
+            <a href = "profile" target = "_self"> Profile </a>
         </div>
     </div>
     <div class="feed">
@@ -107,7 +142,7 @@
         </button>
       </div>
       <div class="footer_item">
-        <button class="roundBtn_noBorder">
+        <button class="roundBtn_noBorder" id="addPost">
           <img src="/public/assets/icons/plus-inverted.png" style="height: 4vh; width: auto;"/>
         </button>
       </div>
