@@ -161,6 +161,10 @@ h3{
 #file{
     display:none;
 }
+#submit {
+    display: none;
+}
+
 
 #uploadBtn{
     height: 40px;

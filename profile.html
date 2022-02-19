@@ -14,18 +14,11 @@
             <img src="public/assets/icons/empty-profile-picture.jpeg" id="photo">
             <form method="post" action="/profile" enctype="multipart/form-data">
                 <input type="file" id="file" name="profilePic"/>
-                <input type="submit" value="Finish"/>
+                <input type="submit" id="submit" value="Upload!"/>
                 <label for="file" id="uploadBtn">Choose Photo</label>
                 <label for="submit" id="finishBtn">Finish</label>
             </form>
         </section>
-
-        <form action="/profile" method="post" enctype="multipart/form-data">
-            <input type="file" name="profilePic" />
-            <input  type="submit" value="Upload!" />
-        </form>
-
-
         <script src="/socket.io/socket.io.js"></script>
         <script src ="public/pic.js"></script>
         <h1>Username</h1>
