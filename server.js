@@ -11,11 +11,12 @@ const {v4: uuidv4} = require("uuid");
 const mysql = require("mysql");
 const MySQLStore = require("express-mysql-session")(session);
 //const mongoose = require("mongoose");
-//const mongoURL = 'mongodb://localhost:27017/Designs';
+//const mongoURL = 'mongodb://localhost:27017';
 const path = require("path");
 const res = require("express/lib/response");
 const { profile } = require("console");
 const fileUpload = require("express-fileupload");
+const { isBuffer } = require("lodash");
 
 
 // Use files from within the file structure
@@ -26,14 +27,15 @@ app.use(express.static(__dirname + "/public/assets")); // different assets for p
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
-//connects to mongodb for storing designs
+//all code for mongoDB is commented out as not everyone has mongoDB set up
 /*
+//connects to mongodb for storing designs
 mongoose.connect(mongoURL, (err) =>{
     if(err) throw err;
     console.log("Connected to MongoDB")
 });
 
-let designs = mongoose.connection;
+let designs = mongoose.connection.useDb('Designs');
 */
 
 // Database connection using mySQL version 5 (I think)
@@ -476,16 +478,19 @@ io.sockets.on('connect', (socket) => {
             }
         }); 
         
-        //saves design data to database
-        //Throws error "Cannot create property '_id'"
-        //find out how to fix
-        
-        //designs.collection("Design").insertOne(data.design);
+        /*
+        //convert design string to JSON then save JSON to Design database
+        data.design = data.design.slice(0, data.design.length - 1);
+        data.design += ", \"name\": \"test\"}";
+        const designJSON = JSON.parse(data.design);
+        designs.collection("Design").insertOne(designJSON);
+        */
     });
 
 
     // Maybe make it so it removes all other objects when load design is called
     socket.on('loadDesign', (data) => {
+      
         fs.readFile('designsTemp/' + data.name, 'utf-8', (err, data) => {
             if (err) throw err;
             io.to(roomName).emit('loadDesignResponse', data);
@@ -511,6 +516,37 @@ io.sockets.on('connect', (socket) => {
                 }
             }
         });
+        
+        
+        /* 
+        //code to load design from database 
+        const design = designs.collection("Design").findOne({name: "test"});
+        design.then((data) => {
+            io.to(roomName).emit('loadDesignResponse', data);
+
+            deleteDesign();     // remove previous design
+            io.to(roomName).emit("canvasUpdate", {type: "deleteDesign"}); // tell clients to remove previous design
+
+            
+            //find out how to get the objects from the json file
+            var objs = data.objects
+
+            for (var i in objs) {
+                addObj(objs[i], true, true);
+            }
+            
+            // i don't know what this code does but everything seems to work without so its getting commented out for now
+            /*
+            for (var i in roomList) {
+                if (roomList[i].roomName == roomName) {
+                    if (JSON.parse(data).backgroundImage) {
+                        roomList[i].background = JSON.parse(data).backgroundImage;
+                        io.to(roomList[i].roomName).emit("importTemplate", roomList[i].background);
+                    }
+                    roomList[i].background = data;
+                }
+            }*/
+        //})
     });
 
     socket.on("importTemplate", (data) => {

@@ -2,16 +2,32 @@
 // var socket = io({path: socketPath});
 const socket = io();
 
+var canvasHeight = 4000;
+var canvasWidth = 4000;
 
 // Create the canvas and set its attributes
 let canvas = new fabric.Canvas("whiteboard");
 canvas.setHeight(window.innerHeight * 0.75);
 canvas.setWidth(window.outerWidth); // this can ignore console being open
 canvas.backgroundColor = "#c9cecf";
+let r = new fabric.Rect({       // don't need this, just for debugging panning and zooming area
+    left:0,
+    top:0,
+    width:canvasWidth, //> 4k res
+    height:canvasHeight,
+    selectable: false,
+    stroke: "black",
+    strokeWidth: 5,
+    fill: "rgba(0,0,0,0)"
+});
+
+canvas.add(r);
 
 // maybe add in an init for the start stuff
 var recentObj;
 var obj;
+
+
 
 // Initialise variables for changable attributes
 var colour = 'black';
@@ -185,13 +201,32 @@ canvas.on("mouse:down", function (opt) {
     }
 });
 canvas.on("mouse:move", function (opt) {
-    if (drawFlag)
+    if (drawFlag)   // this pushed line points to a stack when drawing
         stack.push(canvas.getPointer());
     else if (this.isDragging && !canvas.getActiveObject()) { // this is for panning, refer the mouse:wheel listener for reference to tutorial
+        var zoom = canvas.getZoom();    //gets the current zoom of the client
         var e = opt.e;
         var view = this.viewportTransform;
-        view[4] += e.clientX - this.lastPosX;
+        view[4] += e.clientX - this.lastPosX;   // this calculates the change to the x and y values of the viewport
         view[5] += e.clientY - this.lastPosY;
+
+        if (limitZoom) {    // if the zoom has decided that it has zoomed as far out as possible
+            view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;       //limit the viewport so no panning can be done
+            view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
+        } else {
+            // this handles blocking panning if the new viewport is to be outwith the predefined canvas area
+            if (view[4] > 0) {
+                view[4] = 0;
+            } else if (view[4] < (canvas.getWidth() - canvasWidth) * zoom) {
+                view[4] = canvas.getWidth() - canvasWidth * zoom;
+            }
+            if(view[5] > 0) {
+                view[5] = 0;
+            } else if (view[5] < (canvas.getHeight() - canvasHeight) * zoom) {
+                view[5] = canvas.getHeight() - canvasHeight * zoom;
+            }
+        }
+        
         this.requestRenderAll();
         this.lastPosX = e.clientX;
         this.lastPosY = e.clientY;
@@ -213,38 +248,51 @@ function sendPath(e, stack) {
 
 
 canvas.on('mouse:up', function(opt) {
+    console.log(this.viewportTransform)
     this.setViewportTransform(this.viewportTransform);
     this.isDragging = false;
     // this.selection = true;
 });
 
-// Code for Zoom and Panning taken from fabricjs.com tutorial: http://fabricjs.com/fabric-intro-part-5#pan_zoom
+// these concern when the user has zoomed out as far as allowed in regards to the canvas area
+var limitZoom = false;
+var limitValue = 0.1;   //initial value
+
+// Code for Zoom and Panning adapted from fabricjs.com tutorial: http://fabricjs.com/fabric-intro-part-5#pan_zoom
 canvas.on("mouse:wheel", function(options) {
     var delta = options.e.deltaY;
     var zoom = canvas.getZoom();
     zoom *= 0.999 ** delta;
     if (zoom > 20) zoom = 20;
-    if (zoom < 0.01) zoom = 0.01;
-    canvas.zoomToPoint({x: options.e.offsetX, y: options.e.offsetY}, zoom);
+    if (zoom < limitValue) {        // if user has zoomed out as far as allowed, set the zoom to the limited value
+        if (limitZoom == true) {
+            zoom = limitValue;
+        }
+    } 
+    canvas.zoomToPoint({x: options.e.offsetX, y: options.e.offsetY}, zoom); // this adapts the zoom to zoom in relation to the location of the mouse pointer
     options.e.preventDefault();
     options.e.stopPropagation();
+
     var view = this.viewportTransform;
-    if (zoom < 400 / 1000) {
-        view[4] = 200 - 1000 * zoom / 2;
-        view[5] = 200 - 1000 * zoom / 2;
+    if (zoom < canvas.getHeight() / canvasHeight) {     // if zoomed out as far as allowed, set the fixed limited zoom value and set the viewports accordingly
+        limitZoom = true;
+        limitValue = zoom;
+        view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;
+        view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
     } else {
+        limitZoom = false;
         if (view[4] >= 0) {
             view[4] = 0;
-        } else if (view[4] < canvas.getWidth() - 1000 * zoom) {
-            view [4] = canvas.getWidth() - 1000 * zoom;
+        } else if (view[4] < canvas.getWidth() - canvasWidth * zoom) {
+            view[4] = canvas.getWidth() - canvasWidth * zoom;
         }
         if (view[5] >= 0) {
             view[5] = 0;
-        } else if (view[5] < canvas.getHeight() - 1000 * zoom) {
-            view[5] = canvas.getHeight() - 1000 * zoom;
+        } else if (view[5] < canvas.getHeight() - canvasHeight * zoom) {
+            view[5] = canvas.getHeight() - canvasHeight * zoom;
         }
     }
-})
+});
 
 
 
@@ -552,7 +600,9 @@ socket.on("chatMessage", data => {
 
 // Emit to server design JSON data to be stored in a file for saving
 function saveDesign() {
-    socket.emit('saveDesign', {design: JSON.stringify(canvas)})
+    socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})});
+    var win = window.open();
+    win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg'})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
 }
 
 // Recieves alert on success of save
