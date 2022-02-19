@@ -223,10 +223,11 @@
 
 .postImage {
   height: 300px;
-  width: 600px;
+  width: 648px;
+  display: flex;
+  flex-wrap: wrap;
   position: absolute;
   top: 10%;
-  left: 27.5%;
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid grey;
@@ -259,7 +260,7 @@
   position: absolute;
   height: 450px;
   top: 45%;
-  width: 50%;
+  width: 650px;
 }
 
 #postName {
