@@ -2,6 +2,7 @@ const socket = io();
 
 
 const collabContainer = document.getElementById("_collabContainer");
+const collabContent = document.getElementById("_collabContent");
 const promptContainer = document.getElementById("_promptContainer");
 const promptBtn = document.getElementById("promptButton");
 const closePrompt = document.getElementById("promptClose");
@@ -14,6 +15,7 @@ const addCollab = document.getElementById("addCollaborators");
 
 const addPost = document.getElementById("addPost");
 const addPostContainer = document.getElementById("addPostContainer");
+const postContent = document.getElementById("_postContent");
 const closePosts = document.getElementById("closePosts");
 
 let postTags = document.getElementById("postTags");
@@ -27,6 +29,7 @@ btnOpen.onclick =  () => {
         promptContainer.style.display = "none"; // Set the prompt container to hide if we close the collab menu
     } else {
         collabContainer.style.display = "flex";
+        collabContent.style.animation = "open 0.5s";
     }
 };
 
@@ -46,6 +49,8 @@ addPost.onclick = () => {
         addPostContainer.style.display = "none";
     } else {
         addPostContainer.style.display = "flex";
+        postContent.style.animation = "open 0.5s";
+
     }
 }
 // Needs to be seeperate button for some reason
