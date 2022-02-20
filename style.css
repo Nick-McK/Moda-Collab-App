@@ -192,6 +192,10 @@ h3{
     line-height: 30px;
     font-size: 15px;
     cursor: pointer;
-    
-    
+}
+/* Centering username for profile page */
+.username {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }

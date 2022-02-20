@@ -43,33 +43,6 @@ startCollab.addEventListener("click", () => {
     promptContainer.style.display = "flex";
 })
 
-addPost.onclick = () => {
-
-    if (addPostContainer.style.display == "flex") {
-        addPostContainer.style.display = "none";
-    } else {
-        addPostContainer.style.display = "flex";
-        postContent.style.animation = "open 0.5s";
-
-    }
-}
-// Needs to be seeperate button for some reason
-closePosts.onclick = () => {
-    addPostContainer.style.display = "none";
-}
-
-console.log("asdasd", document.querySelectorAll("option"));
-
-// Select multiple tags without having to hold CTRL
-window.onmousedown = (e) => {
-    let el = e.target;
-    // If the element has a tag of option and the select tag has multiple attribute
-    if (el.tagName.toLowerCase() == "option" && el.parentNode.hasAttribute("multiple")) {
-        e.preventDefault();
-        if(el.hasAttribute("selected")) el.removeAttribute("selected");
-        else el.setAttribute("selected", "");
-    }
-}
 
 let recordedRooms = new Array();
 // Adding rooms to the collab menu
@@ -105,12 +78,38 @@ socket.on("roomNames", (roomList) => {
         recordedRooms.push(room);
     }
 })
-
 socket.on("redirect", (roomName) => {
     window.location.href = "/collab_room/" + roomName;
 })
-    
-
 addCollab.onclick = () => {
 
 }
+
+// Add post menu stuff
+
+addPost.onclick = () => {
+
+    if (addPostContainer.style.display == "flex") {
+        addPostContainer.style.display = "none";
+    } else {
+        addPostContainer.style.display = "flex";
+        postContent.style.animation = "open 0.5s";
+
+    }
+}
+// Needs to be seeperate button for some reason
+closePosts.onclick = () => {
+    addPostContainer.style.display = "none";
+}
+
+// Select multiple tags without having to hold CTRL
+window.onmousedown = (e) => {
+    let el = e.target;
+    // If the element has a tag of option and the select tag has multiple attribute
+    if (el.tagName.toLowerCase() == "option" && el.parentNode.hasAttribute("multiple")) {
+        e.preventDefault();
+        if(el.hasAttribute("selected")) el.removeAttribute("selected");
+        else el.setAttribute("selected", "");
+    }
+}
+    

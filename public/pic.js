@@ -4,6 +4,21 @@ const img = document.querySelector('#photo');
 const file = document.querySelector('#file');
 const uploadBtn = document.querySelector('#uploadBtn');
 
+window.onload = () => {
+    socket.emit("details")
+
+    socket.on("accountDetails", data => {
+        let username = data.username;
+
+        const div = document.createElement("h1");
+        div.innerHTML = username;
+        div.classList.add("username");
+        document.body.appendChild(div);
+        console.log("woooo");
+    })
+}
+socket.on("username")
+
 file.addEventListener('change', function(){
     
     const chosenFile = this.files[0];
@@ -23,6 +38,6 @@ file.addEventListener('change', function(){
         // Once the picture is loaded emit to the server to save in database
         reader.onload = () => {
             socket.emit("NewProfilePic", data);
-        }  
+        } 
     }
 });

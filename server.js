@@ -11,13 +11,12 @@ const {v4: uuidv4} = require("uuid");
 const mysql = require("mysql");
 const MySQLStore = require("express-mysql-session")(session);
 //const mongoose = require("mongoose");
-//const mongoURL = 'mongodb://localhost:27017';
+//const mongoURL = 'mongodb://localhost:27017/Designs';
 const path = require("path");
 const res = require("express/lib/response");
 const { profile } = require("console");
 const fileUpload = require("express-fileupload");
 const { isBuffer } = require("lodash");
-
 
 // Use files from within the file structure
 app.use(express.static(__dirname)); // Serves html files
@@ -30,6 +29,7 @@ app.use(express.urlencoded({ extended: true}));
 //all code for mongoDB is commented out as not everyone has mongoDB set up
 /*
 //connects to mongodb for storing designs
+/*
 mongoose.connect(mongoURL, (err) =>{
     if(err) throw err;
     console.log("Connected to MongoDB")
@@ -74,13 +74,15 @@ const sessionMiddleware = session({
     genid: (req) => {
         return uuidv4();
     },
-    secret: "secret",
+    secret: "secret", // This should be some random string of characters ideally
+    name: "sid", // Name of the cookie storing the session id
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
         maxAge: 300000, // 1000 * 60 * 60 * 24 Sets the cookie to last for 1 day. (Set to 60000 for testing)
-        sameSite: true,
+        sameSite: "lax", // Lax means cookies can be saved across the same domain
+        // Ideally we would use secure: true, however this requires a HTTPS website which we do not have for this project
     }
 })
 
@@ -170,9 +172,18 @@ app.post("/home", (req, res) => {
                     // Session stuff
                     req.session.username = username;
                     req.session.loggedIn = true;
-                    console.log("welcome", req.session.username, " here is your session id ", req.session);
+                    console.log("welcome", req.session.username, " here is your session ", req.session);
                     console.log()
                     console.log("and the id: ", sid);
+
+                    // Could possibly assign user ID's to increase security
+                    res.cookie("uName", JSON.stringify(req.session.username), {
+                        maxAge: 60000, 
+                        secure: process.env.NODE_ENV !== "development",
+                        httpOnly: true});
+
+
+                        
 
                     sessionStore.set(req.session.id, req.session, (error) => {
                         if (error) throw error;
@@ -198,7 +209,7 @@ app.post("/home", (req, res) => {
 app.get("/home", (req, res) => {
     res.sendFile(path.join(__dirname + "/Homepage.html"));
 })
-
+// Get request to show the users profile - Will need to make this user specific 
 app.get("/profile", (req, res) => {
     res.sendFile(path.join(__dirname + "/profile.html"));
 })
@@ -294,6 +305,9 @@ let usersInRoom;
 io.sockets.on('connect', (socket) => {
 
     console.log("socket sessionID", socket.request.session)
+    // Store the socket id from socket just in case we need it (not sure if we will)
+    let sock = socket.request.session.socketio = socket.id;
+    socket.request.session.save();
 
 
     // app.get("/collab_room/:roomName", (req, res) => {
@@ -490,7 +504,6 @@ io.sockets.on('connect', (socket) => {
 
     // Maybe make it so it removes all other objects when load design is called
     socket.on('loadDesign', (data) => {
-      
         fs.readFile('designsTemp/' + data.name, 'utf-8', (err, data) => {
             if (err) throw err;
             io.to(roomName).emit('loadDesignResponse', data);
@@ -516,8 +529,8 @@ io.sockets.on('connect', (socket) => {
                 }
             }
         });
-        
-        
+
+
         /* 
         //code to load design from database 
         const design = designs.collection("Design").findOne({name: "test"});
@@ -567,6 +580,11 @@ io.sockets.on('connect', (socket) => {
         delete rooms[roomName].users[socket.request.session.id];
         
     });
+    socket.on("details", () => {
+        socket.emit("accountDetails", {username: socket.request.session.username});
+    })
+    
+
 });
 
 app.use(router);
