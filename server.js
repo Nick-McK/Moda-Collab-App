@@ -224,7 +224,7 @@ app.post("/profile", (req, res) => {
         return res.status(400).send("No files were uploaded");
     }
 
-    
+
 
 
     uploadPath = __dirname + "/server/" + req.files.profilePic.name;
@@ -243,6 +243,10 @@ app.post("/profile", (req, res) => {
     // res.sendFile(path.join(__dirname + "/profile.html"));
 });
 
+app.get("/communities", (req, res) => {
+    res.sendFile(path.join(__dirname + "/communities.html"));
+
+})
 
 let roomList = new Array();
 
@@ -397,6 +401,26 @@ io.sockets.on('connect', (socket) => {
 
     // Whiteboard stuff
     connectedUsers.push(socket);
+
+    var t = socket.request.session.username;
+	var x;
+	con.query("SELECT userID FROM users WHERE username = ?", [t], (err, result) => {
+		
+        if (err) {
+            throw err;
+        }
+		x = result[0]; 
+		console.log(x);
+	})
+
+	console.log(x);
+	socket.on("fat", () => {con.query("SELECT * FROM tags WHERE userID = ?", [x], (err, result) => {
+        if (err) {
+            throw err;
+        }
+		socket.emit("fuckKnows", result);
+		console.log(result);
+	})});
 
     socket.on("canvasUpdate", (data) => {
         switch(data.type) {

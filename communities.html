@@ -1,0 +1,204 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/public/style.css">
+    <link rel="stylesheet" href="/public/Homepage.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  </head>
+
+  <body onload="displayTagName()">
+<!-- This is a popup that lets you start collaborating with others -->
+    <div class="collabContainer" id="_collabContainer">
+      <div class="collabContent" id="_collabContent">
+          <button class="roundBtn" id="startCollaborating">Start</button>
+          <button class="roundBtn" id="addCollaborators">Add Collaborators</button>
+          <button class="roundBtn_noBorder" id="close">
+            <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+          </button>
+      </div>
+    </div>
+    
+    <div class="promptContainer" id="_promptContainer">
+      <div class="promptContent">
+        <form action ="/collab_room">
+          <h1>What would you like the chat to be called?</h1>
+            <input id="promptAnswer" type="text" name="roomName"/>
+            <input id="passPrompt" type="text" name="roomPass" />
+            <span id="promptButtons">
+            <button class="roundBtn_noBorder" id="promptButton" type="submit" formmethod="post">
+              <img src="/public/assets/icons/check-inverted.png" style="height: 4vh; width: auto;"/>
+            </button>
+            <button class="roundBtn_noBorder" id="promptClose" type="button">
+              <img src="/public/assets/icons/x-inverted.png" style="height: 4vh; width: auto;"/>
+            </button>
+            
+          </span>
+        </form>
+      </div>
+    </div>
+	
+	
+	<div class="collabContainer" id="_collabContainer">
+	<div class="commentContent" id="_commentContent">
+		<div class="post">
+        <div class="grid-item"> <img class="post_img" src="public\assets\icons\logo.png" alt="Moda Lab"></div>
+        <div class="post-bar">
+          <div><i onclick="like(this)" class="fa fa-heart notLiked"></i></div>
+          <div><i onclick="save(this)" class="fa fa-save highlight"></i></div>
+          <div><i onclick="download(this)" class="fa fa-download highlight"></i></div>
+		  <div><button id="comment" class="fa fa-comment highlight"></button></div>
+        </div>
+      </div>
+	</div>
+          <button class="roundBtn_noBorder" id="close">
+            <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+          </button>
+    </div>
+ 
+  
+  <style>
+  .fa {
+  font-size: 24px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.notLiked {
+	color: gray;
+}
+
+.highlight:hover {
+	color: blue;
+}
+
+.fa:hover {
+  outline-style: solid;
+  outline-color: black;
+}
+
+a {
+color: white;
+font-weight: bold;
+
+}
+  </style>
+    <div class="header">
+	<h1 style="text-align: center;" id="tagName"></h1>
+      <img id="logo" src="public/assets/icons/logo.png" alt="Moda Lab">
+    </div>
+	<div class="row">
+    <div class="feed">
+      <div class="post">
+        <div class="grid-item"> <img class="post_img" src="public\assets\icons\logo.png" alt="Moda Lab"></div>
+        <div class="post-bar">
+          <div><i onclick="like(this)" class="fa fa-heart notLiked"></i></div>
+          <div><i onclick="save(this)" class="fa fa-save highlight"></i></div>
+          <div><i onclick="download(this)" class="fa fa-download highlight"></i></div>
+		  <div><button id="comment" class="fa fa-comment highlight"></button></div>
+        </div>
+      </div>
+    </div>
+	</div>
+	<script src="/socket.io/socket.io.js"></script>
+	<div class="row">
+		<section id="relatedTags">
+			<div class="col">
+				<p class="text-light"><strong>Related tags:</strong></p>
+				<hr style="color: white; hieght: 5px;">
+			</div>
+			
+			<script>
+			const socket = io();
+			
+			
+			
+			
+			const veryCool = document.getElementById("relatedTags");
+				window.onload = function(){socket.emit("fat")};
+socket.on('fuckKnows', (data) => {
+
+let subedTags = new Array();
+for (let i of Object.values(data)) {
+    console.log(i)
+    for (let [j, k] of Object.entries(i)) {
+
+        if (j != "userID" && k == 1) {
+			if (k == 1) {
+				subedTags.push(j);
+			}
+			
+        }
+    }
+}
+
+for (let tag of subedTags) {
+
+	let tagDiv = document.createElement("div");
+	tagDiv.classList.add("col");
+	
+	
+	let contentDiv = document.createElement("div");
+	let tagContent = document.createElement("a");
+	let tagName = document.createTextNode(tag);
+	
+	contentDiv.appendChild(tagDiv);
+	tagContent.appendChild(tagName);
+	tagDiv.appendChild(tagContent);
+	veryCool.appendChild(contentDiv);
+	
+	
+}
+
+});
+
+
+function displayTagName() {
+  const noice = document.getElementById("tagName");
+  
+  const queryString = window.location.search;
+console.log(queryString);
+const urlParams = new URLSearchParams(queryString);
+const t = urlParams.get('tagName')
+
+noice.innerHTML = t;
+}
+			</script>
+			</section>
+	</div>
+    <div class="footer1">
+      <div class="footer_item">
+        <button class="roundBtn_noBorder">
+          <img src="/public/assets/icons/thumbs-up-inverted.png" style="height: 4vh; width: auto"/>
+        </button>
+      </div>
+      <div class="footer_item">
+        <button class="roundBtn_noBorder">
+          <img src="/public/assets/icons/plus-inverted.png" style="height: 4vh; width: auto;"/>
+        </button>
+      </div>
+      <div class="footer_item">
+        <button class="roundBtn_noBorder" id="collaborate">
+          <img src="/public/assets/icons/phone-inverted.png" style="height: 4vh; width: auto;"/>
+        </button>
+      </div>
+      <div class="footer_item">
+        <button class="roundBtn_noBorder">
+          <img src="/public/assets/icons/bookmarks-inverted.png" style="height: 4vh; width: auto; display: block"/>
+        </button>
+      </div>      
+    </div>
+	<!--- <script src="Homepage.js">
+	</script>
+	--->
+	<script>
+	function like(x) {
+  if(x.style.color === 'red') {
+    x.style.color = 'grey';
+	// add 1 to like counter from user posts table where postID = x
+  } else {
+    x.style.color = 'red'
+	// remove 1 from like counter
+  }
+}
+</script>
+  </body>
+</html>
