@@ -631,7 +631,7 @@ function deleteDesign() {
 
 // Sends to the server asking for data of hardcoded design
 function loadDesign() {
-    document.getElementById('load').style.display = "grid";
+    //.document.getElementById('load').style.display = "grid";
     socket.emit('getDesignNames');
     socket.on('retrieveDesignNames', (names) => {
     /*
