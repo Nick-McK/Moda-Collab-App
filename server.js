@@ -32,7 +32,7 @@ app.use(express.urlencoded({ extended: true}));
 
 mongoose.connect(mongoURL, (err) =>{
     if(err) throw err;
-    console.log("Connected to MongoDB")
+    console.log("Connected to MongoDB");
 });
 
 let designs = mongoose.connection.useDb('ModaLab');
@@ -518,11 +518,10 @@ io.sockets.on('connect', (socket) => {
             }
         }); 
         */
-        
         //convert design string to JSON then save JSON to Design database
         data.design = data.design.slice(0, data.design.length - 1);
         data.design += ", \"name\": \"" + designName + "\"";
-        data.design += ", \"user\": \"" + nameOfUser + "\"}";
+        data.design += ", \"user\": \"" + socket.request.session.username + "\"}";
         const designJSON = JSON.parse(data.design);
         designs.collection("Designs").insertOne(designJSON, (err) => {
             socket.emit("saveDesignResponse", (!err));
@@ -532,7 +531,7 @@ io.sockets.on('connect', (socket) => {
     });
 
     socket.on('getDesignNames', (res) => {
-        const designList = designs.collection("Designs").find({user: nameOfUser});
+        const designList = designs.collection("Designs").find({user: socket.request.session.username});
         let i = 0;
         let namesList = [];
         
@@ -578,10 +577,11 @@ io.sockets.on('connect', (socket) => {
         */
         
         //code to load design from database 
-        const design = designs.collection("Designs").findOne({name: designName, user: nameOfUser});
+        const design = designs.collection("Designs").findOne({name: designName, user: socket.request.session.username});
         design.then((data) => {
-            console.log(JSON.stringify(data));
-            io.to(roomName).emit('loadDesignResponse', data);
+            if(data == null){
+                socket.emit('loadDesignResponse', "noDesigns");
+            }
 
             deleteDesign();     // remove previous design
             io.to(roomName).emit("canvasUpdate", {type: "deleteDesign"}); // tell clients to remove previous design
@@ -594,6 +594,7 @@ io.sockets.on('connect', (socket) => {
                 addObj(objs[i], true, true);
             }
             console.log("Design Loaded");
+            console.log(data._id);
             // i don't know what this code does but everything seems to work without so its getting commented out for now
             /*
             for (var i in roomList) {
