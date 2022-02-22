@@ -520,6 +520,7 @@ io.sockets.on('connect', (socket) => {
         */
         //convert design string to JSON then save JSON to Design database
         data.design = data.design.slice(0, data.design.length - 1);
+        data.design += ", \"thumbnail\": \"" + data.thumbnail + "\"";
         data.design += ", \"name\": \"" + designName + "\"";
         data.design += ", \"user\": \"" + socket.request.session.username + "\"}";
         const designJSON = JSON.parse(data.design);
