@@ -313,7 +313,7 @@ var widthHeightLimited = null;
 canvas.on("mouse:wheel", function(options) {
     var delta = options.e.deltaY;
     var zoom = canvas.getZoom();
-    zoom *= 0.999 ** delta;
+    zoom *= 0.9991 ** delta;
     if (zoom > 20) zoom = 20;
     if (zoom < limitValue) {        // if user has zoomed out as far as allowed, set the zoom to the limited value
         if (limitZoom == true) {

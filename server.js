@@ -596,7 +596,7 @@ io.sockets.on('connect', (socket) => {
             console.log("Design Loaded");
             console.log(data._id);
             // i don't know what this code does but everything seems to work without so its getting commented out for now
-            /*
+            
             for (var i in roomList) {
                 if (roomList[i].roomName == roomName) {
                     if (JSON.parse(data).backgroundImage) {
@@ -605,7 +605,7 @@ io.sockets.on('connect', (socket) => {
                     }
                     roomList[i].background = data;
                 }
-            }*/
+            }
         })
     });
 
