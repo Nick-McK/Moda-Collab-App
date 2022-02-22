@@ -10,8 +10,8 @@ const session = require("express-session")
 const {v4: uuidv4} = require("uuid");
 const mysql = require("mysql");
 const MySQLStore = require("express-mysql-session")(session);
-//const mongoose = require("mongoose");
-//const mongoURL = 'mongodb://localhost:27017/Designs';
+const mongoose = require("mongoose");
+const mongoURL = 'mongodb://localhost:27017';
 const path = require("path");
 const res = require("express/lib/response");
 const { profile } = require("console");
@@ -27,16 +27,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
 //all code for mongoDB is commented out as not everyone has mongoDB set up
-/*
+
 //connects to mongodb for storing designs
-/*
+
 mongoose.connect(mongoURL, (err) =>{
     if(err) throw err;
     console.log("Connected to MongoDB")
 });
 
-let designs = mongoose.connection.useDb('Designs');
-*/
+let designs = mongoose.connection.useDb('ModaLab');
+
 
 // Database connection using mySQL version 5 (I think)
 let con = mysql.createConnection({
@@ -155,7 +155,7 @@ app.post("/account/tags", (req, res) => {
         }
     }
 })
-
+var nameOfUser;
 app.post("/home", (req, res) => {
     const username = req.body.username;
 
@@ -171,6 +171,7 @@ app.post("/home", (req, res) => {
                 if (user.username == username && user.password == password) {
                     // Session stuff
                     req.session.username = username;
+                    nameOfUser = username;
                     req.session.loggedIn = true;
                     console.log("welcome", req.session.username, " here is your session ", req.session);
                     console.log()
@@ -508,26 +509,47 @@ io.sockets.on('connect', (socket) => {
         }
     }
 
-    socket.on("saveDesign", (data) => {
+    socket.on("saveDesign", (data, designName) => {
+        /*
         fs.writeFile("designsTemp/designTest.json", data.design, (err) => {
             socket.emit("saveDesignResponse", (!err));
             if (err) {
                 throw err;
             }
         }); 
+        */
         
-        /*
         //convert design string to JSON then save JSON to Design database
         data.design = data.design.slice(0, data.design.length - 1);
-        data.design += ", \"name\": \"test\"}";
+        data.design += ", \"name\": \"" + designName + "\"";
+        data.design += ", \"user\": \"" + nameOfUser + "\"}";
         const designJSON = JSON.parse(data.design);
-        designs.collection("Design").insertOne(designJSON);
-        */
+        designs.collection("Designs").insertOne(designJSON, (err) => {
+            socket.emit("saveDesignResponse", (!err));
+            if(err) throw err;
+        });
+        
     });
 
+    socket.on('getDesignNames', (res) => {
+        const designList = designs.collection("Designs").find({user: nameOfUser});
+        let i = 0;
+        let namesList = [];
+        
+        designList.forEach((current) => {
+            namesList[i] = current.name;
+            console.log(namesList[i]);
+            i++;
+        }).then(() => {
+            console.log("number of iterations " + i);
+            socket.emit('retrieveDesignNames', (namesList));
+        })
+
+    })
 
     // Maybe make it so it removes all other objects when load design is called
-    socket.on('loadDesign', (data) => {
+    socket.on('loadDesign', (designName) => {
+      /*
         fs.readFile('designsTemp/' + data.name, 'utf-8', (err, data) => {
             if (err) throw err;
             io.to(roomName).emit('loadDesignResponse', data);
@@ -553,12 +575,12 @@ io.sockets.on('connect', (socket) => {
                 }
             }
         });
-
-
-        /* 
+        */
+        
         //code to load design from database 
-        const design = designs.collection("Design").findOne({name: "test"});
+        const design = designs.collection("Designs").findOne({name: designName, user: nameOfUser});
         design.then((data) => {
+            console.log(JSON.stringify(data));
             io.to(roomName).emit('loadDesignResponse', data);
 
             deleteDesign();     // remove previous design
@@ -571,7 +593,7 @@ io.sockets.on('connect', (socket) => {
             for (var i in objs) {
                 addObj(objs[i], true, true);
             }
-            
+            console.log("Design Loaded");
             // i don't know what this code does but everything seems to work without so its getting commented out for now
             /*
             for (var i in roomList) {
@@ -583,7 +605,7 @@ io.sockets.on('connect', (socket) => {
                     roomList[i].background = data;
                 }
             }*/
-        //})
+        })
     });
 
     socket.on("importTemplate", (data) => {

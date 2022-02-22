@@ -8,6 +8,9 @@
         
     </head>
     <!-- Add img styling to external css -->
+    <body>
+    <div class="load" id="load">
+    </div>
     <div class="collabRoomHeaderFooter" id="collabRoomHeader" style="top: 0%">
         <button class="collabBtn" style="margin-left: 5vh;" onclick="saveDesign()">
             <img src="/public/assets/icons/floppy-disk-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"></img>
@@ -17,7 +20,7 @@
             <img src="/public/assets/icons/trash-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"></img>
             <t style="font-size: 1vh;">Delete Design</t>
         </button>
-        <button class="collabBtn" onclick="loadDesign()">
+        <button class="collabBtn" onclick ="loadDesign()">
             <img src="/public/assets/icons/file-inverted.png" style="height:5vh; width: auto; display: block; padding: 5px;"></img>
             <t style="font-size: 1vh;">Load Design</t>
         </button>
@@ -191,7 +194,6 @@
                 </tr>
             </table>
         </div>
-
         <script src="/public/collab_room_clientside.js"></script>       <!-- Links to clientside js code -->
     </body>
     

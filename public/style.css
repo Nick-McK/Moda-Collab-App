@@ -133,6 +133,19 @@ button:hover {
   display: block;
 }
 
+.load{
+  top:12.5vh;
+  position: fixed;
+  height: 75vh;
+  width: 50vw;
+  align-items: center;
+  justify-content: center;
+  background-color: yellow;
+  display: none;
+  z-index: 100;
+  font-size: 50px;
+}
+
 #colourThicknessSelect{
   z-index: 3;
   top: 12.5%;

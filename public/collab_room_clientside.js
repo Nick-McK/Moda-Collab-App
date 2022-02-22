@@ -600,9 +600,15 @@ socket.on("chatMessage", data => {
 
 // Emit to server design JSON data to be stored in a file for saving
 function saveDesign() {
-    socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})});
-    var win = window.open();
-    win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg'})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
+    //socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})});
+    //var win = window.open();
+    //win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg'})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
+    let designName = prompt("Name your deisgn");
+    designName.trim();
+    if(designName.length > 0){
+        socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, designName);
+    }
+    
 }
 
 // Recieves alert on success of save
@@ -621,9 +627,28 @@ function deleteDesign() {
     canvas.renderAll();
 }
 
+
+
 // Sends to the server asking for data of hardcoded design
 function loadDesign() {
-    socket.emit('loadDesign', {name: "designTest.JSON"});   // need some kind of explorer here
+    document.getElementById('load').style.display = "grid";
+    socket.emit('getDesignNames');
+    socket.on('retrieveDesignNames', (names) => {
+    /*
+    names.forEach((name) => {
+        console.log("works");
+        let currentName = createElement("div");
+            let nameBut = createElement("button");
+            nameBut.innerHTML = name;
+            nameBut.onclick = () => {
+                socket.emit('loadDesign', name);
+            }
+            currentName.appendChild(nameBut);
+            document.getElementById("load").appendChild(currentName);
+            });*/
+        socket.emit('loadDesign', "asd");
+    });
+    //socket.emit('loadDesign', {name: "designTest.JSON"});   // need some kind of explorer here
 }
 
 // Server responds with JSON design data, load it onto canvas
