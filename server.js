@@ -534,16 +534,14 @@ io.sockets.on('connect', (socket) => {
         const designList = designs.collection("Designs").find({user: socket.request.session.username});
         let i = 0;
         let namesList = [];
-        
+    
         designList.forEach((current) => {
-            namesList[i] = current.name;
-            console.log(namesList[i]);
+             namesList[i] = current.name;
             i++;
         }).then(() => {
-            console.log("number of iterations " + i);
             socket.emit('retrieveDesignNames', (namesList));
         })
-
+        
     })
 
     // Maybe make it so it removes all other objects when load design is called
@@ -579,9 +577,6 @@ io.sockets.on('connect', (socket) => {
         //code to load design from database 
         const design = designs.collection("Designs").findOne({name: designName, user: socket.request.session.username});
         design.then((data) => {
-            if(data == null){
-                socket.emit('loadDesignResponse', "noDesigns");
-            }
 
             deleteDesign();     // remove previous design
             io.to(roomName).emit("canvasUpdate", {type: "deleteDesign"}); // tell clients to remove previous design

@@ -699,34 +699,34 @@ function deleteDesign() {
 let recordedName = [];
 // Sends to the server asking for data of hardcoded design
 function loadDesign() {
+    
     socket.emit('getDesignNames');
     socket.on('retrieveDesignNames', (names) => {
-        console.log(names);
-        names.forEach((name) => {
-        
-            let currentName = document.createElement("div");
-            let nameBut = document.createElement("button");
-            nameBut.innerHTML = name;
-            nameBut.onclick = () => {
-                document.getElementById('load').style.display = "none";
-                socket.emit('loadDesign', name);
-            }
-            if(!recordedName.includes(name)){
-                currentName.appendChild(nameBut);
-                document.getElementById("load").appendChild(currentName);
-            }
-            recordedName.push(name);
-        });
-        document.getElementById('load').style.display = "grid";
+        if(names.length == 0){
+            alert("You have no designs to load");
+        }else{
+            names.forEach((name) => {
+                let currentName = document.createElement("div");
+                let nameBut = document.createElement("button");
+                nameBut.innerHTML = name;
+                nameBut.onclick = () => {
+                    document.getElementById('load').style.display = "none";
+                    socket.emit('loadDesign', name);
+                }
+                if(!recordedName.includes(name)){
+                    currentName.appendChild(nameBut);
+                    document.getElementById("load").appendChild(currentName);
+                }
+                recordedName.push(name);
+            });
+            document.getElementById('load').style.display = "grid";
+        }
     });
-    //socket.emit('loadDesign', {name: "designTest.JSON"});   // need some kind of explorer here
 }
 
 // Server responds with JSON design data, load it onto canvas
 socket.on('loadDesignResponse', (res) => {
-    if(res == "noDesign"){
-        prompt("You have no saved designs to load");
-    }
+
 });
 // End of header code
 
