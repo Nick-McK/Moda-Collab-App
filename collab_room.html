@@ -2,7 +2,7 @@
     <head>
         <link rel="stylesheet" href="/public/style.css"></link>
         <!-- <script src="/node_modules/art-canvas/build/ArtCanvas.js"></script> -->
-        <script src="/node_modules/fabric/dist/fabric.min.js"></script>
+        <script src="/node_modules/fabric/dist/fabric.js"></script>
         <script src="/node_modules/uuid/dist/umd/uuidv1.min.js"></script>   <!--Dont think we use this anymore-->
         <script src="/socket.io/socket.io.js"></script>
         
@@ -109,9 +109,8 @@
                         </button>
                     </td>
                     <td>
-                        <button id="transform" onclick="changeTool('TRANSFORM')">
-                        
-                            TBA
+                        <button id="transform" onclick="changeTool('PAN')">
+                            <img src="/public/assets/icons/arrows-out-cardinal-black.png"></img>
                         </button>
                     </td>
                 </tr>

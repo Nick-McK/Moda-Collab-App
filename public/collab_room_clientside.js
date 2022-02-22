@@ -18,7 +18,8 @@ let r = new fabric.Rect({       // don't need this, just for debugging panning a
     selectable: false,
     stroke: "black",
     strokeWidth: 5,
-    fill: "rgba(0,0,0,0)"
+    fill: "rgba(0,0,0,0)",
+    hoverCursor: "default"
 });
 
 canvas.add(r);
@@ -34,6 +35,7 @@ var colour = 'black';
 var pt = 40;
 var lineWidth = 1;
 var fontFamily = "Times New Roman";
+var panning = false;
 
 
 const ptInput = document.getElementById('ptSize');      // Gets ptSize input box element
@@ -156,7 +158,8 @@ function changeTool(res) {
 
             canvas.isDrawingMode = !canvas.isDrawingMode;
             // had to make the listeners global because more would be made each time this section is called
-
+            panning = false;
+            canvas.selection = true;
         break;
         case 'LINE':        //gonna work on setting the coords through user input
             obj = new fabric.Line([50, 10, 200, 150], {
@@ -173,6 +176,17 @@ function changeTool(res) {
                 fontSize: pt,
                 fontFamily: fontFamily
             });
+        break;
+        case 'PAN':
+            canvas.isDrawingMode = false;
+            panning = !panning;
+            canvas.selection = !canvas.selection;
+
+            if (panning) {
+                r.hoverCursor = "move";
+            } else {
+                r.hoverCursor = "default";
+            }
         break;
         default:
             break;
@@ -191,9 +205,13 @@ var stack;  // Stack of points for the line to be recreated on other clients
 
 canvas.on("mouse:down", function (opt) {
     if (canvas.isDrawingMode) {
-        drawFlag = true;
+        if (!checkPointerInArea()) {
+            canvas.isDrawingMode = false;
+        } else {
+            drawFlag = true;
+        }
         stack = [];
-    } else { // this is for panning, refer the mouse:wheel listener for reference to tutorial
+    } else if (panning) { // this is for panning, refer the mouse:wheel listener for reference to tutorial
         this.isDragging = true;
         // this.selection = false;
         this.lastPosX = opt.e.clientX;
@@ -201,8 +219,22 @@ canvas.on("mouse:down", function (opt) {
     }
 });
 canvas.on("mouse:move", function (opt) {
-    if (drawFlag)   // this pushed line points to a stack when drawing
-        stack.push(canvas.getPointer());
+    if (drawFlag) {  // this pushed line points to a stack when drawing
+        if (checkPointerInArea()) {
+            stack.push(canvas.getPointer());
+        } else if (canvas._isCurrentlyDrawing){
+            
+            
+            console.log("here");
+            canvas.isDrawingMode = false;
+
+            canvas.fire("path:created");
+            canvas.freeDrawingBrush.onMouseUp();
+
+            
+        }
+        console.log("x", canvas.getPointer().x, "y", canvas.getPointer().y);
+    }
     else if (this.isDragging && !canvas.getActiveObject()) { // this is for panning, refer the mouse:wheel listener for reference to tutorial
         var zoom = canvas.getZoom();    //gets the current zoom of the client
         var e = opt.e;
@@ -211,28 +243,45 @@ canvas.on("mouse:move", function (opt) {
         view[5] += e.clientY - this.lastPosY;
 
         if (limitZoom) {    // if the zoom has decided that it has zoomed as far out as possible
-            view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;       //limit the viewport so no panning can be done
-            view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
+            console.log(widthHeightLimited);
+            if (widthHeightLimited == "width") {
+                view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;       //limit the viewport so no panning can be done
+                if(view[5] > 0) {
+                    view[5] = 0;
+                } else if (view[5] < canvas.getHeight() - canvasHeight * zoom) {
+                    console.log("here", view[5]);
+                    view[5] = canvas.getHeight() - canvasHeight * zoom;
+                }
+            }
+            if (widthHeightLimited == "height") {
+                view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
+                if (view[4] > 0) {
+                    view[4] = 0;
+                } else if (view[4] < canvas.getWidth() - canvasWidth * zoom) {
+                    view[4] = canvas.getWidth() - canvasWidth * zoom;
+                }    
+            }
         } else {
             // this handles blocking panning if the new viewport is to be outwith the predefined canvas area
             if (view[4] > 0) {
                 view[4] = 0;
-            } else if (view[4] < (canvas.getWidth() - canvasWidth) * zoom) {
+            } else if (view[4] < canvas.getWidth() - canvasWidth * zoom) {
                 view[4] = canvas.getWidth() - canvasWidth * zoom;
             }
             if(view[5] > 0) {
                 view[5] = 0;
-            } else if (view[5] < (canvas.getHeight() - canvasHeight) * zoom) {
+            } else if (view[5] < canvas.getHeight() - canvasHeight * zoom) {
                 view[5] = canvas.getHeight() - canvasHeight * zoom;
             }
         }
-        
+        console.log("y", view[5], "height", canvas.getHeight(), "canvasHeight",canvasHeight * zoom,"yO", canvas.getHeight() - canvasHeight * zoom);
         this.requestRenderAll();
         this.lastPosX = e.clientX;
         this.lastPosY = e.clientY;
     }
 });
 canvas.on("path:created", function (e) {
+    console.log(e);
     sendPath(e, stack)    // send the 
 });
 
@@ -248,15 +297,17 @@ function sendPath(e, stack) {
 
 
 canvas.on('mouse:up', function(opt) {
-    console.log(this.viewportTransform)
-    this.setViewportTransform(this.viewportTransform);
-    this.isDragging = false;
-    // this.selection = true;
+    if (panning) {
+        this.setViewportTransform(this.viewportTransform);
+        this.isDragging = false;
+        // this.selection = true;
+    }
 });
 
 // these concern when the user has zoomed out as far as allowed in regards to the canvas area
 var limitZoom = false;
 var limitValue = 0.1;   //initial value
+var widthHeightLimited = null;
 
 // Code for Zoom and Panning adapted from fabricjs.com tutorial: http://fabricjs.com/fabric-intro-part-5#pan_zoom
 canvas.on("mouse:wheel", function(options) {
@@ -279,6 +330,13 @@ canvas.on("mouse:wheel", function(options) {
         limitValue = zoom;
         view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;
         view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
+        widthHeightLimited = "height";
+    } else if (zoom < canvas.getWidth() / canvasWidth) {
+        limitZoom = true;
+        limitValue = zoom;
+        view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;
+        view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
+        widthHeightLimited = "width";
     } else {
         limitZoom = false;
         if (view[4] >= 0) {
@@ -293,6 +351,13 @@ canvas.on("mouse:wheel", function(options) {
         }
     }
 });
+
+function checkPointerInArea() {
+    if (canvas.getPointer().x >= 0 && canvas.getPointer().x <= canvasWidth && canvas.getPointer().y >= 0 && canvas.getPointer().y <= canvasHeight) 
+        return true;
+    else
+        return false;
+}
 
 
 
@@ -609,6 +674,9 @@ function saveDesign() {
         socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, designName);
     }
     
+    // socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', left:"0", top: "0", height:canvasHeight, width: canvasWidth})});    // the parameters other than format do not work currently
+    var win = window.open();
+    win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg'})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
 }
 
 // Recieves alert on success of save
@@ -661,20 +729,20 @@ socket.on('loadDesignResponse', (data) => {
 // Below is code for buttons in footer
 // Get template image and format it as canvas background image, send emit to ell other client to do so
 function importTemplate(template, dontEmit) {
-    var source = "../public/assets/templates/blank-t-shirt.png"  //hardcoded for now
+    var source = "../public/assets/templates/blank-t-shirt (1).png"  //hardcoded for now
     fabric.Image.fromURL(source, function (img) {
         // Scale to height (means it works better on landscape resolutions)
-        img.scaleToHeight(canvas.getHeight());
+        img.scaleToWidth(canvas.getWidth());
 
         // The don't emit thing will be implemented later
         if (!dontEmit) {
-            socket.emit('importTemplate', "../public/assets/templates/blank-t-shirt.png")
+            socket.emit('importTemplate', source)
         }
 
         // Center the template and set at background image
         canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
-            top: canvas.getCenter().top,
-            left: canvas.getCenter().left,
+            top: canvas.getHeight()*2,
+            left: canvas.getWidth()-(canvas.getWidth()*0.2),
             originX: 'center',
             originY: 'center'
         });
