@@ -307,7 +307,18 @@ canvas.on('mouse:up', function(opt) {
 // these concern when the user has zoomed out as far as allowed in regards to the canvas area
 var limitZoom = false;
 var limitValue = 0.1;   //initial value
+if (canvas.getHeight()/canvasHeight < canvas.getWidth() / canvasWidth) {
+    limitValue = canvas.getWidth()/canvasWidth;
+} else {
+    limitValue = canvas.getHeight()/canvasHeight;
+}
+console.log(limitValue);
+
 var widthHeightLimited = null;
+
+function limitZoomVal() {
+
+}
 
 // Code for Zoom and Panning adapted from fabricjs.com tutorial: http://fabricjs.com/fabric-intro-part-5#pan_zoom
 canvas.on("mouse:wheel", function(options) {
@@ -320,24 +331,27 @@ canvas.on("mouse:wheel", function(options) {
             zoom = limitValue;
         }
     } 
+
+    // console.log(zoom);
     canvas.zoomToPoint({x: options.e.offsetX, y: options.e.offsetY}, zoom); // this adapts the zoom to zoom in relation to the location of the mouse pointer
     options.e.preventDefault();
     options.e.stopPropagation();
 
     var view = this.viewportTransform;
-    if (zoom < canvas.getHeight() / canvasHeight) {     // if zoomed out as far as allowed, set the fixed limited zoom value and set the viewports accordingly
+    if (zoom <= canvas.getHeight() / canvasHeight) {     // if zoomed out as far as allowed, set the fixed limited zoom value and set the viewports accordingly
         limitZoom = true;
-        limitValue = zoom;
+        zoom = limitValue;
         view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;
         view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
         widthHeightLimited = "height";
-    } else if (zoom < canvas.getWidth() / canvasWidth) {
+    } else if (zoom <= canvas.getWidth() / canvasWidth) {
         limitZoom = true;
-        limitValue = zoom;
+        zoom = limitValue;
         view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;
         view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
         widthHeightLimited = "width";
     } else {
+        console.log("elsewhere", zoom);
         limitZoom = false;
         if (view[4] >= 0) {
             view[4] = 0;

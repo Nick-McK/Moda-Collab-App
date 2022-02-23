@@ -147,7 +147,9 @@ app.post("/account/tags", (req, res) => {
         if (passCheck1 == passCheck2) {
             con.query("INSERT INTO users (username, password) VALUES (?, ?)", [req.body.username, req.body.pass1], (err, result) => {
                 if (err) throw err;
-                console.log("inserted into table users the username: " + req.body.username + " and password: " + req.body.pass1);
+                console.log("inserted into table users the username: " + req.body.username + " and password: " + req.body.pass1, "and ID: ", result.insertId);
+                req.session.userID = result.insertID; // This gives us the ID of the user so we dont need to query DB every time we want to know
+                req.session.save();
                 res.sendFile(path.join(__dirname + "/tags.html"));
             });
         } else {
@@ -166,6 +168,9 @@ app.post("/home", (req, res) => {
         if (err) {
             throw err;
         }
+        
+        console.log("---------------", result);
+
         if (result.length > 0) {
             result.find((user, index) => {
                 if (user.username == username && user.password == password) {
@@ -173,7 +178,8 @@ app.post("/home", (req, res) => {
                     req.session.username = username;
                     nameOfUser = username;
                     req.session.loggedIn = true;
-                    console.log("welcome", req.session.username, " here is your session ", req.session);
+                    req.session.userID = user.userID;
+                    console.log("welcome", req.session.username, "userID:", req.session.userID,"here is your session ", req.session);
                     console.log()
                     console.log("and the id: ", sid);
 
@@ -206,8 +212,9 @@ app.post("/home", (req, res) => {
     });
 })
 
-
+//TODO: Put in error handling if we are not logged in
 app.get("/home", (req, res) => {
+    console.log("userID", req.session.userID);
     res.sendFile(path.join(__dirname + "/Homepage.html"));
 })
 // Get request to show the users profile - Will need to make this user specific 
@@ -309,7 +316,7 @@ let usersInRoom;
 // When we connect give every use the rooms available
 io.sockets.on('connect', (socket) => {
 
-    console.log("socket sessionID", socket.request.session)
+    // console.log("socket sessionID", socket.request.session)
     // Store the socket id from socket just in case we need it (not sure if we will)
     let sock = socket.request.session.socketio = socket.id;
     socket.request.session.save();
@@ -527,7 +534,23 @@ io.sockets.on('connect', (socket) => {
         designs.collection("Designs").insertOne(designJSON, (err) => {
             socket.emit("saveDesignResponse", (!err));
             if(err) throw err;
+            
         });
+
+        designs.collection("Designs").findOne({name: designName, user: socket.request.session.username}).then((data) => {
+            stringObjID = (data._id).toString();
+            // let sql = "INSERT INTO savedDesigns (userID, design) VALUES "
+            console.log("----------------objID", stringObjID);
+            
+            con.query("INSERT INTO designs (design, creatorID) VALUES (?, ?)", [stringObjID, socket.request.session.userID], (err, result) => {
+                if (err) throw err;
+                console.log("inserted design into designs table with id:", result.insertId);
+            })
+
+        });
+        
+        
+
         
     });
 
@@ -581,7 +604,15 @@ io.sockets.on('connect', (socket) => {
             deleteDesign();     // remove previous design
             io.to(roomName).emit("canvasUpdate", {type: "deleteDesign"}); // tell clients to remove previous design
 
-            
+            socket.on("savePost", () => {
+
+            })
+
+            console.log("----------------", (data._id).toString());
+
+
+
+
             //find out how to get the objects from the json file
             var objs = data.objects
 
