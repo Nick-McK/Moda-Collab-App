@@ -535,7 +535,6 @@ io.sockets.on('connect', (socket) => {
         const designList = designs.collection("Designs").find({user: socket.request.session.username});
         let i = 0;
         let namesList = [];
-    
         designList.forEach((current) => {
              namesList[i] = current.name;
             i++;
@@ -591,12 +590,11 @@ io.sockets.on('connect', (socket) => {
             }
             console.log("Design Loaded");
             console.log(data._id);
-            // i don't know what this code does but everything seems to work without so its getting commented out for now
             
             for (var i in roomList) {
                 if (roomList[i].roomName == roomName) {
-                    if (JSON.parse(data).backgroundImage) {
-                        roomList[i].background = JSON.parse(data).backgroundImage;
+                    if (data.backgroundImage) {
+                        roomList[i].background = data.backgroundImage;
                         io.to(roomList[i].roomName).emit("importTemplate", roomList[i].background);
                     }
                     roomList[i].background = data;
