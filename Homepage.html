@@ -39,13 +39,12 @@
     <div class="collabContainer" id="addPostContainer">
       <div class="postContent" id="_postContent">
         <section class="postImage">
-          <img src="/public/assets/tagAssets/games.jpg" style="width:100%;"/>
-          <input type="file" id="file" name="postImage" style="display: none"/>
+          <img src="/public/assets/tagAssets/games.jpg" id="designChoice" style="width:100%;"/>
+          <input type="button" id="selectBtn name="selectImage" style="display: none"/>
           <input type="submit" value="Accept" style="display: none"/>
-          <label for="file" id="upload">Select Design</label>
+          <label for="button" id="selectImage">Select Design</label>
           <label for="submit" id="accept">Accept</label>
         </section>
-
         <section class="postInfo">
           <form class="postData" id="_postData">
             <!-- Can change to input instead of textareas, but textarea is needed for the caption -->
@@ -57,16 +56,27 @@
               <option value="streetware">streetware</option>
               <option value="indie">indie</option>
             </select>
-
-            
-
             <input type="submit" class="roundBtn" id="post" value="Post!"/>
           </form>
         </section>
-        
-
         <button class="roundBtn_noBorder" id="closePosts">
           <img src="/icons/x-inverted.png" style="height: 4vh; width: auto; display: flex"/>
+        </button>
+      </div>
+    </div>
+    <div class="collabContainer" id="savedDesignsContainer">
+      <div class="collabContent" id="savedDesignsContent">
+          <button class="roundBtn" id="startCollaborating">Start</button>
+          <button class="roundBtn" id="addCollaborators">Add Collaborators</button>
+          <button class="roundBtn_noBorder" id="closeSavedDesigns">
+            <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+          </button>
+      </div>
+    </div>
+    <div class="collabContainer" id="addPostDesignsContainer">
+      <div class="collabContent" id="addPostDesignsContent">
+        <button class="roundBtn_noBorder" id="closePostSavedDesigns">
+          <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
         </button>
       </div>
     </div>
@@ -123,7 +133,11 @@
         <div class="post-bar">
           <div><img class="bar_img" src="public\assets\icons\floppy-disk.png" alt="save"></div>
           <div><img class="bar_img" src="public\assets\icons\archive-box.png" alt="archive"></div>
-          <div><img class="bar_img" src="public\assets\icons\plus.png" alt="more"></div>
+          <div>
+            <button class="roundBtn_noBorder" id="_savePost">
+              <img class="bar_img" src="public\assets\icons\plus.png" alt="more">
+            </button>
+          </div>
         </div>
       </div>
       <div class="post">
@@ -152,7 +166,7 @@
         </button>
       </div>
       <div class="footer_item">
-        <button class="roundBtn_noBorder">
+        <button class="roundBtn_noBorder" id="savedDesigns">
           <img src="/public/assets/icons/bookmarks-inverted.png" style="height: 4vh; width: auto; display: block"/>
         </button>
       </div>      

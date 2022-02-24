@@ -10,13 +10,17 @@ const session = require("express-session")
 const {v4: uuidv4} = require("uuid");
 const mysql = require("mysql");
 const MySQLStore = require("express-mysql-session")(session);
+
 const mongoose = require("mongoose");
 const mongoURL = 'mongodb://localhost:27017';
+const ObjectId = require("mongodb").ObjectId; // Lets us find entries in MongoDb using the objectId
+
 const path = require("path");
 const res = require("express/lib/response");
 const { profile } = require("console");
 const fileUpload = require("express-fileupload");
-const { isBuffer } = require("lodash");
+const { isBuffer, forEach } = require("lodash");
+const { createSocket } = require("dgram");
 
 // Use files from within the file structure
 app.use(express.static(__dirname)); // Serves html files
@@ -396,7 +400,7 @@ io.sockets.on('connect', (socket) => {
     socket.on("verify", (data) => {
         console.log("password for the room", data.password);
         if (data.password == rooms[data.roomName].roomPass) {
-            socket.emit("redirect", (roomName));
+            socket.emit("redirect", (data.roomName));
         }
     })
 
@@ -536,7 +540,7 @@ io.sockets.on('connect', (socket) => {
             if(err) throw err;
             
         });
-
+        // Lookup the design we just saved and add it to the mySQL Db
         designs.collection("Designs").findOne({name: designName, user: socket.request.session.username}).then((data) => {
             stringObjID = (data._id).toString();
             // let sql = "INSERT INTO savedDesigns (userID, design) VALUES "
@@ -545,16 +549,65 @@ io.sockets.on('connect', (socket) => {
             con.query("INSERT INTO designs (design, creatorID) VALUES (?, ?)", [stringObjID, socket.request.session.userID], (err, result) => {
                 if (err) throw err;
                 console.log("inserted design into designs table with id:", result.insertId);
-            })
+            });
 
+            con.query("INSERT INTO saveddesigns (savedBy, design, creatorID) VALUES (?, ?, ?)", [socket.request.session.userID, stringObjID, socket.request.session.userID], (err, result) => {
+                if (err) throw err;
+                console.log("design saved to savedDesigns table", result.insertId);
+            })
+            
         });
+
+        // TODO: Add saved design to the savedDesigns table, then take all of the designs saved by a given ID and print them to the client
         
         
 
         
     });
+    let _designList = new Array();
+    socket.on("getSavedDesigns", (data) => {
 
-    socket.on('getDesignNames', (res) => {
+        con.query("SELECT design FROM saveddesigns WHERE savedBy = ?", [socket.request.session.userID], (err, result) => {
+                if (err) throw err;
+                console.log("got this: -------------------------------", result);
+
+                
+                result.forEach(design => {
+                    designs.collection("Designs").find({_id: new ObjectId(design.design)}, {projection: {_id: 0, name: 1, thumbnail: 1}}).toArray((err, result) => {
+                        if (err) throw err;
+                        console.log("from mongo", result);
+                        
+                        _designList.push(result[0]); // Can hardcode the result to 0 because objectId's are unique so we only get 1 result
+                        console.log("designList--------", _designList);
+
+                        console.log("data value", data);
+                        sendClientDesigns(_designList, data);
+                        
+                        // socket.emit("savedDesigns", _designList);
+                    });
+                });
+                // console.log("designList--------", _designList);
+                
+                
+        });
+    });
+
+
+    function sendClientDesigns(designList, data) {
+        console.log("dataaaa", data);
+        if (data == 0) {
+            console.log("dessssssinggngngngn", designList);
+            socket.emit("savedDesigns", ({designs: designList, id: data}));
+        } else if (data == 1) {
+            console.log("we are here");
+            socket.emit("savedDesigns", ({designs: designList, id: data}));
+        }
+    }
+
+    // ({_id: design.design}, {projection: {_id: 1, name: 1}})
+
+
+    socket.on('getDesignNames', () => {
         const designList = designs.collection("Designs").find({user: socket.request.session.username});
         let i = 0;
         let namesList = [];
@@ -608,11 +661,6 @@ io.sockets.on('connect', (socket) => {
             socket.on("savePost", () => {
 
             })
-
-            console.log("----------------", (data._id).toString());
-
-
-
 
             //find out how to get the objects from the json file
             var objs = data.objects
