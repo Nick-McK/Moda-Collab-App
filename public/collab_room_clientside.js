@@ -709,6 +709,9 @@ function deleteDesign() {
     canvas.renderAll();
 }
 
+document.getElementById("loadClose").onclick = () => {
+    document.getElementById("load").style.display = "none";
+}
 
 let recordedName = [];
 // Sends to the server asking for data of hardcoded design
@@ -722,6 +725,7 @@ function loadDesign() {
             names.forEach((name) => {
                 let currentName = document.createElement("div");
                 let nameBut = document.createElement("button");
+                nameBut.classList.add("loadButton");
                 nameBut.innerHTML = name;
                 nameBut.onclick = () => {
                     document.getElementById('load').style.display = "none";
@@ -729,7 +733,7 @@ function loadDesign() {
                 }
                 if(!recordedName.includes(name)){
                     currentName.appendChild(nameBut);
-                    document.getElementById("load").appendChild(currentName);
+                    document.getElementById("loadContent").appendChild(currentName);
                 }
                 recordedName.push(name);
             });

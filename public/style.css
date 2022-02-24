@@ -134,18 +134,49 @@ button:hover {
 }
 
 .load{
-  top:12.5vh;
+  top: 0;
+  left: 0;
   position: fixed;
-  height: 75vh;
-  width: 50vw;
+  height: 100vh;
+  width: 100vw;
+  display: none;
   align-items: center;
   justify-content: center;
-  background-color: yellow;
-  display: none;
   z-index: 100;
-  font-size: 50px;
 }
 
+.loadButton{
+  text-align: center;
+  background-color: transparent;
+  border: none;
+  color: white;
+  padding: 20px;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  border-radius: 12px;
+  top: 0;
+
+}
+
+.loadContent{
+  width: 650px;
+  height: 900px;
+  max-width: 100%;
+  padding: 30px 50px;
+  margin: 0;
+  border-radius: 12px;
+  background-color: rgb(29, 29, 29);
+  color: blue;
+}
+.loadClose{
+  position: fixed;
+  top: 8%;
+  right: 1%;
+  padding: 5px 5px;
+  border: none;
+  background-color: transparent;
+}
 #colourThicknessSelect{
   z-index: 3;
   top: 12.5%;
