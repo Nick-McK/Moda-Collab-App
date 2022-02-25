@@ -27,6 +27,7 @@ const savedDesignsContainer = document.getElementById("savedDesignsContainer");
 const savedDesignsContent = document.getElementById("savedDesignsContent");
 const closeSavedDesigns = document.getElementById("closeSavedDesigns")
 const designChoice = document.getElementById("designChoice");
+const sectionContainer = document.getElementById("designContainer");
 
 const selectImage = document.getElementById("selectImage");
 const upload = document.getElementById("upload");
@@ -183,12 +184,12 @@ socket.on("savedDesigns", (data) => {
         
         // Handles adding design images to the savedPosts section with id == 0 and for adding posts section with id == 1
         if (data.id == 0) {
-            let sectionContainer = document.createElement("section");
+            // let sectionContainer = document.createElement("section");
 
             let sectionContent = document.createElement("section");
             let sectionImage = document.createElement("img");
 
-            sectionContainer.classList.add("designContainer");
+            // sectionContainer.classList.add("designContainer");
             sectionContent.classList.add("designContent");
             sectionImage.classList.add("designImage");
             
@@ -196,7 +197,7 @@ socket.on("savedDesigns", (data) => {
 
             sectionContent.appendChild(sectionImage);
             sectionContainer.appendChild(sectionContent);
-            savedDesignsContent.appendChild(sectionContainer);
+            // savedDesignsContent.appendChild(sectionContainer);
         } else if (data.id == 1) {
             console.log("are we here");
             console.log("name", design.name);

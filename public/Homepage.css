@@ -284,15 +284,18 @@ textarea {
 .designContainer {
   width: 600px;
   height: 750px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .designContent {
   height: 300px;
   width: 648px;
   display: flex;
-  position: absolute;
+  /* position: absolute; */
   border-radius: 20px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid grey;
 }
 .designImage {
