@@ -535,12 +535,20 @@ io.sockets.on('connect', (socket) => {
         data.design += ", \"name\": \"" + designName + "\"";
         data.design += ", \"user\": \"" + socket.request.session.username + "\"}";
         const designJSON = JSON.parse(data.design);
-        designs.collection("Designs").insertOne(designJSON, (err) => {
-            socket.emit("saveDesignResponse", (!err));
-            if(err) throw err;
-            
-        });
-        // Lookup the design we just saved and add it to the mySQL Db
+        designs.collection("Designs").findOne({name: designName}).then((current) => {
+            if(current == null){
+                designs.collection("Designs").insertOne(designJSON, (err) => {
+                    socket.emit("saveDesignResponse", (!err));
+                    if(err) throw err;
+                    
+                });
+            }else{
+                designs.collection("Designs").findOneAndReplace({name: designName}, designJSON, (err) => {
+                    socket.emit("saveDesignResponse", (!err));
+                    if(err) throw err;
+                });
+            }
+                    // Lookup the design we just saved and add it to the mySQL Db
         designs.collection("Designs").findOne({name: designName, user: socket.request.session.username}).then((data) => {
             stringObjID = (data._id).toString();
             // let sql = "INSERT INTO savedDesigns (userID, design) VALUES "
@@ -556,7 +564,11 @@ io.sockets.on('connect', (socket) => {
                 console.log("design saved to savedDesigns table", result.insertId);
             })
             
+        }); 
         });
+
+        
+
 
         // TODO: Add saved design to the savedDesigns table, then take all of the designs saved by a given ID and print them to the client
         
@@ -564,6 +576,7 @@ io.sockets.on('connect', (socket) => {
 
         
     });
+    
     let _designList = new Array();
     socket.on("getSavedDesigns", (data) => {
 
@@ -590,9 +603,9 @@ io.sockets.on('connect', (socket) => {
                 
                 
         });
+        
     });
-
-
+    
     function sendClientDesigns(designList, data) {
         console.log("dataaaa", data);
         if (data == 0) {

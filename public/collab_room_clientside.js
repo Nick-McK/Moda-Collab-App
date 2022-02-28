@@ -673,8 +673,11 @@ socket.on("chatMessage", data => {
     console.log(data);
 })
 
-
-
+document.getElementById("newDesign").onclick = () => {
+    document.getElementById('save').style.display = "none";
+    socket.emit(socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, prompt("Name your design")));
+}
+var recordedSaveNames = [];
 // Below is the code pertaining to the buttons in the header
 
 // Emit to server design JSON data to be stored in a file for saving
@@ -682,12 +685,34 @@ function saveDesign() {
     //socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})});
     //var win = window.open();
     //win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg'})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
+    document.getElementById('save').style.display = "grid";
+    socket.emit('getDesignNames');
+    socket.on('retrieveDesignNames', (names) => {
+        console.log("design names got");
+        names.forEach((name) => {
+            let currentName = document.createElement("div");
+            let nameBut = document.createElement("button");
+            nameBut.classList.add("saveButton");
+            nameBut.innerHTML = name;
+            nameBut.onclick = () => {
+                document.getElementById('save').style.display = "none";
+                socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, name);
+            }
+            if(!recordedSaveNames.includes(name)){
+                currentName.appendChild(nameBut);
+                document.getElementById("saveContent").appendChild(currentName);
+            }
+            recordedSaveNames.push(name);
+        });
+        
+    })
+    /*
     let designName = prompt("Name your deisgn");
     designName.trim();
     if(designName.length > 0){
         socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, designName);
     }
-    
+    */
     // socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', left:"0", top: "0", height:canvasHeight, width: canvasWidth})});    // the parameters other than format do not work currently
     var win = window.open();
     win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg'})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
@@ -709,14 +734,15 @@ function deleteDesign() {
     canvas.renderAll();
 }
 
-document.getElementById("loadClose").onclick = () => {
+document.getElementById("close").onclick = () => {
     document.getElementById("load").style.display = "none";
+    document.getElementById("save").style.display = "none";
 }
 
-let recordedName = [];
+let recordedLoadNames = [];
 // Sends to the server asking for data of hardcoded design
 function loadDesign() {
-    
+    document.getElementById('load').style.display = "grid";
     socket.emit('getDesignNames');
     socket.on('retrieveDesignNames', (names) => {
         if(names.length == 0){
@@ -731,13 +757,13 @@ function loadDesign() {
                     document.getElementById('load').style.display = "none";
                     socket.emit('loadDesign', name);
                 }
-                if(!recordedName.includes(name)){
+                if(!recordedLoadNames.includes(name)){
                     currentName.appendChild(nameBut);
                     document.getElementById("loadContent").appendChild(currentName);
                 }
-                recordedName.push(name);
+                recordedLoadNames.push(name);
             });
-            document.getElementById('load').style.display = "grid";
+            
         }
     });
 }
