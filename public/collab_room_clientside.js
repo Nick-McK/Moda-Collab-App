@@ -274,7 +274,7 @@ canvas.on("mouse:move", function (opt) {
                 view[5] = canvas.getHeight() - canvasHeight * zoom;
             }
         }
-        console.log("y", view[5], "height", canvas.getHeight(), "canvasHeight",canvasHeight * zoom,"yO", canvas.getHeight() - canvasHeight * zoom);
+        // console.log("y", view[5], "height", canvas.getHeight(), "canvasHeight",canvasHeight * zoom,"yO", canvas.getHeight() - canvasHeight * zoom);
         this.requestRenderAll();
         this.lastPosX = e.clientX;
         this.lastPosY = e.clientY;
@@ -312,7 +312,6 @@ if (canvas.getHeight()/canvasHeight < canvas.getWidth() / canvasWidth) {
 } else {
     limitValue = canvas.getHeight()/canvasHeight;
 }
-console.log(limitValue);
 
 var widthHeightLimited = null;
 
@@ -324,7 +323,7 @@ function limitZoomVal() {
 canvas.on("mouse:wheel", function(options) {
     var delta = options.e.deltaY;
     var zoom = canvas.getZoom();
-    zoom *= 0.9991 ** delta;
+    zoom *= 0.99916 ** delta;
     if (zoom > 20) zoom = 20;
     if (zoom < limitValue) {        // if user has zoomed out as far as allowed, set the zoom to the limited value
         if (limitZoom == true) {
@@ -351,7 +350,7 @@ canvas.on("mouse:wheel", function(options) {
         view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
         widthHeightLimited = "width";
     } else {
-        console.log("elsewhere", zoom);
+        // console.log("elsewhere", zoom, limitValue);
         limitZoom = false;
         if (view[4] >= 0) {
             view[4] = 0;
