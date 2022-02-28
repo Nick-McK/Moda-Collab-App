@@ -23,7 +23,7 @@ file.addEventListener('change', function(){
     
     const chosenFile = this.files[0];
 
-    if (chosenFile) {
+    if (chosenFile && (chosenFile.type=="image/jpeg" || chosenFile.type=="image/png")) {
 
         const reader = new FileReader(); 
 
@@ -39,5 +39,7 @@ file.addEventListener('change', function(){
         reader.onload = () => {
             socket.emit("NewProfilePic", data);
         } 
+    } else {
+        alert("File not chosen or incompatible file type, please upload PNG or JPEG only.")
     }
 });

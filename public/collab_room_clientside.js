@@ -27,6 +27,7 @@ canvas.add(r);
 // maybe add in an init for the start stuff
 var recentObj;
 var obj;
+var newImg;
 
 
 
@@ -121,7 +122,7 @@ function changeColour(col) {
 }
 
 // Uses a switch case to perform actions for each tool, triggered by onclick when selecting any tool
-function changeTool(res) {
+function changeTool(res, imgInfo) {
     // Disable draw if other tool is selected
     if (res != 'DRAW') {
         canvas.isDrawingMode = false;
@@ -167,7 +168,19 @@ function changeTool(res) {
             })
         break;
         case 'IMAGE':
-            // Open Windows Explorer
+            // Images are created in a different way to the rest of the tools
+            // Need to use from URL and then create a callback to add img to canvas after it has loaded
+            obj = new fabric.Image.fromURL(imgInfo, function(oriImg){
+                oriImg.set({
+                    top: 100,
+                    left:100
+                });
+
+                // this needs to be called here. Because of the callback, the code at the bottom of this section will not be able to add the img as it hadn't loaded at that point
+                canvas.add(oriImg).renderAll();
+                recentObj = oriImg;
+                socket.emit('canvasUpdate', {"change": oriImg, "type" : "add"});
+            });
             break;
         case 'TEXT':
             obj = new fabric.Textbox("Enter Text Here...", {
@@ -191,7 +204,7 @@ function changeTool(res) {
         default:
             break;
     }
-    if (obj) {
+    if (obj && res != 'IMAGE') {    //Img check needed bc of use of callback in image loading
         canvas.add(obj).renderAll();
         recentObj = obj;
         socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
@@ -243,7 +256,6 @@ canvas.on("mouse:move", function (opt) {
         view[5] += e.clientY - this.lastPosY;
 
         if (limitZoom) {    // if the zoom has decided that it has zoomed as far out as possible
-            console.log(widthHeightLimited);
             if (widthHeightLimited == "width") {
                 view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;       //limit the viewport so no panning can be done
                 if(view[5] > 0) {
@@ -307,13 +319,16 @@ canvas.on('mouse:up', function(opt) {
 // these concern when the user has zoomed out as far as allowed in regards to the canvas area
 var limitZoom = false;
 var limitValue = 0.1;   //initial value
+var widthHeightLimited = null;
 if (canvas.getHeight()/canvasHeight < canvas.getWidth() / canvasWidth) {
     limitValue = canvas.getWidth()/canvasWidth;
+    widthHeightLimited = "width";
 } else {
     limitValue = canvas.getHeight()/canvasHeight;
+    widthHeightLimited = "height";
 }
 
-var widthHeightLimited = null;
+
 
 function limitZoomVal() {
 
@@ -332,23 +347,38 @@ canvas.on("mouse:wheel", function(options) {
     } 
 
     // console.log(zoom);
-    canvas.zoomToPoint({x: options.e.offsetX, y: options.e.offsetY}, zoom); // this adapts the zoom to zoom in relation to the location of the mouse pointer
+    if(zoom >= limitValue) {    //make sure there is no out of bounds zooming
+        canvas.zoomToPoint({x: options.e.offsetX, y: options.e.offsetY}, zoom); // this adapts the zoom to zoom in relation to the location of the mouse pointer
+    }
     options.e.preventDefault();
     options.e.stopPropagation();
 
     var view = this.viewportTransform;
+
     if (zoom <= canvas.getHeight() / canvasHeight) {     // if zoomed out as far as allowed, set the fixed limited zoom value and set the viewports accordingly
         limitZoom = true;
         zoom = limitValue;
-        view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;
+
         view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
-        widthHeightLimited = "height";
+
+        if (view[4] >= 0) {
+            view[4] = 0;
+        } else if (view[4] < canvas.getWidth() - canvasWidth * zoom) {
+            view[4] = canvas.getWidth() - canvasWidth * zoom;
+        }      
+
     } else if (zoom <= canvas.getWidth() / canvasWidth) {
         limitZoom = true;
         zoom = limitValue;
+
         view[4] = (canvas.getWidth()/2) - canvasWidth * zoom / 2;
-        view[5] = (canvas.getHeight()/2) - canvasHeight * zoom / 2;
-        widthHeightLimited = "width";
+
+        if (view[5] >= 0) {
+            view[5] = 0;
+        } else if (view[5] < canvas.getHeight() - canvasHeight * zoom) {
+            view[5] = canvas.getHeight() - canvasHeight * zoom;
+        }    
+        
     } else {
         // console.log("elsewhere", zoom, limitValue);
         limitZoom = false;
@@ -363,6 +393,7 @@ canvas.on("mouse:wheel", function(options) {
             view[5] = canvas.getHeight() - canvasHeight * zoom;
         }
     }
+    console.log(view[4], view[5])
 });
 
 function checkPointerInArea() {
@@ -372,6 +403,22 @@ function checkPointerInArea() {
         return false;
 }
 
+const imageSelect = document.getElementById("image");
+imageSelect.addEventListener('change', function(){
+    const chosenFile = this.files[0];
+
+    if (chosenFile && (chosenFile.type=="image/jpeg" || chosenFile.type=="image/png")) {    //check the file chosen is of a valid filetype
+        
+        const reader = new FileReader(); 
+        console.log(reader)
+        reader.onload = function(){
+            changeTool('IMAGE', reader.result);
+        };
+        reader.readAsDataURL(chosenFile);
+    } else {
+        alert("File not chosen or incompatible file type, please upload PNG or JPEG only.")
+    }
+});
 
 
 // Emits to canvas whenever a change is made to any object so other clients can update
@@ -495,6 +542,26 @@ socket.on('canvasUpdate', (data) => {
                     angle: data.change.angle,
                     id: data.change.id
                 });
+            } else if (data.change.type == 'image') {
+                // newImg = document.createElement("img");
+                // newImg.setAttribute('src', data.change.src);
+                // document.getElementById("body").appendChild(newImg);
+
+                addObj = new fabric.Image.fromURL(data.change.src, function(oriImg){
+                    oriImg.set({
+                        top: data.change.top,
+                        left: data.change.left,
+                        height: data.change.height,
+                        width: data.change.width,
+                        angle: data.change.angle,
+                        scaleX: data.change.scaleX,
+                        scaleY: data.change.scaleY,
+                        id: data.change.id
+                    })
+                    
+                    canvas.add(oriImg);
+                    canvas.renderAll();
+                });
             } else {    // this should cover both path and polyline
                 // on other clients, free drawing is recreated as a polyline
                 canvas.isDrawingMode = true;
@@ -550,8 +617,13 @@ socket.on('canvasUpdate', (data) => {
                 } 
                 canvas.isDrawingMode = false;
             }
-            console.log(addObj);
-            canvas.add(addObj);
+
+
+            if (data.change.type != 'image') {  //when loading image from url, need to use callback when the image has loaded, so ignore here
+                console.log(addObj);
+                canvas.add(addObj);
+            }
+            
         break;
 
         case 'remove':

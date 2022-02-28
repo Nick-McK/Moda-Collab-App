@@ -361,7 +361,12 @@ io.sockets.on('connect', (socket) => {
 
         // rooms[data.roomName].roomPass = data.roomPass;
 
-        console.log("room password", rooms[data.roomName].roomPass);
+        if (rooms[data.roomPass]?.roomPass === undefined) {
+            console.log("no room password, server would've crashed")
+        } else {
+            console.log("room password", rooms[data.roomName].roomPass);
+        }
+        
 
 
         
