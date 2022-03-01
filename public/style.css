@@ -133,7 +133,7 @@ button:hover {
   display: block;
 }
 
-.load{
+.load, .save{
   top: 0;
   left: 0;
   position: fixed;
@@ -159,7 +159,7 @@ button:hover {
 
 }
 
-.loadContent{
+.loadContent, .saveContent{
   width: 650px;
   height: 900px;
   max-width: 100%;
@@ -169,7 +169,7 @@ button:hover {
   background-color: rgb(29, 29, 29);
   color: blue;
 }
-.loadClose{
+.close{
   position: fixed;
   top: 8%;
   right: 1%;
