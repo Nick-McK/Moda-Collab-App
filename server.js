@@ -16,7 +16,6 @@ const mongoURL = 'mongodb://localhost:27017';
 const ObjectId = require("mongodb").ObjectId; // Lets us find entries in MongoDb using the objectId
 
 const path = require("path");
-const res = require("express/lib/response");
 const { profile } = require("console");
 const fileUpload = require("express-fileupload");
 const { isBuffer, forEach } = require("lodash");
@@ -33,7 +32,7 @@ app.use(express.urlencoded({ extended: true}));
 
 app.use((req, res, next) => {
     req.io = io;
-    next();
+    return next();
 })
 
 //all code for mongoDB is commented out as not everyone has mongoDB set up
@@ -229,10 +228,19 @@ app.post("/home", (req, res) => {
     
 })
 
+
+
 //TODO: Put in error handling if we are not logged in
 app.get("/home", (req, res) => {
-    console.log("userID", req.session.userID);
-    res.sendFile(path.join(__dirname + "/Homepage.html"));
+    // If the user is logged in then let them access page
+    if (req.session.loggedIn) {
+        res.sendFile(path.join(__dirname + "/Homepage.html")); 
+    } else {
+        // res.send("log in");
+        res.sendFile(path.join(__dirname + "/Homepage.html"));
+    }
+    
+    
 })
 // Get request to show the users profile - Will need to make this user specific 
 app.get("/profile", (req, res) => {
@@ -722,12 +730,41 @@ io.sockets.on('connect', (socket) => {
     })
     
     socket.on("post", (postData) => {
-        // Save to DB
+
+
+        designs.collection("Designs").find({thumbnail: postData.image}, {projection: {_id: 1, name: 1, user: 1}}).toArray((err, result) => {
+            if (err) console.log(err);
+            let image = result[0]._id;
+            let design = image.toString();
+            console.log("wo-00000000000000000", design);
+            con.query("INSERT INTO posts (postName, postCaption, design, userID) VALUES (?, ?, ?, ?)", [postData.postName, postData.postCaption, design, socket.request.session.userID], (err, result) => {
+                if (err) throw err;
+                console.log(result);
+            });
+        });
+        
         // Use io.emit to give it to all connected clients
         io.emit("postAdded", (postData));
         
     })
 
+    // Deals with sending posts to new users that join the page
+    socket.on("getPosts", () => {
+        let posts = [];
+        let postsName = {};
+        con.query("SELECT postName, postCaption, design FROM posts", (err, result) => {
+            if (err) throw err;
+            for (let i = 0; i < result.length; i++) {
+                designs.collection("Designs").find({_id: new ObjectId(result[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, res) => {
+                    postsName = {name: result[i].postName, caption: result[i].design, design: res[i].thumbnail}
+                    posts.push(postsName);
+                    socket.emit("posts", posts);
+                    
+                }) 
+            }
+        })
+    })
+    
 
 });
 

@@ -33,6 +33,7 @@ const selectImage = document.getElementById("selectImage");
 const upload = document.getElementById("upload");
 const postButton = document.getElementById("post");
 const postName = document.getElementById("_postName");
+const postCaption = document.getElementById("_postCaption");
 const posts = document.querySelectorAll(".post");
 
 const postdesign = document.getElementById("addPostDesignsContainer");
@@ -252,8 +253,11 @@ postButton.onclick = () => {
 
     let postImage = designChoice.src;
     let name = postName.value;
+    let caption = postCaption.value;
 
-    let data = {postName: name, image: postImage};
+    let data = {postName: name, postCaption: caption, image: postImage};
+
+    console.log(data.image)
 
     socket.emit("post", (data));
 }
@@ -325,3 +329,62 @@ selectImage.onclick = () => {
 closePostSavedDesigns.onclick = () => {
     postdesign.style.display = "none";
 }
+
+this.onload = () => {
+    socket.emit("getPosts");
+}
+
+
+socket.on("posts", posts => {
+    console.log(posts.posts);
+    for (let post of posts) {
+        console.log("possss", post);
+        let postDiv = document.createElement("div");
+        let gridItem = document.createElement("div");
+        let postBar = document.createElement("div");
+        let postImage = document.createElement("img");
+        let barImage1 = document.createElement("img");
+        let barImage2 = document.createElement("img");
+        let barImage3 = document.createElement("img");
+        
+        
+        let div1 = document.createElement("div");
+        let div2 = document.createElement("div");
+        let div3 = document.createElement("div");
+
+
+        barImage1.classList.add("bar_img");
+        barImage2.classList.add("bar_img");
+        barImage3.classList.add("bar_img");
+        postDiv.classList.add("post");
+        gridItem.classList.add("grid-item");
+        postBar.classList.add("post-bar");
+        postImage.classList.add("post_img");
+
+        barImage1.setAttribute("src", "/public/assets/icons/floppy-disk.png");
+        barImage2.setAttribute("src", "/public/assets/icons/archive-box.png");
+        barImage3.setAttribute("src", "/public/assets/icons/plus.png");
+
+        div1.appendChild(barImage1);
+        div2.appendChild(barImage2);
+        div3.appendChild(barImage3);
+        
+
+        postBar.appendChild(div1);
+        postBar.appendChild(div2);
+        postBar.appendChild(div3);
+
+        
+        
+
+        postImage.setAttribute("src", post.design);
+
+        
+
+        gridItem.appendChild(postImage);
+        postDiv.appendChild(gridItem);
+        postDiv.appendChild(postBar);
+        const feed = document.getElementById("_feed");
+        feed.prepend(postDiv); // This is prepend as we want the newest posts at the top of the feed
+    }
+})
