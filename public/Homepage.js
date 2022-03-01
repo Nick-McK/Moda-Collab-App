@@ -31,6 +31,8 @@ const sectionContainer = document.getElementById("designContainer");
 
 const selectImage = document.getElementById("selectImage");
 const upload = document.getElementById("upload");
+const postButton = document.getElementById("post");
+const postName = document.getElementById("_postName");
 
 const postdesign = document.getElementById("addPostDesignsContainer");
 const postDContent = document.getElementById("addPostDesignsContent");
@@ -126,6 +128,11 @@ window.onmousedown = (e) => {
     }
 }
 
+// postButton.onclick = () => {
+//     console.log("hasodgasdg");
+//     socket.emit("newPost");
+// }
+
 
 // Saving posts
 
@@ -151,25 +158,6 @@ socket.on("savedDesigns", (data) => {
 
     let designList = Object.values(data.designs);
     
-    // if (data.id == 0)  {
-    //     let sectionContainer = document.createElement("section");
-
-    //     let sectionContent = document.createElement("section");
-    //     let sectionImage = document.createElement("img");
-
-    //     sectionImage.setAttribute("src", design.thumbnail);
-
-    //     sectionContent.appendChild(sectionImage);
-    //     sectionContainer.appendChild(sectionContent);
-    //     savedDesignsContainer.appendChild(sectionContainer);
-    // }
-
-
-
-
-
-
-
     for (let design of designList) {     
         // Check if the designs have been added to their respective pages thumbnails for savedPosts(id=0) page and names to the addPost page(id=1)
         // If they have not been then add them to the checked list and then carry on with adding them to the page
@@ -211,6 +199,7 @@ socket.on("savedDesigns", (data) => {
 
             nameBut.onclick = () => {
                 designChoice.setAttribute("src", design.thumbnail);
+                // postThumb.value = design.thumbnail;
                 postdesign.style.display = "none";
             }
             nameDiv.appendChild(nameBut);
@@ -220,6 +209,67 @@ socket.on("savedDesigns", (data) => {
     }
 });
 
+postButton.onclick = () => {
+
+    let postImage = designChoice.src;
+    let name = postName.value;
+
+    let data = {postName: name, image: postImage};
+
+    socket.emit("post", (data));
+}
+// TODO: Clean this up with a loop for the repeated elements
+socket.on("postAdded", (data) => {
+    console.log("new post")
+    let postDiv = document.createElement("div");
+    let gridItem = document.createElement("div");
+    let postBar = document.createElement("div");
+    let postImage = document.createElement("img");
+    let barImage1 = document.createElement("img");
+    let barImage2 = document.createElement("img");
+    let barImage3 = document.createElement("img");
+    
+    
+    let div1 = document.createElement("div");
+    let div2 = document.createElement("div");
+    let div3 = document.createElement("div");
+
+
+    barImage1.classList.add("bar_img");
+    barImage2.classList.add("bar_img");
+    barImage3.classList.add("bar_img");
+    postDiv.classList.add("post");
+    gridItem.classList.add("grid-item");
+    postBar.classList.add("post-bar");
+    postImage.classList.add("post_img");
+
+    barImage1.setAttribute("src", "/public/assets/icons/floppy-disk.png");
+    barImage2.setAttribute("src", "/public/assets/icons/archive-box.png");
+    barImage3.setAttribute("src", "/public/assets/icons/plus.png");
+
+    div1.appendChild(barImage1);
+    div2.appendChild(barImage2);
+    div3.appendChild(barImage3);
+    
+
+    postBar.appendChild(div1);
+    postBar.appendChild(div2);
+    postBar.appendChild(div3);
+
+    
+    
+
+    postImage.setAttribute("src", data.image);
+
+    gridItem.appendChild(postImage);
+    postDiv.appendChild(gridItem);
+    postDiv.appendChild(postBar);
+    const feed = document.getElementById("_feed");
+    feed.prepend(postDiv); // This is prepend as we want the newest posts at the top of the feed
+
+    
+    
+})
 
 
 

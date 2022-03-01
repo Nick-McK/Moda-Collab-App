@@ -30,6 +30,12 @@ app.use(express.static(__dirname + "/public/assets")); // different assets for p
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
+
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+})
+
 //all code for mongoDB is commented out as not everyone has mongoDB set up
 
 //connects to mongodb for storing designs
@@ -163,57 +169,86 @@ app.post("/account/tags", (req, res) => {
 })
 var nameOfUser;
 app.post("/home", (req, res) => {
-    const username = req.body.username;
+    // If we are on the login page (the only place where username input field is present) then login
+    // Doing thus lets us make mulitple post requests to the homepage and have different results based on the page
+    if(req.body.username) {
 
-    const password = req.body.password;
-    const sid = req.session.id;
+    
+        const username = req.body.username;
 
-    con.query("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, result) => {
-        if (err) {
-            throw err;
-        }
-        
-        console.log("---------------", result);
+        const password = req.body.password;
+        const sid = req.session.id;
 
-        if (result.length > 0) {
-            result.find((user, index) => {
-                if (user.username == username && user.password == password) {
-                    // Session stuff
-                    req.session.username = username;
-                    nameOfUser = username;
-                    req.session.loggedIn = true;
-                    req.session.userID = user.userID;
-                    console.log("welcome", req.session.username, "userID:", req.session.userID,"here is your session ", req.session);
-                    console.log()
-                    console.log("and the id: ", sid);
+        con.query("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, result) => {
+            if (err) {
+                throw err;
+            }
+            
+            // console.log("---------------", result);
 
-                    // Could possibly assign user ID's to increase security
-                    res.cookie("uName", JSON.stringify(req.session.username), {
-                        maxAge: 60000, 
-                        secure: process.env.NODE_ENV !== "development",
-                        httpOnly: true});
+            if (result.length > 0) {
+                result.find((user, index) => {
+                    if (user.username == username && user.password == password) {
+                        // Session stuff
+                        req.session.username = username;
+                        nameOfUser = username;
+                        req.session.loggedIn = true;
+                        req.session.userID = user.userID;
+                        console.log("welcome", req.session.username, "userID:", req.session.userID,"here is your session ", req.session);
+                        console.log()
+                        console.log("and the id: ", sid);
 
+                        // Could possibly assign user ID's to increase security
+                        res.cookie("uName", JSON.stringify(req.session.username), {
+                            maxAge: 60000, 
+                            secure: process.env.NODE_ENV !== "development",
+                            httpOnly: true});
+
+
+                            
+
+                        sessionStore.set(req.session.id, req.session, (error) => {
+                            if (error) throw error;
+
+                            console.log("session stored");
+                        })
 
                         
+                        
+                        res.sendFile(path.join(__dirname + "/Homepage.html"));
+                        
+                    }
+                        
+                })
+            } else {
+                req.session.loggedIn = false;
+                res.send("you dont have an account");
+            }
+        });
+    }
+    
+    // if(req.body.postName) {
+    //     let postName = req.body.postName;
+    //     let postCaption = req.body.postCaption;
 
-                    sessionStore.set(req.session.id, req.session, (error) => {
-                        if (error) throw error;
+    //     // WRITE TO THE POSTS DATABASE ABOUT A NEW POST THAT HAS BEEN ADDED
+    //     // console.log("this is our postName: ", req.body.postThumbnail);
 
-                        console.log("session stored");
-                    })
+    //     let postData = {name: postName, caption: postCaption}
 
-                    
-                    
-                    res.sendFile(path.join(__dirname + "/Homepage.html"));
-                    
-                }
-                    
-            })
-        } else {
-            req.session.loggedIn = false;
-            res.send("you dont have an account");
-        }
-    });
+        
+
+    //     req.io.emit("newPost", (postData));
+
+    //     console.log("here");
+
+    //     // res.redirect("/home");
+    //     // io.emit("newPost");
+
+        
+
+
+    // }
 })
 
 //TODO: Put in error handling if we are not logged in
@@ -544,7 +579,6 @@ io.sockets.on('connect', (socket) => {
         designs.collection("Designs").findOne({name: designName, user: socket.request.session.username}).then((data) => {
             stringObjID = (data._id).toString();
             // let sql = "INSERT INTO savedDesigns (userID, design) VALUES "
-            console.log("----------------objID", stringObjID);
             
             con.query("INSERT INTO designs (design, creatorID) VALUES (?, ?)", [stringObjID, socket.request.session.userID], (err, result) => {
                 if (err) throw err;
@@ -569,16 +603,16 @@ io.sockets.on('connect', (socket) => {
 
         con.query("SELECT design FROM saveddesigns WHERE savedBy = ?", [socket.request.session.userID], (err, result) => {
                 if (err) throw err;
-                console.log("got this: -------------------------------", result);
+                // console.log("got this: -------------------------------", result);
 
                 
                 result.forEach(design => {
                     designs.collection("Designs").find({_id: new ObjectId(design.design)}, {projection: {_id: 0, name: 1, thumbnail: 1}}).toArray((err, result) => {
                         if (err) throw err;
-                        console.log("from mongo", result);
+                        // console.log("from mongo", result);
                         
                         _designList.push(result[0]); // Can hardcode the result to 0 because objectId's are unique so we only get 1 result
-                        console.log("designList--------", _designList);
+                        // console.log("designList--------", _designList);
 
                         console.log("data value", data);
                         sendClientDesigns(_designList, data);
@@ -704,6 +738,10 @@ io.sockets.on('connect', (socket) => {
         socket.emit("accountDetails", {username: socket.request.session.username});
     })
     
+    socket.on("post", (postData) => {
+        // Save to DB
+        socket.emit("postAdded", (postData));
+    })
 
 });
 
