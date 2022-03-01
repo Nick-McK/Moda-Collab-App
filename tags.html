@@ -1,33 +1,130 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <!-- <link rel="stylesheet" href="/public/style.css"> -->
-        <link rel="stylesheet" href="/public/tags.css">
-        
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Tags Page</title>
+        <link rel="stylesheet" type="text/css"  href="style.css">
     </head>
+    
     <body>
-
-        <div class="header">
-            <img src="/public/assets/icons/logo.png">
-        </div>
-
-
-
-        <h1>Tags Registration Page</h1>
-        <div class="tagContainer">
-            <div class="tags">/
-                <img id="animal" src="/public/assets/tagAssets/monkey.jpg"/>
-                <img id="photo" src="/public/assets/tagAssets/photography.jpg"/>
-                <img id="games" src="/public/assets/tagAssets/games.jpg"/>
-                <img id="photo" src="/public/assets/tagAssets/monkey.jpg"/>
-                <img id="games" src="/public/assets/tagAssets/games.jpg"/>
-                <img id="games" src="/public/assets/tagAssets/games.jpg"/>
-                <img id="games" src="/public/assets/tagAssets/games.jpg"/>
-                <img id="photo" src="/public/assets/tagAssets/photography.jpg"/>
+        <section class = "header">
+            <div class = "inner">
+                <div class="topnav">
+                    <img id="logo" src="/public/assets/icons/logo.png" alt="Moda Lab">
+                </div>
             </div>
+        </section>
+        <div class = "clearfix"> </div>
+        <section class = "txt">
+            <div class = "tags_txt">
+                <h2> Tags Registration Page </h2>
+            </div>
+            <div class = "tags_txt">
+                    <p> Select the fashion genres that you most identify with so that we <br>
+                        can better match you with communities that you will be interested in.
+                        Click the checkboxes of the styles <br> you are interested in and press submit.
+                    </p>
+            </div>
+        </section>
+        <div class = "clearfix"> </div>
+        
+<!--
+        <div class = "select">
+            <div class = "select__item"> Games </div>
+            <div class = "select__item"> HTML </div>
+            <div class = "select__item"> CSS </div>
         </div>
+-->
+        
+<!--
+        <select name="language" class = "custom-select" multiple>
+            <option class="Streetwear" value = "Streetwear"> 
+                Streetwear
+            </option>
+            <option class="Streetwear"> Vitage </option>
+            <option> Urban </option>
+            <option> Formal </option>
+            <option> Avant Garde </option>
+            <option> Runway </option>
+            <option> Athletic </option>
+            <option> Grunge</option>
+        </select>
+-->
+        <div class="my-select-box">
+            
+          <div class = Streetwear>
+            <label for="option-1">
+                Streetwear
+                <input type="checkbox" id="Streetwear" name="inputName[]">
+            </label>
+          </div>
+            
+          <div class = Urban>
+              <label for="option-2">
+                Urban
+                <input type="checkbox" id="Urban" name="inputName[]">
+              </label>
+          </div>
+              
+         <div class = Avante-Garde>
+              <label for="option-3">
+                Avant Garde
+                <input type="checkbox" id="Avante Garde" name="inputName[]">
+              </label>
+         </div>
+
+          <div class = Formal>
+              <label for="option-4">
+                Formal
+                <input type="checkbox" id="Formal" name="inputName[]">
+              </label>
+         </div>
+
+         <div class = Runway>
+              <label for="option-2">
+                Runway
+                <input type="checkbox" id="Runway" name="inputName[]">
+              </label>
+        </div>
+
+         <div class = Athletic>
+              <label for="option-3">
+                Athletic
+                <input type="checkbox" id="Athletic" name="inputName[]">
+              </label>
+        </div>
+             
+         <div class = Grunge>
+              <label for="option-4">
+                Grunge
+                <input type="checkbox" id="Grunge" name="inputName[]">
+              </label>
+        </div>
+            
+        </div>
+        <script src="Tags.js" type="module"></script>
+        
+        <div class = "tags_button">
+            <button id="button" onclick="addToProfileTagList()">Submit</button>
+        </div>
+        <div class = "clearfix"></div>
+ 
+
+            
+<!-- This was me testing how to add photos as selectable options
+            <div class="row"> 
+          <div class="column">
+                <option style ="background-image: url(public/assets/tagAssets/games.jpg)"> Games</option>
+                <option><img src="public/assets/tagAssets/monkey.jpg"> Monkey </option>
+                <option><img src="public/assets/tagAssets/photography.jpg"> Phot </option>
+          </div>
+          <div class="column">
+                <img src="public/assets/tagAssets/games.jpg">
+                <img src="public/assets/tagAssets/monkey.jpg">
+                <img src="public/assets/tagAssets/photography.jpg">
+          </div> 
+-->
     </body>
-    <script src="Tags.js" type="module"></script>
 </html>
 
 
