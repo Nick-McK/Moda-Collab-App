@@ -227,28 +227,6 @@ app.post("/home", (req, res) => {
         });
     }
     
-    // if(req.body.postName) {
-    //     let postName = req.body.postName;
-    //     let postCaption = req.body.postCaption;
-
-    //     // WRITE TO THE POSTS DATABASE ABOUT A NEW POST THAT HAS BEEN ADDED
-    //     // console.log("this is our postName: ", req.body.postThumbnail);
-
-    //     let postData = {name: postName, caption: postCaption}
-
-        
-
-    //     req.io.emit("newPost", (postData));
-
-    //     console.log("here");
-
-    //     // res.redirect("/home");
-    //     // io.emit("newPost");
-
-        
-
-
-    // }
 })
 
 //TODO: Put in error handling if we are not logged in
@@ -462,7 +440,6 @@ io.sockets.on('connect', (socket) => {
             throw err;
         }
 		x = result[0]; 
-		console.log(x);
 	})
 
 	console.log(x);
@@ -607,13 +584,6 @@ io.sockets.on('connect', (socket) => {
         });
 
         
-
-
-        // TODO: Add saved design to the savedDesigns table, then take all of the designs saved by a given ID and print them to the client
-        
-        
-
-        
     });
     
     let _designList = new Array();
@@ -632,7 +602,6 @@ io.sockets.on('connect', (socket) => {
                         _designList.push(result[0]); // Can hardcode the result to 0 because objectId's are unique so we only get 1 result
                         // console.log("designList--------", _designList);
 
-                        console.log("data value", data);
                         sendClientDesigns(_designList, data);
                         
                         // socket.emit("savedDesigns", _designList);
@@ -646,17 +615,13 @@ io.sockets.on('connect', (socket) => {
     });
     
     function sendClientDesigns(designList, data) {
-        console.log("dataaaa", data);
         if (data == 0) {
-            console.log("dessssssinggngngngn", designList);
             socket.emit("savedDesigns", ({designs: designList, id: data}));
         } else if (data == 1) {
-            console.log("we are here");
             socket.emit("savedDesigns", ({designs: designList, id: data}));
         }
     }
 
-    // ({_id: design.design}, {projection: {_id: 1, name: 1}})
 
 
     socket.on('getDesignNames', () => {
@@ -758,8 +723,11 @@ io.sockets.on('connect', (socket) => {
     
     socket.on("post", (postData) => {
         // Save to DB
-        socket.emit("postAdded", (postData));
+        // Use io.emit to give it to all connected clients
+        io.emit("postAdded", (postData));
+        
     })
+
 
 });
 

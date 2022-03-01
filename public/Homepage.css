@@ -1,5 +1,6 @@
 body {
   font-family: "fira code";
+  background: rgb(20, 19, 19);
 }
 
 /* General Button stuff - placed at the top so we can overwrite with classes later eg headerBtn */
@@ -85,6 +86,7 @@ body {
 
 /* Can either use this or footer1 whichever looks better */
 .footer {
+  z-index: 1000;
   display: grid;
   grid-template-columns: 10% 10% 10% 10%;
   grid-column-gap: 4%;
@@ -100,6 +102,7 @@ body {
 }
 
 .footer1 {
+  z-index: 1000;
   display: flex;
   justify-content: center;
   position: fixed;
@@ -133,7 +136,38 @@ body {
   display: grid;
   grid-template-rows: 25em 2em;
   grid-gap: 1px;
+  transition: transform 1s;
+  transition-delay: 1s;
+ 
+}
+.post:hover {
+  transform: scale3d(1.15, 1.15, 1);
+}
+/* .post.active {
+  animation: highlightPost 1s forwards;
+  animation-timing-function: ease-in-out;
+  animation-delay: 0.5s;
+}
+.post.inactive {
+  animation-direction: reverse;
+} */
+
+@keyframes highlightPost {
+  0% {
+    transform: scale3d(1, 1, 0.5);
+  }
+  100% {
+    transform: scale3d(1.15, 1.15, 1);
+  }
   
+}
+@keyframes out {
+  0% {
+    transform: scale3d(1.15, 1.15, 1);
+  }
+  100% {
+    transform: scale3d(1,1,0.5);
+  }
 }
 
 .grid-item {
@@ -179,6 +213,7 @@ body {
   display: none;
   align-items: center;
   justify-content: center;
+  z-index: 100;
 }
 /* If the browser doesn't support backdrop filters then set it to none */
 /* Add darkening around the borders of the popup so that its easier to tell where it starts and the background ends */
@@ -280,11 +315,11 @@ body {
 }
 
 .postImage {
-  height: 300px;
+  height: 50%;
   width: 648px;
-  flex-direction: column;;
+  flex-direction: row;;
   display: flex;
-  align-self: flex-end;
+  align-items: center;
   /* flex-wrap: wrap; */
   /* position: absolute; */
   /* top: 10%; */
@@ -297,8 +332,9 @@ body {
   height: 50px;
   width: 25%;
   position: absolute;
+  bottom: 50%;
   left: 38%;
-  top: 35%;
+  z-index: 9999;
   color: white;
   text-align: center;
   font-size: 22px;
@@ -320,7 +356,7 @@ body {
   /* position: fixed; */
   display: flex;
   flex-direction: column;
-  justify-content: flex-end; 
+  justify-content: center; 
   height: 350px;
   /* bottom: 22%; */
   width: 650px;
@@ -334,8 +370,8 @@ body {
   height: 100px;
 }
 #postTags {
-  left: 0;
-  position: absolute;
+  width: 100%;
+  overflow-y: auto;
 }
 #post {
   display: flex;

@@ -33,10 +33,49 @@ const selectImage = document.getElementById("selectImage");
 const upload = document.getElementById("upload");
 const postButton = document.getElementById("post");
 const postName = document.getElementById("_postName");
+const posts = document.querySelectorAll(".post");
 
 const postdesign = document.getElementById("addPostDesignsContainer");
 const postDContent = document.getElementById("addPostDesignsContent");
 const closePostSavedDesigns = document.getElementById("closePostSavedDesigns");
+
+// CODE FOR POST TRANSITIONS IF I CAN MAKE IT STOP HALF WAY THROUGH AND REVERSE
+// Currently will go to the full size if we move out before its finished and this is quite jarring
+// for (let post of posts) {
+//     post.addEventListener("mouseenter", () => {
+//         // post.classList.add("active");
+//         post.style.animation = "highlightPost 1s ease-in-out 1s 1 normal forwards";
+        
+//         // post.style.animation = "delay 0.5s";
+//     });
+//     post.addEventListener("mouseleave", () => {
+//         post.style.animation = "out 1s ease-in-out";
+//         // post.style.opacity = 0;
+//         // post.classList.add("inactive");
+//         // post.classList.remove("active");
+
+        
+        
+
+//         // setTimeout(() => {
+//         //     post.classList.add("active");
+//         //     post.style.opacity = ""
+//         // }, 25);
+
+//         // post.addEventListener("animationend", onanimationend)
+//     })
+
+//     // function onanimationend() {
+//     //     console.log("what is this");
+//     //     post.classList.remove("active", "inactive");
+//     //     post.removeEventListener("animationend", onanimationend);
+//     // }
+    
+// }
+
+
+
+
 
 // Events for handling opening and closing the collaboration menu
 btnOpen.onclick =  () => {
