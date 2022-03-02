@@ -261,6 +261,9 @@ postButton.onclick = () => {
 
     socket.emit("post", (data));
 }
+
+
+
 // TODO: Clean this up with a loop for the repeated elements
 socket.on("postAdded", (data) => {
     console.log("new post")
@@ -355,6 +358,8 @@ socket.on("posts", posts => {
         let barImage2 = document.createElement("img");
         let barImage3 = document.createElement("img");
         let profileImage = document.createElement("img");
+        
+        let likeCounter = document.createElement("sup");
 
         profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg")
         
@@ -378,11 +383,31 @@ socket.on("posts", posts => {
 
         name.innerHTML = post.user;
 
-        barImage1.setAttribute("src", "/public/assets/icons/floppy-disk-inverted.png");
+        barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
+        let LIKES = post.likes; // Set this to the database value
+        const LIKES_BEFORE = post.likes;
+
+        
+        console.log("our likes at the start", post.id);
+        barImage1.addEventListener("click", () => {
+            if (LIKES_BEFORE != LIKES) {
+                LIKES--;
+                // likeCounter.style.color = 
+                barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
+                console.log("LIKES", LIKES);
+            } else {
+                LIKES++;
+                barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
+                console.log("LIKES", LIKES);
+            }
+            likeCounter.innerHTML = LIKES;
+            socket.emit("liked", {likes: LIKES, id: post.id});
+        })
         barImage2.setAttribute("src", "/public/assets/icons/archive-box-inverted.png");
-        barImage3.setAttribute("src", "/public/assets/icons/plus-inverted.png");
+        barImage3.setAttribute("src", "/public/assets/icons/chat-circle-inverted.png");
 
         div1.appendChild(barImage1);
+        div1.appendChild(likeCounter);
         div2.appendChild(barImage2);
         div3.appendChild(barImage3);
         
@@ -404,7 +429,6 @@ socket.on("posts", posts => {
         const feed = document.getElementById("_feed");
         feed.prepend(postDiv); // This is prepend as we want the newest posts at the top of the feed
     }
-
     const postImages = document.querySelectorAll(".post_img");
     const postTop = document.querySelectorAll(".post-top");
     console.log("sfasdf", postImages)
@@ -421,6 +445,7 @@ socket.on("posts", posts => {
             post.style.transition = "transform 1s";
             post.style.transitionDelay = "1s"
             post.style.transform = "scale(1.15, 1.15)";
+            post.style.boxShadow = "0 0 2em white;"
 
             post.addEventListener("transitionend", () => {
                 child[0].style.transition = "opacity 1s ease-in-out";
@@ -440,4 +465,23 @@ socket.on("posts", posts => {
             
         });
     }
+
+    // const BAR_BUTTONS = document.querySelectorAll(".bar_img");
+    // let LIKES_COUNTER = 0;
+    // for (let button of BAR_BUTTONS) {
+    //     let buttonString = getPNG(button.src)
+    //     console.log("button", button.src)
+    //     if (buttonString == "heart-inverted.png") {
+    //         button.addEventListener("click", () => {
+    //             LIKES_COUNTER++;
+    //             console.log("likes", LIKES_COUNTER);
+    //         })
+    //     }
+    // }
+
+    // function getPNG(imageString) {
+    //     return imageString.slice(42);
+    // } 
+
+
 })

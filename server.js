@@ -591,24 +591,6 @@ io.sockets.on('connect', (socket) => {
                 });
             }
         })
-                    // Lookup the design we just saved and add it to the mySQL Db
-        // designs.collection("Designs").findOne({name: designName, user: socket.request.session.username}, (err, result) => {
-        //     console.log("ressss", result);
-        //     stringObjID = new ObjectId(result._id);
-        //     console.log("stinrg", stringObjID);
-        //     // let sql = "INSERT INTO savedDesigns (userID, design) VALUES "
-            
-        //     con.query("INSERT INTO designs (design, creatorID) VALUES (?, ?)", [stringObjID, socket.request.session.userID], (err, result) => {
-        //         if (err) throw err;
-        //         console.log("inserted design into designs table with id:", result.insertId);
-        //     });
-
-        //     con.query("INSERT INTO saveddesigns (savedBy, design, creatorID) VALUES (?, ?, ?)", [socket.request.session.userID, stringObjID, socket.request.session.userID], (err, result) => {
-        //         if (err) throw err;
-        //         console.log("design saved to savedDesigns table", result.insertId);
-        //     })
-            
-        // }); 
 
         
     });
@@ -771,7 +753,7 @@ io.sockets.on('connect', (socket) => {
     socket.on("getPosts", () => {
         let posts = [];
         let postsName = {};
-        con.query("SELECT postName, postCaption, design, userID FROM posts", (err, result) => {
+        con.query("SELECT postID, postName, postCaption, design, userID, likes FROM posts", (err, result) => {
             if (err) throw err;
             if (result.length == 0) {return}
             console.log("resulllll", result);
@@ -784,17 +766,23 @@ io.sockets.on('connect', (socket) => {
                             // console.log("ressi", res);
                             let image = res[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             let name = r[0].username; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
-                            postsName = {name: result[i].postName, caption: result[i].design, design: image, user: name}
+                            if (result[i].likes == null) result[i].likes = 0;
+                            postsName = {name: result[i].postName, caption: result[i].design, design: image, user: name, likes: result[i].likes, id: result[i].postID} // Send over name of the user who created it so that we can show who posted it
                             posts.push(postsName);
                             socket.emit("posts", posts);
-                            socket.emit("print"); //used to get all the posts images from the DOM
-                        
                         }) ;
                 });
             }
         });
     });
 
+    socket.on("liked", data => {
+        console.log("data", data.id);
+        con.query("UPDATE posts SET likes = ? WHERE postID = ?", [data.likes, data.id], (err, result) => {
+            if (err) throw err;
+            console.log("updated the table posts with likes ", result)
+        })
+    })
     
 
 });

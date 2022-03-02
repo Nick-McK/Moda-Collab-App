@@ -53,35 +53,82 @@ body {
 }
 
 .topnav {
+  --clr: #ff6492;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  
   width: 100%;
   gap: 20px;
 }
 
-.topnav a {
-  border-radius: 3em;
-  text-shadow: 0 0 0.125em hsl(0 0% 100% / 0.3), 0 0 0.45em rgb(163, 148, 148);
+.nav-menu {
+  position: relative;
+  display: grid;
+  grid-auto-columns: 5em;
+  grid-auto-flow: column;
+  grid-template-columns: repeat(4, 1fr);
+  box-sizing: border-box;
 }
 
+.nav-menu > :nth-child(1):hover::before {
+  width: 83.5;
+  filter: drop-shadow(0 0 25px var(--clr));
+}
 
+.nav-menu > :nth-child(3) {
+  grid-column: 4;
+}
+.nav-menu > :nth-child(3):hover::before {
+  width: 92.5;
+  filter: drop-shadow(0 0 25px var(--clr));
+}
+
+.nav-menu a {
+  font-size: 1.125em;
+  text-decoration: none;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255,255,255,0.5);
+}
+.nav-menu a:hover {
+  background: transparent;
+}
+.nav-menu a::before {
+  content: attr(data-text);
+  position: absolute;
+  color: var(--clr);
+  width: 0;
+  overflow: hidden;
+  transition: 1s;
+  -webkit-text-stroke: 1px var(--clr);
+}
+
+/* 
 .headerBtn {
   z-index: 2000;
   color: white;
   font-size: 17px;
   border: none;
-  /* margin-left: auto; */
+  margin-left: auto;
   padding: 0.35em;
   background-color: transparent;
   align-items: flex-end;
   justify-content: center;
-}
-
+} */
+/* 
 .headerBtn:hover {
   background-color: white;
   color: black;
   box-shadow: 0 0 0.5em 0 var(317 100% 54%), 0 0 0.5em 0 rgb(235, 9, 171);
+} */
+
+
+
+.headerBtn:hover::before {
+  width: 100%;
+  filter: drop-shadow(0 0 10px white);
 }
 
 /* Can either use this or footer1 whichever looks better */
@@ -136,6 +183,9 @@ body {
   display: grid;
   grid-template-rows: 2.75em 25em 2em; 
 }
+/* .post:hover {
+  box-shadow: 0 0 1em .125em rgba(255, 255, 255, 255);
+} */
 .post-top {
   background: rgba(0,0,0,255);
   display: flex;
@@ -425,4 +475,12 @@ textarea {
   width: 105%;
   height: auto;
 }
+/* Likes stuff */
+sup {
+  vertical-align: top;
+  font-size: 0.6em;
+  /* margin-left: -10px; */
+  color: white;
+}
+
 
