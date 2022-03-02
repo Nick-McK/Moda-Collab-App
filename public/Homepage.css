@@ -1,6 +1,6 @@
 body {
   font-family: "fira code";
-  background: rgb(20, 19, 19);
+  background: rgba(15,15,15,255)
 }
 
 /* General Button stuff - placed at the top so we can overwrite with classes later eg headerBtn */
@@ -67,7 +67,7 @@ body {
 
 
 .headerBtn {
-  z-index: 1000;
+  z-index: 2000;
   color: white;
   font-size: 17px;
   border: none;
@@ -128,29 +128,38 @@ body {
   padding-bottom: 10%;
   grid-column-gap: 100px;
   grid-row-gap: 100px;
-  grid-template-columns: 22em 22em 22em;
+  grid-template-columns: 24em 24em 24em;
   text-align: center;
 }
 
 .post {
   display: grid;
-  grid-template-rows: 25em 2em;
-  grid-gap: 1px;
-  transition: transform 1s;
-  transition-delay: 1s;
- 
+  grid-template-rows: 2.75em 25em 2em; 
 }
-.post:hover {
-  transform: scale3d(1.15, 1.15, 1);
+.post-top {
+  background: rgba(0,0,0,255);
+  display: flex;
+  align-items: center;
+  opacity: 0;
 }
-/* .post.active {
-  animation: highlightPost 1s forwards;
-  animation-timing-function: ease-in-out;
-  animation-delay: 0.5s;
+.profile-pic {
+  display: flex;
+  flex-direction: row;
+  height: 2.75em;
+  width: auto;
+  align-items: center;
+  
 }
-.post.inactive {
-  animation-direction: reverse;
-} */
+.profile-pic img {
+  height: 2em;
+  width: 2em;
+  border-radius: 50%;
+  margin-left: 0.5em;
+}
+.account {
+  color: white;
+  padding-left: .5em;
+}
 
 @keyframes highlightPost {
   0% {
@@ -171,22 +180,29 @@ body {
 }
 
 .grid-item {
-  background-color: white;
+  /* background-color: white; */
+  margin: 0;
+  padding: 0;
 }
 
 .post-bar {
   display: grid;
-  grid-template-columns: 7em 7em 7em;
+  grid-template-columns: 5em 5em 5em;
   justify-content: space-around;
-  background-color: white;
+  background-color: rgba(0,0,0,255);
   text-align: center;
 }
 
 .post_img {
-  margin-top: .5em;
-  width: 21em;
-  height: 24em;
+  margin-top: .125em;
+  width: 24em;
+  height: 25em;
+  /* transition: transform 1s;
+  transition-delay: 1s; */
 }
+/* .post_img:hover {
+  transform: scale3d(1.15, 1.15, 1);
+} */
 
 .bar_img{
   width: 2em;
@@ -269,6 +285,7 @@ body {
 
 
 .promptContainer {
+  z-index: 1000;
   top: 40%;
   position: fixed;
   height: 200px;

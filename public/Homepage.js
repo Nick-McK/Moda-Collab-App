@@ -36,6 +36,7 @@ const postName = document.getElementById("_postName");
 const postCaption = document.getElementById("_postCaption");
 const posts = document.querySelectorAll(".post");
 
+
 const postdesign = document.getElementById("addPostDesignsContainer");
 const postDContent = document.getElementById("addPostDesignsContent");
 const closePostSavedDesigns = document.getElementById("closePostSavedDesigns");
@@ -73,7 +74,6 @@ const closePostSavedDesigns = document.getElementById("closePostSavedDesigns");
 //     // }
     
 // }
-
 
 
 
@@ -332,20 +332,31 @@ closePostSavedDesigns.onclick = () => {
 
 this.onload = () => {
     socket.emit("getPosts");
+    
 }
 
-
+let posted = {};
 socket.on("posts", posts => {
     console.log(posts.posts);
     for (let post of posts) {
+        if (posted[post.name] == post.caption) {
+            continue;
+        }
+        posted[post.name] = post.caption;
         console.log("possss", post);
         let postDiv = document.createElement("div");
         let gridItem = document.createElement("div");
+        let postTop = document.createElement("div");
+        let profilePic = document.createElement("div");
         let postBar = document.createElement("div");
+        let name = document.createElement("div");
         let postImage = document.createElement("img");
         let barImage1 = document.createElement("img");
         let barImage2 = document.createElement("img");
         let barImage3 = document.createElement("img");
+        let profileImage = document.createElement("img");
+
+        profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg")
         
         
         let div1 = document.createElement("div");
@@ -358,12 +369,18 @@ socket.on("posts", posts => {
         barImage3.classList.add("bar_img");
         postDiv.classList.add("post");
         gridItem.classList.add("grid-item");
+        postTop.classList.add("post-top");
+        profilePic.classList.add("profile-pic")
+        profileImage.classList.add("profile-pic");
+        name.classList.add("account");
         postBar.classList.add("post-bar");
         postImage.classList.add("post_img");
 
-        barImage1.setAttribute("src", "/public/assets/icons/floppy-disk.png");
-        barImage2.setAttribute("src", "/public/assets/icons/archive-box.png");
-        barImage3.setAttribute("src", "/public/assets/icons/plus.png");
+        name.innerHTML = post.user;
+
+        barImage1.setAttribute("src", "/public/assets/icons/floppy-disk-inverted.png");
+        barImage2.setAttribute("src", "/public/assets/icons/archive-box-inverted.png");
+        barImage3.setAttribute("src", "/public/assets/icons/plus-inverted.png");
 
         div1.appendChild(barImage1);
         div2.appendChild(barImage2);
@@ -374,17 +391,53 @@ socket.on("posts", posts => {
         postBar.appendChild(div2);
         postBar.appendChild(div3);
 
-        
-        
-
         postImage.setAttribute("src", post.design);
 
-        
-
+    
         gridItem.appendChild(postImage);
+        postTop.appendChild(profilePic);
+        postTop.appendChild(name);
+        profilePic.appendChild(profileImage);
+        postDiv.appendChild(postTop);
         postDiv.appendChild(gridItem);
         postDiv.appendChild(postBar);
         const feed = document.getElementById("_feed");
         feed.prepend(postDiv); // This is prepend as we want the newest posts at the top of the feed
+    }
+
+    const postImages = document.querySelectorAll(".post_img");
+    const postTop = document.querySelectorAll(".post-top");
+    console.log("sfasdf", postImages)
+    for (let image of postImages) {
+        console.log("image", image);
+        let post = image.parentElement.parentElement;
+        let child = post.children;
+        let postTop = child[0].children;
+        console.log("posts", post);
+        console.log("psot1", child);
+        console.log("postTop", postTop);
+        image.addEventListener("mouseenter", () => {
+            console.log("enter")
+            post.style.transition = "transform 1s";
+            post.style.transitionDelay = "1s"
+            post.style.transform = "scale(1.15, 1.15)";
+
+            post.addEventListener("transitionend", () => {
+                child[0].style.transition = "opacity 1s ease-in-out";
+                child[0].style.opacity = "1";
+            })
+            
+            // child[0].style.transition = "transform 1s";
+            
+
+        })
+        image.addEventListener("mouseleave", () => {
+            post.style.transform = "scale(1,1)";
+            post.addEventListener("transitionend", () => {
+                child[0].style.transition = "opacity 1s ease-in-out";
+                child[0].style.opacity = "0";
+            })
+            
+        });
     }
 })

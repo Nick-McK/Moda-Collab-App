@@ -20,6 +20,7 @@ const { profile } = require("console");
 const fileUpload = require("express-fileupload");
 const { isBuffer, forEach } = require("lodash");
 const { createSocket } = require("dgram");
+const { emitWarning } = require("process");
 
 // Use files from within the file structure
 app.use(express.static(__dirname)); // Serves html files
@@ -560,12 +561,28 @@ io.sockets.on('connect', (socket) => {
         data.design += ", \"name\": \"" + designName + "\"";
         data.design += ", \"user\": \"" + socket.request.session.username + "\"}";
         const designJSON = JSON.parse(data.design);
-        designs.collection("Designs").findOne({name: designName}).then((current) => {
-            if(current == null){
-                designs.collection("Designs").insertOne(designJSON, (err) => {
+        console.log("this is our JSON string", designJSON);
+        designs.collection("Designs").findOne({name: designName}, (err, res) => {
+
+            console.log(res, "----------------------------------")
+            if(res === null){
+                console.log("what is this fucking shit");
+                designs.collection("Designs").insertOne(designJSON, (err, res) => {
+                    if (err) throw err;
+                    console.log("this is our responding", res.insertedId);
                     socket.emit("saveDesignResponse", (!err));
-                    if(err) throw err;
-                    
+                    // if(err) throw err;
+                    console.log("what is this thing", res.insertedId.toString());
+                    let stringObjID = res.insertedId.toString();
+
+                    con.query("INSERT INTO designs (design, creatorID) VALUES (?, ?)", [stringObjID, socket.request.session.userID], (err, result) => {
+                        if (err) throw err;
+                        console.log("inserted the design into designs with id:", result.insertId);
+                    });
+                    con.query("INSERT INTO saveddesigns (savedBy, design, creatorID) VALUES (?, ?, ?)", [socket.request.session.userID, stringObjID, socket.request.session.userID], (err, result) => {
+                        if (err) throw err;
+                        console.log("design saved to saveddesigns with id:", result.insertId);
+                    });
                 });
             }else{
                 designs.collection("Designs").findOneAndReplace({name: designName}, designJSON, (err) => {
@@ -573,23 +590,25 @@ io.sockets.on('connect', (socket) => {
                     if(err) throw err;
                 });
             }
+        })
                     // Lookup the design we just saved and add it to the mySQL Db
-        designs.collection("Designs").findOne({name: designName, user: socket.request.session.username}).then((data) => {
-            stringObjID = (data._id).toString();
-            // let sql = "INSERT INTO savedDesigns (userID, design) VALUES "
+        // designs.collection("Designs").findOne({name: designName, user: socket.request.session.username}, (err, result) => {
+        //     console.log("ressss", result);
+        //     stringObjID = new ObjectId(result._id);
+        //     console.log("stinrg", stringObjID);
+        //     // let sql = "INSERT INTO savedDesigns (userID, design) VALUES "
             
-            con.query("INSERT INTO designs (design, creatorID) VALUES (?, ?)", [stringObjID, socket.request.session.userID], (err, result) => {
-                if (err) throw err;
-                console.log("inserted design into designs table with id:", result.insertId);
-            });
+        //     con.query("INSERT INTO designs (design, creatorID) VALUES (?, ?)", [stringObjID, socket.request.session.userID], (err, result) => {
+        //         if (err) throw err;
+        //         console.log("inserted design into designs table with id:", result.insertId);
+        //     });
 
-            con.query("INSERT INTO saveddesigns (savedBy, design, creatorID) VALUES (?, ?, ?)", [socket.request.session.userID, stringObjID, socket.request.session.userID], (err, result) => {
-                if (err) throw err;
-                console.log("design saved to savedDesigns table", result.insertId);
-            })
+        //     con.query("INSERT INTO saveddesigns (savedBy, design, creatorID) VALUES (?, ?, ?)", [socket.request.session.userID, stringObjID, socket.request.session.userID], (err, result) => {
+        //         if (err) throw err;
+        //         console.log("design saved to savedDesigns table", result.insertId);
+        //     })
             
-        }); 
-        });
+        // }); 
 
         
     });
@@ -752,18 +771,30 @@ io.sockets.on('connect', (socket) => {
     socket.on("getPosts", () => {
         let posts = [];
         let postsName = {};
-        con.query("SELECT postName, postCaption, design FROM posts", (err, result) => {
+        con.query("SELECT postName, postCaption, design, userID FROM posts", (err, result) => {
             if (err) throw err;
+            if (result.length == 0) {return}
+            console.log("resulllll", result);
+            console.log("this sis our result", result);
             for (let i = 0; i < result.length; i++) {
-                designs.collection("Designs").find({_id: new ObjectId(result[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, res) => {
-                    postsName = {name: result[i].postName, caption: result[i].design, design: res[i].thumbnail}
-                    posts.push(postsName);
-                    socket.emit("posts", posts);
-                    
-                }) 
+                con.query("SELECT username FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
+                    if (err) console.log(err);
+                    console.log("r value", r);
+                        designs.collection("Designs").find({_id: new ObjectId(result[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, res) => {
+                            // console.log("ressi", res);
+                            let image = res[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                            let name = r[0].username; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                            postsName = {name: result[i].postName, caption: result[i].design, design: image, user: name}
+                            posts.push(postsName);
+                            socket.emit("posts", posts);
+                            socket.emit("print"); //used to get all the posts images from the DOM
+                        
+                        }) ;
+                });
             }
-        })
-    })
+        });
+    });
+
     
 
 });
