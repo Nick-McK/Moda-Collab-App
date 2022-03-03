@@ -37,6 +37,7 @@ var pt = 40;
 var lineWidth = 1;
 var fontFamily = "Times New Roman";
 var panning = false;
+var straightLineDraw = {toggled: false, isDrawing: false};
 
 
 const ptInput = document.getElementById('ptSize');      // Gets ptSize input box element
@@ -163,9 +164,15 @@ function changeTool(res, imgInfo) {
             canvas.selection = true;
         break;
         case 'LINE':        //gonna work on setting the coords through user input
-            obj = new fabric.Line([50, 10, 200, 150], {
-                stroke: colour
-            })
+            straightLineDraw.toggled = !straightLineDraw.toggled;
+            panning = false;
+            canvas.selection = false;
+            if (straightLineDraw.toggled) {
+                r.set({hoverCursor: "crosshair"});
+            } else {
+                r.set({hoverCursor: "default"});
+            }
+           
         break;
         case 'IMAGE':
             // Images are created in a different way to the rest of the tools
@@ -204,6 +211,7 @@ function changeTool(res, imgInfo) {
         default:
             break;
     }
+
     if (obj && res != 'IMAGE') {    //Img check needed bc of use of callback in image loading
         canvas.add(obj).renderAll();
         recentObj = obj;
@@ -229,8 +237,33 @@ canvas.on("mouse:down", function (opt) {
         // this.selection = false;
         this.lastPosX = opt.e.clientX;
         this.lastPosY = opt.e.clientY;
+    } else if (straightLineDraw.toggled) {
+        straightMouseDown(opt);
     }
 });
+
+function straightMouseDown(o) {
+    straightLineDraw.isDrawing = true;
+    var pointer = canvas.getPointer(o.e);
+    obj = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {strokeWidth: lineWidth, stroke: colour});
+    canvas.add(obj);
+}
+
+function straightMouseMove(o) {
+    var pointer = canvas.getPointer(o.e);
+    obj.set({x2:pointer.x, y2:pointer.y});
+    canvas.renderAll();
+}
+
+function straightMouseUp(o) {
+    straightLineDraw.isDrawing = false;
+    var pointer = canvas.getPointer(o.e);
+    obj.set({x2:pointer.x, y2:pointer.y});
+    recentObj = obj;
+    canvas.renderAll();
+    socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
+}
+
 canvas.on("mouse:move", function (opt) {
     if (drawFlag) {  // this pushed line points to a stack when drawing
         if (checkPointerInArea()) {
@@ -290,6 +323,8 @@ canvas.on("mouse:move", function (opt) {
         this.requestRenderAll();
         this.lastPosX = e.clientX;
         this.lastPosY = e.clientY;
+    } else if (straightLineDraw.isDrawing) {
+        straightMouseMove(opt);
     }
 });
 canvas.on("path:created", function (e) {
@@ -313,6 +348,8 @@ canvas.on('mouse:up', function(opt) {
         this.setViewportTransform(this.viewportTransform);
         this.isDragging = false;
         // this.selection = true;
+    } else if (straightLineDraw.isDrawing) {
+        straightMouseUp(opt);
     }
 });
 
@@ -522,7 +559,8 @@ socket.on('canvasUpdate', (data) => {
                     id: data.change.id
                 });
             } else if (data.change.type == 'line') {
-                addObj = new fabric.Line([50, 10, 200, 150], {  //hardcoded coords for time being, not being sent through socket io
+                var points = [data.change.x1, data.change.y1, data.change.x2, data.change.y2]
+                addObj = new fabric.Line(points, {
                     stroke: data.change.stroke,
                     lineWidth: data.change.lineWidth,
                     top: data.change.top,
