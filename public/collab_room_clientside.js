@@ -19,7 +19,8 @@ let r = new fabric.Rect({       // don't need this, just for debugging panning a
     stroke: "black",
     strokeWidth: 5,
     fill: "rgba(0,0,0,0)",
-    hoverCursor: "default"
+    hoverCursor: "default",
+    erasable: false
 });
 
 canvas.add(r);
@@ -132,32 +133,31 @@ function changeTool(res, imgInfo) {
     switch (res) {
         case 'RECTANGLE':
             obj = new fabric.Rect({
-                left:100,
-                top:100,
+                left:1000,
+                top:1000,
                 fill:colour,
-                width: 20,
-                height: 20
+                width: 200,
+                height: 200
             });
             break;
         case 'CIRCLE':
             obj = new fabric.Circle({
-                left:100,
-                top:100,
+                left:1000,
+                top:1000,
                 fill:colour,
-                radius: 20
+                radius: 200
             });
             break;
         case 'TRIANGLE':
             obj = new fabric.Triangle({
-                left:100,
-                top:100,
+                left:1000,
+                top:1000,
                 fill:colour,
-                width: 20,
-                height: 20
+                width: 200,
+                height: 200
             });
         break;
         case 'DRAW':
-
             canvas.isDrawingMode = !canvas.isDrawingMode;
             // had to make the listeners global because more would be made each time this section is called
             panning = false;
@@ -179,8 +179,8 @@ function changeTool(res, imgInfo) {
             // Need to use from URL and then create a callback to add img to canvas after it has loaded
             obj = new fabric.Image.fromURL(imgInfo, function(oriImg){
                 oriImg.set({
-                    top: 100,
-                    left:100
+                    top: 1000,
+                    left:1000
                 });
 
                 // this needs to be called here. Because of the callback, the code at the bottom of this section will not be able to add the img as it hadn't loaded at that point
@@ -191,8 +191,8 @@ function changeTool(res, imgInfo) {
             break;
         case 'TEXT':
             obj = new fabric.Textbox("Enter Text Here...", {
-                left: 100, 
-                top:100,
+                left: 1000, 
+                top:1000,
                 fontSize: pt,
                 fontFamily: fontFamily
             });
