@@ -767,7 +767,7 @@ function saveDesign() {
             nameBut.innerHTML = name;
             nameBut.onclick = () => {
                 document.getElementById('save').style.display = "none";
-                socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, name);
+                socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})}, name);
             }
             if(!recordedSaveNames.includes(name)){
                 currentName.appendChild(nameBut);
@@ -786,7 +786,7 @@ function saveDesign() {
     */
     // socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', left:"0", top: "0", height:canvasHeight, width: canvasWidth})});    // the parameters other than format do not work currently
     var win = window.open();
-    win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg'})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
+    win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
 }
 
 // Recieves alert on success of save
@@ -849,31 +849,72 @@ socket.on('loadDesignResponse', (res) => {
 // Below is code for buttons in footer
 // Get template image and format it as canvas background image, send emit to ell other client to do so
 function importTemplate(template, dontEmit) {
-    var source = "../public/assets/templates/blank-t-shirt (1).png"  //hardcoded for now
-    fabric.Image.fromURL(source, function (img) {
-        // Scale to height (means it works better on landscape resolutions)
-        img.scaleToWidth(canvas.getWidth());
-
+    fabric.Image.fromURL(template, function (img) {
         // The don't emit thing will be implemented later
         if (!dontEmit) {
-            socket.emit('importTemplate', source)
+            socket.emit('importTemplate', template)
         }
 
-        // Center the template and set at background image
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
-            top: canvas.getHeight()*2,
-            left: canvas.getWidth()-(canvas.getWidth()*0.2),
-            originX: 'center',
-            originY: 'center'
-        });
+        if (img.height < img.width) {
+            // Scale to height (means it works better on landscape resolutions)
+            img.scaleToWidth(canvasWidth, true);
 
+            // Center the template and set at background image
+            canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+                top: (canvasHeight - (img.height*img.scaleY)) / 2,
+                left: 0
+            });
+        } else {
+            // Scale to height (means it works better on landscape resolutions)
+            img.scaleToHeight(canvasHeight, true);
+
+            // Center the template and set at background image
+            canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+                top: 0,
+                left: (canvasHeight - (img.width*img.scaleX)) / 2
+            });
+        }
+        
         canvas.renderAll();
     })
 }
 
+function importTemplatePopup() {
+    const popup = document.getElementById("_templateContainer");
+    popup.style.display = "flex";
+}
 
-socket.on('importTemplate', (data) => {
-    importTemplate( "" , true); // figure out solution for the first param later
+window.onload = function() {
+    // Since templates will only be updated infrequently, request templates should only be called on page load rather than each time template window is opened
+    socket.emit('requestTemplates');
+}
+
+socket.on('templateResponse', (templates) => {
+    console.log(templates);  //Start by converting this to an image
+    const templateGrid = document.getElementById("_templateGrid");
+    if (templates.length == 0) {
+        alert("No templates to show");
+    } else {
+        templates.forEach((template) => {
+            let curImg = document.createElement("img");
+            let imgContainer = document.createElement("div");
+            let templateName = document.createElement("p");
+            templateName.innerHTML = template.name;
+            imgContainer.style.backgroundColor = "#c9cecf";
+            imgContainer.onclick = () => {
+                document.getElementById('_templateContainer').style.display = "none";
+                importTemplate(template.image)
+            }
+            curImg.src = template.image;
+            imgContainer.appendChild(curImg);
+            imgContainer.appendChild(templateName);
+            templateGrid.appendChild(imgContainer);
+        });
+    }
+});
+
+socket.on('importTemplate', (template) => {
+    importTemplate(template, true); // figure out solution for the first param later
 })
 
 function leaveRoom() {
