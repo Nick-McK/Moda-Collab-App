@@ -725,7 +725,24 @@ io.sockets.on('connect', (socket) => {
         io.to(roomName).emit("userLeave", {username: rooms[roomName].users[socket.request.session.id]}); // allow other clients to update participants
         delete rooms[roomName].users[socket.request.session.id];
         
+        console.log("000000000000000000000000000", rooms[roomName].users.length)
+        // If there are no people in the room then after 5 mins delete
+        if (rooms[roomName].users.length == undefined) {
+            let start = 0;
+            let TIMER = setInterval(() => {
+                start++;
+                
+            if (start == 300) { //300 for 5 mins
+                console.log("DELETED ROOM:", rooms[roomName]);
+                delete rooms[roomName]
+                roomList = roomList.filter(ro => ro.roomName != roomName);
+                clearInterval(TIMER);
+                io.emit("roomNames");
+            }
+            }, 1000);
+        }
     });
+
     socket.on("details", () => {
         socket.emit("accountDetails", {username: socket.request.session.username});
     })
@@ -737,7 +754,6 @@ io.sockets.on('connect', (socket) => {
             if (err) console.log(err);
             let image = result[0]._id;
             let design = image.toString();
-            console.log("wo-00000000000000000", design);
             con.query("INSERT INTO posts (postName, postCaption, design, userID) VALUES (?, ?, ?, ?)", [postData.postName, postData.postCaption, design, socket.request.session.userID], (err, result) => {
                 if (err) throw err;
                 console.log(result);
