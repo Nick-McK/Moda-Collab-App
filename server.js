@@ -21,7 +21,6 @@ const fileUpload = require("express-fileupload");
 const { isBuffer, forEach } = require("lodash");
 const { createSocket } = require("dgram");
 const { emitWarning } = require("process");
-const res = require("express/lib/response");
 
 // Use files from within the file structure
 app.use(express.static(__dirname)); // Serves html files
@@ -368,6 +367,7 @@ function updateTemplateTable() {
     setTimeout(updateTemplateTable, 500000) // This runs the code every 5 min
 };
 updateTemplateTable();  //Initial function call at start
+
 
 const connectedUsers = [];
 
@@ -743,7 +743,6 @@ io.sockets.on('connect', (socket) => {
         })
     });
 
-
     socket.on("importTemplate", (data) => {
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
@@ -775,7 +774,6 @@ io.sockets.on('connect', (socket) => {
         io.to(roomName).emit("userLeave", {username: rooms[roomName].users[socket.request.session.id]}); // allow other clients to update participants
         delete rooms[roomName].users[socket.request.session.id];
         
-        console.log("000000000000000000000000000", rooms[roomName].users.length)
         // If there are no people in the room then after 5 mins delete
         if (rooms[roomName].users.length == undefined) {
             let start = 0;
@@ -792,6 +790,8 @@ io.sockets.on('connect', (socket) => {
             }, 1000);
         }
     });
+
+
 
     socket.on("details", () => {
         socket.emit("accountDetails", {username: socket.request.session.username});
