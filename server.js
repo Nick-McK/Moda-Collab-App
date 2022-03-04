@@ -344,23 +344,27 @@ function updateTemplateTable() {
     });
 
     con.query("SELECT name FROM templates", (err, result) => {
-        let retrievedTemplateNames = []
-        for (var l of result) {
-            retrievedTemplateNames.push(l.name);
-        }
-        for (var i in templateFolder) {
-            const fileName = templateFolder[i].toString().slice(0,-4).toLowerCase()
-            if (!retrievedTemplateNames.includes(fileName)) {
-                const data = fs.readFileSync(templateFolderPath+templateFolder[i], {encoding:'base64'})
-                const buf = Buffer.from(data,"base64");
-                con.query("INSERT INTO templates (name, image) VALUES (?, ?)", [fileName,buf], (err) => {
-                    if (err) {
-                        console.log("fail");
-                        console.log(err);
-                    } else {
-                        console.log("success");
-                    }
-                });
+        if(result != null){
+
+        
+            let retrievedTemplateNames = []
+            for (var l of result) {
+                retrievedTemplateNames.push(l.name);
+            }
+            for (var i in templateFolder) {
+                const fileName = templateFolder[i].toString().slice(0,-4).toLowerCase()
+                if (!retrievedTemplateNames.includes(fileName)) {
+                    const data = fs.readFileSync(templateFolderPath+templateFolder[i], {encoding:'base64'})
+                    const buf = Buffer.from(data,"base64");
+                    con.query("INSERT INTO templates (name, image) VALUES (?, ?)", [fileName,buf], (err) => {
+                        if (err) {
+                            console.log("fail");
+                            console.log(err);
+                        } else {
+                            console.log("success");
+                        }
+                    });
+                }
             }
         }
     });
