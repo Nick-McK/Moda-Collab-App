@@ -96,6 +96,11 @@
                         <label for="colourselect"> Colour: </label>
                         <input type="color" id="colourselect" value="#000000" onchange="changeColour(document.getElementById('colourselect').value)">
                     </td>
+
+                    <td>
+                        <label for="bgColourSelect">Background Colour: </label>
+                        <input type="color" id="bgColourSelect" value="#c9cecf" onchange="changeBgColour(document.getElementById('bgColourSelect').value)">
+                    </td>
                 
                     <td>
                         <input type="text" placeholder="Enter pt size" id="ptSize">
@@ -125,7 +130,7 @@
             <table>
                 <tr>
                     <td>
-                        <button id="draw" onclick="changeTool('DRAW')">
+                        <button id="draw" onclick="changeTool('DRAW'); const d = document.getElementById('draw'); if(d.style.backgroundColor == 'grey') d.style.backgroundColor = 'darkgrey'; else d.style.backgroundColor = 'grey';">
                             <img src="/public/assets/icons/pencil-line.png"></img>
                         </button>
                     </td>
@@ -142,7 +147,7 @@
                         </button>
                     </td>
                     <td>
-                        <button id="transform" onclick="changeTool('PAN')">
+                        <button id="pan" onclick="changeTool('PAN'); const p = document.getElementById('pan'); if(p.style.backgroundColor == 'grey') p.style.backgroundColor = 'darkgrey'; else p.style.backgroundColor = 'grey';">
                             <img src="/public/assets/icons/arrows-out-cardinal-black.png"></img>
                         </button>
                     </td>
@@ -166,7 +171,7 @@
                         </button>
                     </td>
                     <td>
-                        <button id="line" onclick="changeTool('LINE')">
+                        <button id="line" onclick="changeTool('LINE'); const l = document.getElementById('line'); if(l.style.backgroundColor == 'grey') l.style.backgroundColor = 'darkgrey'; else l.style.backgroundColor = 'grey';">
                             <img src="/public/assets/icons/line-segment.png"></img>
                         </button>
 

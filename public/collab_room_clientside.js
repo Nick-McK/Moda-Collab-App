@@ -4,12 +4,12 @@ const socket = io();
 
 var canvasHeight = 4000;
 var canvasWidth = 4000;
-
+var backgroundColor = "#c9cecf"
 // Create the canvas and set its attributes
 let canvas = new fabric.Canvas("whiteboard");
 canvas.setHeight(window.innerHeight * 0.75);
 canvas.setWidth(window.outerWidth); // this can ignore console being open
-canvas.backgroundColor = "#c9cecf";
+canvas.backgroundColor = backgroundColor;
 let r = new fabric.Rect({       // don't need this, just for debugging panning and zooming area
     left:0,
     top:0,
@@ -18,9 +18,10 @@ let r = new fabric.Rect({       // don't need this, just for debugging panning a
     selectable: false,
     stroke: "black",
     strokeWidth: 5,
-    fill: "rgba(0,0,0,0)",
+    fill: backgroundColor,
     hoverCursor: "default",
-    erasable: false
+    erasable: false,
+    id: "DONTDELETE"
 });
 
 canvas.add(r);
@@ -123,6 +124,13 @@ function changeColour(col) {
     }
 }
 
+function changeBgColour(col) {
+    backgroundColor = col;
+    r.set({fill: backgroundColor});
+    canvas.renderAll();
+    canvas.fire('object:modified');
+}
+
 // Uses a switch case to perform actions for each tool, triggered by onclick when selecting any tool
 function changeTool(res, imgInfo) {
     // Disable draw if other tool is selected
@@ -162,9 +170,19 @@ function changeTool(res, imgInfo) {
             // had to make the listeners global because more would be made each time this section is called
             panning = false;
             canvas.selection = true;
+            straightLineDraw.toggled = false;
+            straightLineDraw.isDrawing = false;
+            document.getElementById('pan').style.backgroundColor = 'darkgrey';
+            document.getElementById('line').style.backgroundColor = 'darkgrey';
+
+
         break;
         case 'LINE':        //gonna work on setting the coords through user input
             straightLineDraw.toggled = !straightLineDraw.toggled;
+
+            document.getElementById('draw').style.backgroundColor = 'darkgrey';
+            document.getElementById('pan').style.backgroundColor = 'darkgrey';
+            canvas.isDrawingMode = false;
             panning = false;
             canvas.selection = false;
             if (straightLineDraw.toggled) {
@@ -198,7 +216,13 @@ function changeTool(res, imgInfo) {
             });
         break;
         case 'PAN':
+            // reset values for other tools that can be toggled
             canvas.isDrawingMode = false;
+            document.getElementById('draw').style.backgroundColor = 'darkgrey';
+            document.getElementById('line').style.backgroundColor = 'darkgrey';
+            straightLineDraw.toggled = false;
+            straightLineDraw.isDrawing = false;
+
             panning = !panning;
             canvas.selection = !canvas.selection;
 
@@ -705,7 +729,11 @@ socket.on('canvasUpdate', (data) => {
             }
         break;
         case 'deleteDesign':
-            canvas.remove(...canvas.getObjects());
+            for (var i of canvas.getObjects()) {
+                if (i.id != 'DONTDELETE') { // this makes sure that the delete function doesn't remove the background rectangle that shows the borders
+                    canvas.remove(i);
+                }
+            }
             canvas.backgroundImage = false; // remove any possible background image
             canvas.renderAll();
         break;
@@ -838,7 +866,11 @@ socket.on('saveDesignResponse', (res) => {
 // Deletes all objects on canvas and sends emit telling other clients to do so as well
 function deleteDesign() {
     socket.emit('canvasUpdate', {type: "deleteDesign"});
-    canvas.remove(...canvas.getObjects());
+    for (var i of canvas.getObjects()) {
+        if (i.id != 'DONTDELETE') {
+            canvas.remove(i);
+        }
+    }    
     canvas.backgroundImage = false; // remove any possible background image
     canvas.renderAll();
 }
