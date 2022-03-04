@@ -19,7 +19,8 @@ let r = new fabric.Rect({       // don't need this, just for debugging panning a
     stroke: "black",
     strokeWidth: 5,
     fill: "rgba(0,0,0,0)",
-    hoverCursor: "default"
+    hoverCursor: "default",
+    erasable: false
 });
 
 canvas.add(r);
@@ -37,6 +38,7 @@ var pt = 40;
 var lineWidth = 1;
 var fontFamily = "Times New Roman";
 var panning = false;
+var straightLineDraw = {toggled: false, isDrawing: false};
 
 
 const ptInput = document.getElementById('ptSize');      // Gets ptSize input box element
@@ -131,49 +133,54 @@ function changeTool(res, imgInfo) {
     switch (res) {
         case 'RECTANGLE':
             obj = new fabric.Rect({
-                left:100,
-                top:100,
+                left:1000,
+                top:1000,
                 fill:colour,
-                width: 20,
-                height: 20
+                width: 200,
+                height: 200
             });
             break;
         case 'CIRCLE':
             obj = new fabric.Circle({
-                left:100,
-                top:100,
+                left:1000,
+                top:1000,
                 fill:colour,
-                radius: 20
+                radius: 200
             });
             break;
         case 'TRIANGLE':
             obj = new fabric.Triangle({
-                left:100,
-                top:100,
+                left:1000,
+                top:1000,
                 fill:colour,
-                width: 20,
-                height: 20
+                width: 200,
+                height: 200
             });
         break;
         case 'DRAW':
-
             canvas.isDrawingMode = !canvas.isDrawingMode;
             // had to make the listeners global because more would be made each time this section is called
             panning = false;
             canvas.selection = true;
         break;
         case 'LINE':        //gonna work on setting the coords through user input
-            obj = new fabric.Line([50, 10, 200, 150], {
-                stroke: colour
-            })
+            straightLineDraw.toggled = !straightLineDraw.toggled;
+            panning = false;
+            canvas.selection = false;
+            if (straightLineDraw.toggled) {
+                r.set({hoverCursor: "crosshair"});
+            } else {
+                r.set({hoverCursor: "default"});
+            }
+           
         break;
         case 'IMAGE':
             // Images are created in a different way to the rest of the tools
             // Need to use from URL and then create a callback to add img to canvas after it has loaded
             obj = new fabric.Image.fromURL(imgInfo, function(oriImg){
                 oriImg.set({
-                    top: 100,
-                    left:100
+                    top: 1000,
+                    left:1000
                 });
 
                 // this needs to be called here. Because of the callback, the code at the bottom of this section will not be able to add the img as it hadn't loaded at that point
@@ -184,8 +191,8 @@ function changeTool(res, imgInfo) {
             break;
         case 'TEXT':
             obj = new fabric.Textbox("Enter Text Here...", {
-                left: 100, 
-                top:100,
+                left: 1000, 
+                top:1000,
                 fontSize: pt,
                 fontFamily: fontFamily
             });
@@ -204,6 +211,7 @@ function changeTool(res, imgInfo) {
         default:
             break;
     }
+
     if (obj && res != 'IMAGE') {    //Img check needed bc of use of callback in image loading
         canvas.add(obj).renderAll();
         recentObj = obj;
@@ -229,8 +237,33 @@ canvas.on("mouse:down", function (opt) {
         // this.selection = false;
         this.lastPosX = opt.e.clientX;
         this.lastPosY = opt.e.clientY;
+    } else if (straightLineDraw.toggled) {
+        straightMouseDown(opt);
     }
 });
+
+function straightMouseDown(o) {
+    straightLineDraw.isDrawing = true;
+    var pointer = canvas.getPointer(o.e);
+    obj = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {strokeWidth: lineWidth, stroke: colour});
+    canvas.add(obj);
+}
+
+function straightMouseMove(o) {
+    var pointer = canvas.getPointer(o.e);
+    obj.set({x2:pointer.x, y2:pointer.y});
+    canvas.renderAll();
+}
+
+function straightMouseUp(o) {
+    straightLineDraw.isDrawing = false;
+    var pointer = canvas.getPointer(o.e);
+    obj.set({x2:pointer.x, y2:pointer.y});
+    recentObj = obj;
+    canvas.renderAll();
+    socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
+}
+
 canvas.on("mouse:move", function (opt) {
     if (drawFlag) {  // this pushed line points to a stack when drawing
         if (checkPointerInArea()) {
@@ -290,6 +323,8 @@ canvas.on("mouse:move", function (opt) {
         this.requestRenderAll();
         this.lastPosX = e.clientX;
         this.lastPosY = e.clientY;
+    } else if (straightLineDraw.isDrawing) {
+        straightMouseMove(opt);
     }
 });
 canvas.on("path:created", function (e) {
@@ -313,6 +348,8 @@ canvas.on('mouse:up', function(opt) {
         this.setViewportTransform(this.viewportTransform);
         this.isDragging = false;
         // this.selection = true;
+    } else if (straightLineDraw.isDrawing) {
+        straightMouseUp(opt);
     }
 });
 
@@ -522,7 +559,8 @@ socket.on('canvasUpdate', (data) => {
                     id: data.change.id
                 });
             } else if (data.change.type == 'line') {
-                addObj = new fabric.Line([50, 10, 200, 150], {  //hardcoded coords for time being, not being sent through socket io
+                var points = [data.change.x1, data.change.y1, data.change.x2, data.change.y2]
+                addObj = new fabric.Line(points, {
                     stroke: data.change.stroke,
                     lineWidth: data.change.lineWidth,
                     top: data.change.top,
@@ -767,7 +805,7 @@ function saveDesign() {
             nameBut.innerHTML = name;
             nameBut.onclick = () => {
                 document.getElementById('save').style.display = "none";
-                socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, name);
+                socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})}, name);
             }
             if(!recordedSaveNames.includes(name)){
                 currentName.appendChild(nameBut);
@@ -786,7 +824,7 @@ function saveDesign() {
     */
     // socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', left:"0", top: "0", height:canvasHeight, width: canvasWidth})});    // the parameters other than format do not work currently
     var win = window.open();
-    win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg'})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
+    win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
 }
 
 // Recieves alert on success of save
@@ -849,31 +887,72 @@ socket.on('loadDesignResponse', (res) => {
 // Below is code for buttons in footer
 // Get template image and format it as canvas background image, send emit to ell other client to do so
 function importTemplate(template, dontEmit) {
-    var source = "../public/assets/templates/blank-t-shirt (1).png"  //hardcoded for now
-    fabric.Image.fromURL(source, function (img) {
-        // Scale to height (means it works better on landscape resolutions)
-        img.scaleToWidth(canvas.getWidth());
-
+    fabric.Image.fromURL(template, function (img) {
         // The don't emit thing will be implemented later
         if (!dontEmit) {
-            socket.emit('importTemplate', source)
+            socket.emit('importTemplate', template)
         }
 
-        // Center the template and set at background image
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
-            top: canvas.getHeight()*2,
-            left: canvas.getWidth()-(canvas.getWidth()*0.2),
-            originX: 'center',
-            originY: 'center'
-        });
+        if (img.height < img.width) {
+            // Scale to height (means it works better on landscape resolutions)
+            img.scaleToWidth(canvasWidth, true);
 
+            // Center the template and set at background image
+            canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+                top: (canvasHeight - (img.height*img.scaleY)) / 2,
+                left: 0
+            });
+        } else {
+            // Scale to height (means it works better on landscape resolutions)
+            img.scaleToHeight(canvasHeight, true);
+
+            // Center the template and set at background image
+            canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+                top: 0,
+                left: (canvasHeight - (img.width*img.scaleX)) / 2
+            });
+        }
+        
         canvas.renderAll();
     })
 }
 
+function importTemplatePopup() {
+    const popup = document.getElementById("_templateContainer");
+    popup.style.display = "flex";
+}
 
-socket.on('importTemplate', (data) => {
-    importTemplate( "" , true); // figure out solution for the first param later
+window.onload = function() {
+    // Since templates will only be updated infrequently, request templates should only be called on page load rather than each time template window is opened
+    socket.emit('requestTemplates');
+}
+
+socket.on('templateResponse', (templates) => {
+    console.log(templates);  //Start by converting this to an image
+    const templateGrid = document.getElementById("_templateGrid");
+    if (templates.length == 0) {
+        alert("No templates to show");
+    } else {
+        templates.forEach((template) => {
+            let curImg = document.createElement("img");
+            let imgContainer = document.createElement("div");
+            let templateName = document.createElement("p");
+            templateName.innerHTML = template.name;
+            imgContainer.style.backgroundColor = "#c9cecf";
+            imgContainer.onclick = () => {
+                document.getElementById('_templateContainer').style.display = "none";
+                importTemplate(template.image)
+            }
+            curImg.src = template.image;
+            imgContainer.appendChild(curImg);
+            imgContainer.appendChild(templateName);
+            templateGrid.appendChild(imgContainer);
+        });
+    }
+});
+
+socket.on('importTemplate', (template) => {
+    importTemplate(template, true); // figure out solution for the first param later
 })
 
 function leaveRoom() {

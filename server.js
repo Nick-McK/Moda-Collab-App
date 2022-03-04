@@ -21,6 +21,7 @@ const fileUpload = require("express-fileupload");
 const { isBuffer, forEach } = require("lodash");
 const { createSocket } = require("dgram");
 const { emitWarning } = require("process");
+const res = require("express/lib/response");
 
 // Use files from within the file structure
 app.use(express.static(__dirname)); // Serves html files
@@ -333,6 +334,40 @@ app.get("/collab_room/:roomName", (req, res) => {
     
     res.sendFile(__dirname + "/collab_room.html");
 })
+
+// This is to update the templates table if new templates have been added, runs every 5 mins, or on server start
+function updateTemplateTable() {
+    // get all names of files in /public/assests/templates folder
+    templateFolder = [];
+    templateFolderPath = './public/assets/templates/'
+    fs.readdirSync(templateFolderPath).forEach(file => {
+        templateFolder.push(file);
+    });
+
+    con.query("SELECT name FROM templates", (err, result) => {
+        let retrievedTemplateNames = []
+        for (var l of result) {
+            retrievedTemplateNames.push(l.name);
+        }
+        for (var i in templateFolder) {
+            const fileName = templateFolder[i].toString().slice(0,-4).toLowerCase()
+            if (!retrievedTemplateNames.includes(fileName)) {
+                const data = fs.readFileSync(templateFolderPath+templateFolder[i], {encoding:'base64'})
+                const buf = Buffer.from(data,"base64");
+                con.query("INSERT INTO templates (name, image) VALUES (?, ?)", [fileName,buf], (err) => {
+                    if (err) {
+                        console.log("fail");
+                        console.log(err);
+                    } else {
+                        console.log("success");
+                    }
+                });
+            }
+        }
+    });
+    setTimeout(updateTemplateTable, 500000) // This runs the code every 5 min
+};
+updateTemplateTable();  //Initial function call at start
 
 const connectedUsers = [];
 
@@ -708,6 +743,7 @@ io.sockets.on('connect', (socket) => {
         })
     });
 
+
     socket.on("importTemplate", (data) => {
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
@@ -716,6 +752,20 @@ io.sockets.on('connect', (socket) => {
             }
         }
     });
+
+    socket.on("requestTemplates", () => {
+        con.query("SELECT name, image FROM templates", (err, result) => {
+            if (err) {
+                throw err;
+            } else {
+                for (var i in result) { // dont touch this stuff pls, I have no clue how it works but it does - dan
+                    result[i].image = Buffer.from(result[i].image).toString('base64');
+                    result[i].image = "data:image/png;base64," + result[i].image.toString("base64");   //convert arraybuffer from blob to base64
+                }
+                socket.emit('templateResponse', result);
+            }
+        })
+    })
 
     socket.on("leaveRoom" , () => {
         

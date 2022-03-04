@@ -1,6 +1,7 @@
 <html style="height: 100%;">   <!-- can remove the width and height from here and body as long as the 100%s go in the main css -->
     <head>
         <link rel="stylesheet" href="/public/style.css"></link>
+        <link rel="stylesheet" href="/public/collab_room.css"></link> <!-- For css specific to collab room -->
         <!-- <script src="/node_modules/art-canvas/build/ArtCanvas.js"></script> -->
         <script src="/node_modules/fabric/dist/fabric.js"></script>
         <script src="/node_modules/uuid/dist/umd/uuidv1.min.js"></script>   <!--Dont think we use this anymore-->
@@ -8,11 +9,11 @@
         
     </head>
     <!-- Add img styling to external css -->
-    <body>
+    <body id="body">
     <div class="save" id="save">
         <div class="saveContent" id="saveContent">
             <div>
-                <button id="close">
+                <button id="close" onclick="document.getElementById('save').style.display = 'none';">
                     <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
                 </button>
                 <div>
@@ -25,7 +26,7 @@
     <div class="load" id="load">
         <div class="loadContent" id="loadContent">
             <div>
-                <button id="close">
+                <button id="close" onclick="document.getElementById('load').style.display = 'none';">
                     <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
                 </button>
                 <h3 style="color: white">What design do you want to load?</h3>
@@ -77,6 +78,17 @@
 
         <canvas id="whiteboard"></canvas>
         
+        <div class="templateContainer" id="_templateContainer">
+            <div class="templateContent" id="_templateContent">
+                <button class="roundBtn_noBorder" id="close" onclick="document.getElementById('_templateContainer').style.display = 'none';">
+                  <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+                </button>
+                <div class="gridContainer" id="_gridContainer">
+                    <div class="templateGrid" id="_templateGrid"></div>
+                </div>
+            </div>
+        </div>
+
         <div id="colourThicknessSelect">
             <table>
                 <tr style="display: inline-block;">
@@ -162,9 +174,11 @@
                 </tr>
                 <tr>
                     <td>
-                        <button id="image" onclick="changeTool('IMAGE')">
-                            <img src="/public/assets/icons/image.png"></img>
+                        <button>
+                            <img src="/public/assets/icons/image.png" onclick="document.getElementById('image').click()"></img>
+                            <input id="image" type="file" style="display: none;"/>
                         </button>
+                        
                     </td>
                     <td>
                         <button id="delete" onclick="deleteItem()">
@@ -179,7 +193,7 @@
                 <tr>
                     <td style="width: 20vw;" align="center">
                         <button class="collabBtn">
-                            <img src="/public/assets/icons/archive-inverted.png" align="center"></img>
+                            <img src="/public/assets/icons/archive-inverted.png" align="center" onclick="importTemplatePopup()"></img>
                             Browse Templates
                         </button>
                     </td>
