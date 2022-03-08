@@ -11,10 +11,10 @@
       <div class="collabContent" id="_collabContent">
           <button class="roundBtn" id="startCollaborating">Start</button>
           <button class="roundBtn" id="addCollaborators">Add Collaborators</button>
-          <button class="roundBtn_noBorder" id="close">
-            <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
-          </button>
       </div>
+      <button class="roundBtn_noBorder close" id="close">
+        <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+      </button>
     </div>
     
     <div class="promptContainer" id="_promptContainer">
@@ -54,27 +54,50 @@
               <button class="roundBtn" id="post" name="post">Post!</button>
           </section>
         <!-- </form> -->
-        <button class="roundBtn_noBorder" id="closePosts">
-          <img src="/icons/x-inverted.png" style="height: 4vh; width: auto; display: flex"/>
-        </button>
       </div>
+      <button class="roundBtn_noBorder close" id="closePosts">
+        <img src="/icons/x-inverted.png" style="height: 4vh; width: auto; display: flex"/>
+      </button>
     </div>
     <div class="collabContainer" id="savedDesignsContainer">
       <div class="collabContent" id="savedDesignsContent">
           <section class="designContainer" id="designContainer"></section>
           <button class="roundBtn" id="startCollaborating">Start</button>
           <button class="roundBtn" id="addCollaborators">Add Collaborators</button>
-          <button class="roundBtn_noBorder" id="closeSavedDesigns">
-            <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
-          </button>
       </div>
+      <button class="roundBtn_noBorder close" id="closeSavedDesigns">
+        <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+      </button>
     </div>
     <div class="collabContainer" id="addPostDesignsContainer">
       <div class="collabContent" id="addPostDesignsContent">
-        <button class="roundBtn_noBorder" id="closePostSavedDesigns">
-          <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
-        </button>
+        
       </div>
+      <button class="roundBtn_noBorder close" id="closePostSavedDesigns">
+        <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+      </button>
+    </div>
+
+    <div class="collabContainer" id="commentsContainer">
+      <div class="collabContent" id="commentsContent">
+        <section class="postImage">
+          <img id="commentImage"></img>
+        </section>
+        <section class="comments">
+
+        </section>
+        <form class="commentForm">
+          <div class="comment-text">
+            <img src="/public/assets/icons/empty-profile-picture.jpeg" style="border-radius: 50%;"/>
+            <textarea id="comment" placeholder="Add a comment..." style="width: 90%; height: 100%;"></textarea>
+            <input class="roundBtn1"type="button" id="postComment" value="Post">
+          </div>
+        </form>
+        
+      </div>
+      <button class="roundBtn_noBorder close" id="closeComments">
+        <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+      </button>
     </div>
   
     <div class="header flex">
@@ -83,14 +106,14 @@
           <div class="nav-menu">
             <a href="profile" class="" target="_self" data-text="&nbsp;Profile">&nbsp;Profile</a>
             <a href="profile" class="" target="_self" data-text="&nbsp;Friends">&nbsp;Friends</a>
-            <a href="profile" class="" target="_self" data-text="&nbsp;Logout">&nbsp;Logout</a>
+            <a href="/account/login" class="" target="_self" data-text="&nbsp;Logout">&nbsp;Logout</a>
           </div>
             <!-- <img id="logo" src="public/assets/icons/logo.png" alt="Moda Lab"> -->
             
         </div>
     </div>
     <div class="feed" id="_feed">
-      <div class="post">
+      <!-- <div class="post">
         <div class="post-top">
           <div class="profile-pic"> <img class="profile-pic" src="/public/assets/icons/empty-profile-picture.jpeg"/></div>
           <div class="account" style="color: white; padding-left: .5em"></div>
@@ -101,7 +124,7 @@
           <div><img class="bar_img" src="public\assets\icons\archive-box-inverted.png" alt="archive"></div>
           <div><img class="bar_img" src="public\assets\icons\chat-circle-inverted.png" alt="more"></div>
         </div>
-      </div>
+      </div> -->
     </div>
     <div class="footer1">
       <div class="footer_item">

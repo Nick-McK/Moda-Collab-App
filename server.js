@@ -787,12 +787,12 @@ io.sockets.on('connect', (socket) => {
             let TIMER = setInterval(() => {
                 start++;
                 
-            if (start == 300) { //300 for 5 mins
+            if (start == 10) { //300 for 5 mins
                 console.log("DELETED ROOM:", rooms[roomName]);
                 delete rooms[roomName]
                 roomList = roomList.filter(ro => ro.roomName != roomName);
                 clearInterval(TIMER);
-                io.emit("roomNames");
+                io.emit("roomNames", roomList);
             }
             }, 1000);
         }
@@ -816,7 +816,7 @@ io.sockets.on('connect', (socket) => {
                 console.log(result);
             });
         });
-        
+
         // Use io.emit to give it to all connected clients
         io.emit("postAdded", (postData));
         
@@ -898,6 +898,13 @@ io.sockets.on('connect', (socket) => {
     })
     
 
+    // Adds comments to the comments table with foreign key of postID
+    socket.on("postComment", data => {
+        con.query("INSERT INTO comments (postID, comment) VALUES (?, ?)", [data.postID, data.comment], (err, result) => {
+            if (err) throw err;
+            console.log("updated table posts with:", result);
+        });
+    })
 });
 
 app.use(router);

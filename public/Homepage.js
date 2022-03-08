@@ -40,6 +40,11 @@ const posts = document.querySelectorAll(".post");
 const postdesign = document.getElementById("addPostDesignsContainer");
 const postDContent = document.getElementById("addPostDesignsContent");
 const closePostSavedDesigns = document.getElementById("closePostSavedDesigns");
+const commentsContainer = document.getElementById("commentsContainer");
+const commentsContent = document.getElementById("commentsContent");
+const commentText = document.getElementById("comment");
+
+const feed = document.getElementById("_feed");
 
 // CODE FOR POST TRANSITIONS IF I CAN MAKE IT STOP HALF WAY THROUGH AND REVERSE
 // Currently will go to the full size if we move out before its finished and this is quite jarring
@@ -100,9 +105,14 @@ startCollab.addEventListener("click", () => {
     promptContainer.style.display = "flex";
 })
 
+closePrompt.onclick = () => {
+    promptContainer.style.display = "none";
+}
 
 let recordedRooms = new Array();
 // Adding rooms to the collab menu
+// TODO: Try setting a timeout on this method so that we update the room list every minute so we dont need to refresh the page
+// once a room has been removed
 socket.on("roomNames", (roomList) => {
 
     console.log("rooms", roomList);
@@ -340,13 +350,13 @@ this.onload = () => {
 
 let posted = {};
 socket.on("posts", posts => {
-    console.log(posts.posts);
+    console.log("posts", posts);
+    console.log("what isthis", posts[0].id);
     for (let post of posts) {
         if (posted[post.name] == post.caption) {
             continue;
         }
         posted[post.name] = post.caption;
-        console.log("possss", post);
         let postDiv = document.createElement("div");
         let gridItem = document.createElement("div");
         let postTop = document.createElement("div");
@@ -388,17 +398,14 @@ socket.on("posts", posts => {
         const LIKES_BEFORE = post.likes;
 
         
-        console.log("our likes at the start", post.id);
         barImage1.addEventListener("click", () => {
             if (LIKES_BEFORE != LIKES) {
                 LIKES--;
                 // likeCounter.style.color = 
                 barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
-                console.log("LIKES", LIKES);
             } else {
                 LIKES++;
                 barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
-                console.log("LIKES", LIKES);
             }
             likeCounter.innerHTML = LIKES;
             socket.emit("liked", {likes: LIKES, id: post.id});
@@ -428,33 +435,47 @@ socket.on("posts", posts => {
         postDiv.appendChild(postBar);
         const feed = document.getElementById("_feed");
         feed.prepend(postDiv); // This is prepend as we want the newest posts at the top of the feed
+
+        const postComment = document.getElementById("postComment");
+
+        postComment.onclick = () => {
+            let commentValue = commentText.value;
+            console.log("content", commentValue);
+            commentText.value = "";
+            console.log("does this work", post.id);
+            socket.emit("postComment", {comment: commentValue, postID: post.id, name: post.name, caption: post.caption});
+        }
+
+
     }
+
+    // Adds event listeners to all the images so that we don't have growing posts
+
     const postImages = document.querySelectorAll(".post_img");
     const postTop = document.querySelectorAll(".post-top");
-    console.log("sfasdf", postImages)
+    // console.log("sfasdf", postImages)
     for (let image of postImages) {
-        console.log("image", image);
+        // console.log("image", image);
         let post = image.parentElement.parentElement;
         let child = post.children;
         let postTop = child[0].children;
-        console.log("posts", post);
-        console.log("psot1", child);
-        console.log("postTop", postTop);
+        // console.log("posts", post);
+        // console.log("psot1", child);
+        // console.log("postTop", postTop);
         image.addEventListener("mouseenter", () => {
-            console.log("enter")
             post.style.transition = "transform 1s";
             post.style.transitionDelay = "1s"
             post.style.transform = "scale(1.15, 1.15)";
             post.style.boxShadow = "0 0 2em white;"
+            post.style.left = "0";
+            post.style.top = "0";
+
+            // console.log("ethiasdhgtasd", post.getBoundingClientRect().left);
 
             post.addEventListener("transitionend", () => {
                 child[0].style.transition = "opacity 1s ease-in-out";
                 child[0].style.opacity = "1";
             })
-            
-            // child[0].style.transition = "transform 1s";
-            
-
         })
         image.addEventListener("mouseleave", () => {
             post.style.transform = "scale(1,1)";
@@ -464,24 +485,222 @@ socket.on("posts", posts => {
             })
             
         });
+
+        let imageOldLeft = post.offsetLeft;
+        let newLeftOffset = imageOldLeft - 384;
+        // console.log("left before click", post.getBoundingClientRect().left);
+
+        // ANIMATION FOR OPENING COMMENTS -> TODO: EXPAND THE POST AFTER IT HAS FINISHED MOVING TO CENTRE SCREEN
+        image.addEventListener("click", () => {
+
+            const col2 = document.querySelector(".feed > :nth-child(3n-1");
+            const col1 = document.querySelector(".feed > :nth-child(3n-2");
+
+            const col1All = document.querySelectorAll(".feed > :nth-child(3n-2");
+            const col2All = document.querySelectorAll(".feed > :nth-child(3n-1");
+            const col3All = document.querySelectorAll(".feed > :nth-child(3n)");
+
+            // columnNumber = getCols(post);
+            console.log("column 2", col2All);
+            console.log("column 3", col3All);
+            let col = null;
+            // Find column of post
+            for (let p of col1All) {
+                if (p == post) {
+                    col = true;
+                }
+            }
+            // Only loop through the 3rd column if our post isnt in the first
+            if (col == null) {
+                for (let p of col3All) {
+                    if (p == post) {
+                        col = false
+                        console.log("did we set col")
+                    }
+                }
+            }
+            console.log("this is col value", col);
+            const clientY = window.innerHeight / 2;
+            const scrollY = document.documentElement.scrollTop;
+            const clientH = document.documentElement.clientTop;
+
+            const scrollTop = window.scrollY;
+            
+
+            const gridWidth = feed.offsetWidth;
+            const gridHeight = feed.offsetHeight;
+            const postWidth = post.offsetWidth;
+            const postLeft = post.offsetLeft
+            const postHeight = post.offsetHeight;
+            const postTop = post.offsetTop;
+            const centre = ((gridWidth - postWidth) / 2) + "px";
+
+            console.log("currentTop: ", post.style.left);
+
+            // If column is == 1 then move it to centre and if col is == 3 move to centre
+            // Using if as we need to minus coords if the post is in col 3
+            if (col == true) {
+                if (postLeft != col2.offsetLeft) {
+                    post.style.right = "0";
+                    post.style.bottom = "0";
+                    post.style.left = ((gridWidth - postWidth) / 2)- 10;
+                    // post.style.top = ((gridHeight - postHeight) / 2) - 10;
+                    // console.log("clientHeight: ", (clientY - postTop) - 160)
+                    post.style.top = scrollTop + (clientY - postTop) - 160; // Calculates the centre of the screen (kinda) with scrolling included
+                    // post.style.top = (scrollY - clientH) / 2;
+                    post.style.transition = "all 2s";
+                    // post.style.zIndex = "8000";
+
+
+                    console.log("new left", post.style.left);
+                    // Only play the animation after we have transitioned to the middle of the screen
+                    post.addEventListener("transitionend", () => {
+                        // If the post is in the middle of the screen then play the animation grow
+                        if (post.style.left == ((gridWidth - postWidth) / 2) - 10 + "px") {
+
+                            post.style.animation = "shrink 1s";
+                            post.style.animationFillMode = "forwards";
+
+                            commentsContainer.style.display = "flex";
+                            commentsContainer.style.animation = "opacity .75s";
+                            commentsContainer.style.animationFillMode = "forwards";
+                            commentsContainer.style.animationDelay = "1s";
+
+                            const commentImage = document.getElementById("commentImage");
+
+                            let postImage = post.children[1].children[0];
+                            
+
+                            commentImage.setAttribute("src", postImage.src);
+                            commentImage.style.width = "100%";
+                            commentImage.style.height = "100%";
+
+                            const close = document.getElementById("closeComments");
+
+                            close.addEventListener("click", () => {
+                                commentsContainer.style.animation = "opacity-reverse 1.75s" // Could try use animationDirection but this is easier
+                                // commentsContainer.style.animationDelay = "1s";
+                                commentsContainer.style.display = "none";
+
+                                post.style.animation = "grow 1s";
+
+                                post.style.left = -((postWidth) / postWidth) + 1;
+                                post.style.top = -(postHeight / postHeight) + 1;
+                                post.style.transition = "all 2s";
+                            });
+                            // post.style.animation = "grow 1.5s";
+                            // post.style.animationDelay = "0.25s";
+                            // post.style.animationDirection = "forwards";
+                        }
+                    });
+                }
+                // if (postLeft == col2.offsetLeft) {
+                //     post.style.left = -((postWidth) / postWidth) + 1;
+                //     post.style.top = -(postHeight / postHeight) + 1;
+                //     post.style.transition = "all 2s";
+                //     post.style.zIndex = "1000";
+                    
+                // }
+            } else if (col == false) {
+                if (postLeft != col2.offsetLeft || postLeft != col2.offsetLeft + 1) {
+                    post.style.left = -((gridWidth - postWidth) / 2) + 10;
+                    // post.style.top = ((gridHeight - postHeight) / 2) + 10;
+                    post.style.top = scrollTop + (clientY - postTop) - 160; // Calculates the centre of the screen (kinda) with scrolling included
+                    post.style.transition = "all 2s";
+
+                    
+
+                    // Only play the animation after we have transitioned to the middle of the screen
+                    post.addEventListener("transitionend", () => {
+                        // If the post is in the middle of the screen then play the animation grow
+                        if (post.style.left == -((gridWidth - postWidth) / 2) + 10 + "px") {
+
+                            post.style.animation = "shrink 1s";
+                            post.style.animationFillMode = "forwards";
+
+                            commentsContainer.style.display = "flex";
+                            commentsContainer.style.animation = "opacity .75s";
+                            commentsContainer.style.animationFillMode = "forwards";
+                            commentsContainer.style.animationDelay = "1s";
+
+                            const commentImage = document.getElementById("commentImage");
+
+                            let postImage = post.children[1].children[0];
+                            
+
+                            commentImage.setAttribute("src", postImage.src);
+                            commentImage.style.width = "100%";
+                            commentImage.style.height = "100%";
+
+                            const close = document.getElementById("closeComments");
+
+                            close.addEventListener("click", () => {
+                                commentsContainer.style.animation = "opacity-reverse 1.75s" // Could try use animationDirection but this is easier
+                                // commentsContainer.style.animationDelay = "1s";
+                                commentsContainer.style.display = "none";
+
+                                post.style.animation = "grow 1s";
+
+                                post.style.left = -((postWidth) / postWidth) + 1;
+                                post.style.top = -(postHeight / postHeight) + 1;
+                                post.style.transition = "all 2s";
+                            });
+                        }
+                    });
+                }
+                // if (postLeft == col2.offsetLeft || postLeft == col2.offsetLeft + 1) {
+                //     post.style.left = ((postWidth) / postWidth) - 1;
+                //     post.style.top = (postHeight / postHeight) - 1;
+                //     post.style.transition = "all 2s";
+
+                // }
+            } else if (col == null) {
+                if (postLeft == col2.offsetLeft) {
+                    post.style.top = scrollTop + (clientY - postTop) - 160; // Calculates the centre of the screen (kinda) with scrolling included
+                    post.style.transition = "all 2s";
+
+                    post.addEventListener("transitionend", () => {
+                        if (post.style.top == scrollTop + (clientY - postTop) - 160 + "px") {
+                            post.style.animation = "shrink 1s";
+                            post.style.animationFillMode = "forwards";
+
+                            commentsContainer.style.display = "flex";
+                            commentsContainer.style.animation = "opacity .75s";
+                            commentsContainer.style.animationFillMode = "forwards";
+                            commentsContainer.style.animationDelay = "1s";
+
+                            const commentImage = document.getElementById("commentImage");
+
+                            let postImage = post.children[1].children[0];
+                            
+                            
+
+                            commentImage.setAttribute("src", postImage.src);
+                            commentImage.style.width = "100%";
+                            commentImage.style.height = "100%";
+
+                            const close = document.getElementById("closeComments");
+
+                            close.addEventListener("click", () => {
+                                commentsContainer.style.animation = "opacity-reverse 1.75s";
+
+                                commentsContainer.style.display = "none";
+
+                                post.style.animation = "grow 1s";
+
+                                post.style.top = (postHeight / postHeight) - 1;
+                                post.style.transition = "all 2s"; 
+                            })
+                        }
+                    })
+                }
+            }
+        })
+
+        
+
     }
 
-    // const BAR_BUTTONS = document.querySelectorAll(".bar_img");
-    // let LIKES_COUNTER = 0;
-    // for (let button of BAR_BUTTONS) {
-    //     let buttonString = getPNG(button.src)
-    //     console.log("button", button.src)
-    //     if (buttonString == "heart-inverted.png") {
-    //         button.addEventListener("click", () => {
-    //             LIKES_COUNTER++;
-    //             console.log("likes", LIKES_COUNTER);
-    //         })
-    //     }
-    // }
-
-    // function getPNG(imageString) {
-    //     return imageString.slice(42);
-    // } 
+});
 
 
-})

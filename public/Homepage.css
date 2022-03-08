@@ -15,6 +15,14 @@ body {
   margin: 4px 2px;
   border-radius: 12px;
 }
+.roundBtn_noBorder.close {
+  position: fixed;
+  top: 8%;
+  right: 1%;
+  padding: 5px 5px;
+  border: none;
+  background-color: transparent;
+}
 .roundBtn {
   text-align: center;
   background-color: transparent;
@@ -24,6 +32,13 @@ body {
   font-size: 16px;
   margin: 4px 2px;
   border-radius: 12px;
+}
+.roundBtn1 {
+  position: relative;
+  width: 5%;
+  height: 100%;
+  background: white;
+  border: none;
 }
 
 /* .header {
@@ -44,11 +59,13 @@ body {
 
 .header {
   position: fixed;
+  z-index: 9999;
   top: 0;
   width: 100%;
   height: 5%;
   border-bottom: solid 0.5px;
   border-color: rgb(75, 71, 71);
+
   
 }
 
@@ -167,21 +184,48 @@ body {
 
 .feed {
   display: grid;
+  /* position: absolute; */
   background-color: inherit;
   margin-left: 100;
   margin-right: 100;
-  margin-top: 150px;
+  margin-top: 150px; 
   padding: 10;
   padding-bottom: 10%;
-  grid-column-gap: 100px;
-  grid-row-gap: 100px;
+  grid-gap: 100px;
   grid-template-columns: 24em 24em 24em;
+  /* grid-template-rows: 29.75em; */
   text-align: center;
 }
 
+/* .item-found {
+  left: 10px;
+  top: 10px;
+  border-radius: 50%;
+} */
+
+/* .feed > :nth-child(3n - 1) {
+  border: solid red;
+  left: calc(24em);
+  top: 10px;
+}
+
+.feed > :nth-child(3n) {
+  left: calc(24em + 24em + 110px + 100px);
+  top: 10px;
+  left: calc(24em + 110px);
+  top: 10px;
+}
+
+.feed > :nth-child(3n-2) {
+  left: 10px;
+  top: 10px; 
+} */
+
 .post {
   display: grid;
-  grid-template-rows: 2.75em 25em 2em; 
+  grid-template-rows: 2.75em 25em 2em;
+  position: relative;
+  transition: all 2s;
 }
 /* .post:hover {
   box-shadow: 0 0 1em .125em rgba(255, 255, 255, 255);
@@ -209,6 +253,57 @@ body {
 .account {
   color: white;
   padding-left: .5em;
+}
+#commentsContainer {
+  /* display: flex; */
+  opacity: 0;
+}
+.comment-text {
+  width: 100%;
+  height: 5%;
+  display: flex;
+  justify-content: flex-end;
+  /* border: 1px solid black; */
+}
+
+.collabContainer .opacity {
+  opacity: 1;
+  transition: all 1s;
+}
+
+@keyframes grow {
+  0% {
+    transform: scale(0, 0);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+@keyframes shrink {
+  0% {
+    transform: scale(1, 1);
+  }
+  100% {
+    transform: scale(0, 0);
+  }
+}
+
+@keyframes opacity {
+  from {opacity: 0;}
+  to {opacity: 1;}
+}
+@keyframes opacity-reverse {
+  from {opacity: 1;}
+  to {opacity: 0;}
+}
+
+@keyframes showComments {
+  0% {
+    transform: scale(0, 0);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
 }
 
 @keyframes highlightPost {
@@ -247,6 +342,7 @@ body {
   margin-top: .125em;
   width: 24em;
   height: 25em;
+  cursor: pointer;
   /* transition: transform 1s;
   transition-delay: 1s; */
 }
@@ -300,6 +396,10 @@ body {
   background-color: rgb(29, 29, 29);
   color: blue;
 }
+#commentsContent {
+  height: 80%;
+  width: 30%;
+}
 .collabRoom {
   color: rgb(255, 255, 255);
   display: flex;
@@ -308,14 +408,6 @@ body {
   /* padding: 0;
   margin: 0; */
   font-size: 28px;
-}
-#close, #closePosts, #closeSavedDesigns, #closePostSavedDesigns {
-  position: fixed;
-  top: 8%;
-  right: 1%;
-  padding: 5px 5px;
-  border: none;
-  background-color: transparent;
 }
 
 #startCollaborating, #addCollaborators {
@@ -384,7 +476,8 @@ body {
 
 .postImage {
   height: 50%;
-  width: 648px;
+  /* width: 648px; */
+  width: 100%;
   flex-direction: row;;
   display: flex;
   align-items: center;
@@ -394,6 +487,18 @@ body {
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid grey;
+}
+.comments {
+  height: 45%;
+  width: 100%;
+  /* border: 1px solid grey; */
+  border-radius: 20px;
+  /* flex-direction: row;;
+  display: flex;
+  align-items: center;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid grey; */
 }
 
 #selectImage {
@@ -483,5 +588,30 @@ sup {
   /* margin-left: -10px; */
   color: white;
 }
+
+/* @keyframes centre-post {
+  0% {
+    top: 0;
+    left: 0;
+    transform: translateX(100%);
+  }
+  25% {
+    top: 50%;
+    left: 25%;
+    transform: translateX(0) translateY(-50%)
+  }
+  75% {
+    top: 50%;
+    left: 35%;
+    transform: translateX(-35%) translateY(-50%);
+  }
+  
+  100% {
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%)
+    
+  }
+} */
 
 

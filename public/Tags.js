@@ -140,26 +140,4 @@ function addToProfileTagList() {
     console.log("curProf2", curProf);
 }
 
-
-
-// class Profile {
-//     constructor(username, tags) {
-//         this.username = username;
-//         this.tags = tags;
-//         // this.tag1 = tag1;
-//         // this.tag2 = tag2;
-//     }
-
-//     getTags() {
-        
-//         console.log("This is our profiles keys: ", Object.keys(Profile));
-//         // For each element of the taglist check if the profile has that tag assigned to it
-//         for (let tag of tagList) {
-//             // Object.keys(Profile);
-//             // if (this)
-//         }
-//     }
-
-// }
-
 */
