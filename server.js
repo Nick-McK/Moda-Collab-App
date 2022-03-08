@@ -158,7 +158,8 @@ app.post("/account/tags", (req, res) => {
             con.query("INSERT INTO users (username, password) VALUES (?, ?)", [req.body.username, req.body.pass1], (err, result) => {
                 if (err) throw err;
                 console.log("inserted into table users the username: " + req.body.username + " and password: " + req.body.pass1, "and ID: ", result.insertId);
-                req.session.userID = result.insertID; // This gives us the ID of the user so we dont need to query DB every time we want to know
+                req.session.userID = result.insertId; // This gives us the ID of the user so we dont need to query DB every time we want to know
+                console.log("user id: " + req.session.userID);
                 req.session.save();
                 res.sendFile(path.join(__dirname + "/tags.html"));
             });
@@ -333,6 +334,8 @@ app.get("/collab_room/:roomName", (req, res) => {
     
     res.sendFile(__dirname + "/collab_room.html");
 })
+
+
 
 // This is to update the templates table if new templates have been added, runs every 5 mins, or on server start
 function updateTemplateTable() {
@@ -852,6 +855,46 @@ io.sockets.on('connect', (socket) => {
             if (err) throw err;
             console.log("updated the table posts with likes ", result)
         })
+    })
+    
+    socket.on("sendTagData", (tagsList) => {
+        if(tagsList.length > 0){
+            let tags = [];
+            for(let i = 0; i<8; i++){
+                tags[i] = 0;
+            }
+            if(tagsList.includes('streetware')){
+                tags[0] = 1;
+            }
+            if(tagsList.includes('formal')){
+                tags[1] = 1;
+            }
+            if(tagsList.includes('casual')){
+                tags[2] = 1;
+            }
+            if(tagsList.includes('luxury')){
+                tags[3] = 1;
+            }
+            if(tagsList.includes('vintage')){
+                tags[4] = 1;
+            }
+            if(tagsList.includes('chic')){
+                tags[5] = 1;
+            }
+            if(tagsList.includes('punk')){
+                tags[6] = 1;
+            }
+            if(tagsList.includes('sportsware')){
+                tags[7] = 1;
+            }
+            console.log(socket.request.session.userID);
+            con.query("INSERT INTO tags (userID, streetware, formal, casual, luxury, vintage, chic, punk, sportsware) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [socket.request.session.userID, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]], (err, result) => {
+                if(err) throw err;
+            });
+            (socket.emit("tagDataResponse", true))
+        }else{
+            socket.emit("tagDataResponse", false);
+        }
     })
     
 

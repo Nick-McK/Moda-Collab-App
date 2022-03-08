@@ -1,12 +1,39 @@
-import {Profile} from "./Profile.js";
+//import {Profile} from "./Profile.js";
+
+const socket = io();
+let tagList = [];
+
+function updateTag(tagName){
+    if(!tagList.includes(tagName)){
+        tagList.push(tagName);
+        document.getElementById(tagName).innerHTML = "checked";
+    }else{
+        tagList.splice(tagList.indexOf(tagName), 1);
+        document.getElementById(tagName).innerHTML = tagName;
+    }
+    console.log(tagList);
+}
+
+function sendTagData(){
+    socket.emit('sendTagData', tagList);
+}
+
+socket.on('tagDataResponse', (response) => {
+    if(response == true){
+        window.location.href = "/home";
+    }else{
+        alert("Please select at least one tag");
+    }
+});
 
 
-let tagList = new Array();
-let profileMap = new Map();
-let profileTags = new Array();
 
-document.onpageload = populateTags();
-document.onpageload = dummyProfiles()
+//let tagList = new Array();
+//let profileMap = new Map();
+//let profileTags = new Array();
+
+//document.onpageload = populateTags();
+//document.onpageload = dummyProfiles()
 // document.onpageload = randomTags();
 
 //class CustomSelect {
@@ -69,6 +96,9 @@ document.onpageload = dummyProfiles()
 
 //This code is all from a youtube it genuinely doesnt work as far as I know but I have legit no clue why all this does nothing
 
+//let streetBtn = document.getElementById("Streetwear");
+
+/*
 function populateTags() {
     tagList.push("animals");
     tagList.push("photography");
@@ -111,6 +141,7 @@ function addToProfileTagList() {
 }
 
 
+
 // class Profile {
 //     constructor(username, tags) {
 //         this.username = username;
@@ -130,3 +161,5 @@ function addToProfileTagList() {
 //     }
 
 // }
+
+*/

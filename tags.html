@@ -1,9 +1,9 @@
-<!DOCTYPE html>
 <html>
     <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <title>Tags Page</title>
-        <link rel="stylesheet" type="text/css"  href="style.css">
+        <link rel="stylesheet" href="../style.css">
+        <link rel="stylesheet" href="../public/tags.css">
     </head>
     
     <body>
@@ -50,62 +50,43 @@
             <option> Grunge</option>
         </select>
 -->
-        <div class="my-select-box">
+          <div class="tagContainer">
             
-          <div class = Streetwear>
-            <label for="option-1">
-                Streetwear
-                <input type="checkbox" id="Streetwear" name="inputName[]">
-            </label>
+          <div class = "tagButton">
+            <button id="streetware" onclick="updateTag('streetware')">Streetware</button>
           </div>
             
-          <div class = Urban>
-              <label for="option-2">
-                Urban
-                <input type="checkbox" id="Urban" name="inputName[]">
-              </label>
+          <div class = "tagButton">
+            <button id="formal" onclick="updateTag('formal')">Formal</button>
           </div>
               
-         <div class = Avante-Garde>
-              <label for="option-3">
-                Avant Garde
-                <input type="checkbox" id="Avante Garde" name="inputName[]">
-              </label>
+         <div class = "tagButton">
+            <button id="casual" onclick="updateTag('casual')">Casual</button>
          </div>
 
-          <div class = Formal>
-              <label for="option-4">
-                Formal
-                <input type="checkbox" id="Formal" name="inputName[]">
-              </label>
+          <div class = "tagButton">
+            <button id="luxury" onclick="updateTag('luxury')">Luxury</button>
+          </div>
+
+         <div class = "tagButton">
+          <button id="vintage" onclick="updateTag('vintage')">Vintage</button> 
          </div>
 
-         <div class = Runway>
-              <label for="option-2">
-                Runway
-                <input type="checkbox" id="Runway" name="inputName[]">
-              </label>
-        </div>
-
-         <div class = Athletic>
-              <label for="option-3">
-                Athletic
-                <input type="checkbox" id="Athletic" name="inputName[]">
-              </label>
-        </div>
+         <div class = "tagButton">
+          <button id="chic" onclick="updateTag('chic')">Chic</button>   
+         </div>
              
-         <div class = Grunge>
-              <label for="option-4">
-                Grunge
-                <input type="checkbox" id="Grunge" name="inputName[]">
-              </label>
+         <div class = "tagButton">
+          <button id="punk" onclick="updateTag('punk')">Punk</button>   
+         </div>
+        
+         <div class = "tagButton">
+            <button id="sportswear" onclick="updateTag('sportsware')">Sportsware</button>   
+           </div>
         </div>
-            
-        </div>
-        <script src="Tags.js" type="module"></script>
         
         <div class = "tags_button">
-            <button id="button" onclick="addToProfileTagList()">Submit</button>
+            <button id="button" onclick="sendTagData()">Submit</button>
         </div>
         <div class = "clearfix"></div>
  
@@ -124,6 +105,8 @@
                 <img src="public/assets/tagAssets/photography.jpg">
           </div> 
 -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="../public/Tags.js"></script>
     </body>
 </html>
 

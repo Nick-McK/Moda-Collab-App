@@ -30,6 +30,10 @@ h1 {
     transform: translateY(-5px);
     transition: 0.5s;
 }
+.tagContainer{
+    display: grid;
+    grid-template-columns: auto auto;
+}
 /* When we hover over the tags container blur all the other images except the one we are hovering over */
 .tagContainer:hover .tags img:not(:hover) {
     filter: blur(3px);
