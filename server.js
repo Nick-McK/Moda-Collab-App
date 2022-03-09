@@ -509,11 +509,15 @@ io.sockets.on('connect', (socket) => {
                 addObj(data.change);
                 
                 break;
+            case "addErased":
+                addErased(data.change);
+            break;
             case "remove":
                 removeObj(data.change);
 
                 break
             case "mod":
+                console.log(data);
                 data.change.id = data.id;
                 modObj(data.change);
 
@@ -543,6 +547,9 @@ io.sockets.on('connect', (socket) => {
                 roomList[i].objects.push(data);
                 roomList[i].objIdCounter++;
 
+                console.log("newObj", data)
+
+
                 if (loadDesign) {
                     io.to(roomList[i].roomName).emit('canvasUpdate', {change: data, type: "add"});            
                 }
@@ -550,7 +557,21 @@ io.sockets.on('connect', (socket) => {
         }
 
         if (!ignore) {
+            console.log("sending");
             socket.emit("idUpdate", data.id);
+        }
+    }
+
+    // Issue here is that we need to get the id's of the objects when getting toJSON, so we know which object is which when updating serverside
+    function addErased(data) {
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                for (var j in roomList[i].objects) {
+                    if (data.obj.id == roomList[i].objects[j].id) {
+                        roomList[i].objects[j] = data.obj;
+                    }
+                }
+            }
         }
     }
 
@@ -570,6 +591,7 @@ io.sockets.on('connect', (socket) => {
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
                 for (var j in roomList[i].objects) {
+                    // console.log(roomList[i].objects[j], data.id);
                     if (roomList[i].objects[j].id == data.id) {
                         roomList[i].objects[j] = data;
                         roomList[i].objects[j].id = data.id;

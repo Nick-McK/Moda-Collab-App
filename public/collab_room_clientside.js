@@ -18,7 +18,7 @@ let r = new fabric.Rect({       // don't need this, just for debugging panning a
     selectable: false,
     stroke: "black",
     strokeWidth: 5,
-    fill: backgroundColor,
+    fill: "rgba(0,0,0,0)",
     hoverCursor: "default",
     erasable: false,
     id: "DONTDELETE"
@@ -144,8 +144,8 @@ function changeTool(res, imgInfo) {
                 left:1000,
                 top:1000,
                 fill:colour,
-                width: 200,
-                height: 200
+                width: 1000,
+                height: 1000
             });
             break;
         case 'CIRCLE':
@@ -153,7 +153,7 @@ function changeTool(res, imgInfo) {
                 left:1000,
                 top:1000,
                 fill:colour,
-                radius: 200
+                radius: 500
             });
             break;
         case 'TRIANGLE':
@@ -161,20 +161,40 @@ function changeTool(res, imgInfo) {
                 left:1000,
                 top:1000,
                 fill:colour,
-                width: 200,
-                height: 200
+                width: 1000,
+                height: 1000
             });
         break;
-        case 'DRAW':
-            canvas.isDrawingMode = !canvas.isDrawingMode;
-            // had to make the listeners global because more would be made each time this section is called
-            panning = false;
-            canvas.selection = true;
-            straightLineDraw.toggled = false;
-            straightLineDraw.isDrawing = false;
-            document.getElementById('pan').style.backgroundColor = 'darkgrey';
-            document.getElementById('line').style.backgroundColor = 'darkgrey';
+        case 'ERASER':
+            // canvas.freeDrawingBrush = new fabric.EraserBrush(canvas); // Make this its own case for 'eraser', find out why it makes the most recently placed obj invisible. Could create a switch case just for brush patterns
+            // canvas.freeDrawingBrush.width = lineWidth;
+            // canvas.isDrawingMode = !canvas.isDrawingMode;
+            obj = null;
 
+            freeDrawing('ERASER');
+
+        break;
+        case 'DRAW':
+            // canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+            // canvas.freeDrawingBrush.stroke = colour;
+            // canvas.freeDrawingBrush.strokeWidth = lineWidth;
+            // // brush.color = 'red';
+            // // brush.width = 50;
+            // // brush.radius = 50;
+            // console.log(canvas.freeDrawingBrush)
+            // // canvas.freeDrawingBrush = brush;
+            // canvas.isDrawingMode = !canvas.isDrawingMode;
+            // // had to make the listeners global because more would be made each time this section is called
+            // panning = false;
+            // canvas.selection = true;
+            // straightLineDraw.toggled = false;
+            // straightLineDraw.isDrawing = false;
+            // document.getElementById('pan').style.backgroundColor = 'darkgrey';
+            // document.getElementById('line').style.backgroundColor = 'darkgrey';
+
+            obj = null;
+
+            freeDrawing('PENCIL')
 
         break;
         case 'LINE':        //gonna work on setting the coords through user input
@@ -206,6 +226,7 @@ function changeTool(res, imgInfo) {
                 recentObj = oriImg;
                 socket.emit('canvasUpdate', {"change": oriImg, "type" : "add"});
             });
+            obj = null; // need this otherwise errors will occur at bottom of this section
             break;
         case 'TEXT':
             obj = new fabric.Textbox("Enter Text Here...", {
@@ -239,9 +260,39 @@ function changeTool(res, imgInfo) {
     if (obj && res != 'IMAGE') {    //Img check needed bc of use of callback in image loading
         canvas.add(obj).renderAll();
         recentObj = obj;
+        console.log("sending", obj);
         socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
     }
 }
+
+function freeDrawing(brushType) {
+    canvas.isDrawingMode = !canvas.isDrawingMode;
+
+    switch (brushType) {
+        case 'ERASER':
+            canvas.freeDrawingBrush = new fabric.EraserBrush(canvas); // Make this its own case for 'eraser'. Could create a switch case just for brush patterns
+            canvas.freeDrawingBrush.width = lineWidth;
+        break;
+        case 'PENCIL':
+            canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+            canvas.freeDrawingBrush.stroke = colour;
+            canvas.freeDrawingBrush.strokeWidth = lineWidth;
+        break;
+        case 'CIRCLES':
+            canvas.freeDrawingBrush = new fabric.CircleBrush(canvas);
+            canvas.freeDrawingBrush.radius = lineWidth;
+            canvas.freeDrawingBrush.stroke = colour;    // might be wrong values for circle
+        break;
+    }
+    // reset values of other tools possibly in use
+    panning = false;
+    canvas.selection = true;
+    straightLineDraw.toggled = false;
+    straightLineDraw.isDrawing = false;
+    document.getElementById('pan').style.backgroundColor = 'darkgrey';
+    document.getElementById('line').style.backgroundColor = 'darkgrey';
+}
+
 
 
 // this is for free drawing
@@ -351,17 +402,27 @@ canvas.on("mouse:move", function (opt) {
         straightMouseMove(opt);
     }
 });
+
 canvas.on("path:created", function (e) {
-    console.log(e);
-    sendPath(e, stack)    // send the 
+    sendPath(e.path)    // send the 
 });
 
-function sendPath(e, stack) {
+function sendPath(e) {
     if (e) {
        recentObj = e;
-       socket.emit('canvasUpdate', {"change": {stack: stack, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add"});
+        if (canvas.freeDrawingBrush.type == 'eraser') { // if the line drawn is an eraser line
+            // find all of the objects it intersects with
+            for (var i in canvas._objects) {
+                if (i==0) continue; //except the boundary box
+                if (e.intersectsWithObject(canvas._objects[i], true)) { // when this happens, it means that the eraser line becomes a clip path on the obj and the obj should be sent fully to the server and other clients
+                    socket.emit('canvasUpdate', {change: {obj: canvas._objects[i].toJSON(['id'])}, type: "addErased"});  //don't know why we need to include id but we do
+                }
+            }
+        } else {
+            socket.emit('canvasUpdate', {"change": {path: e.path, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add"});
+        }
+        
     }
-    // delete stack;    // Probably don't need this because stack is set to [] on mousedown
     drawFlag = false;
 }
 // end of free drawing code
@@ -389,11 +450,6 @@ if (canvas.getHeight()/canvasHeight < canvas.getWidth() / canvasWidth) {
     widthHeightLimited = "height";
 }
 
-
-
-function limitZoomVal() {
-
-}
 
 // Code for Zoom and Panning adapted from fabricjs.com tutorial: http://fabricjs.com/fabric-intro-part-5#pan_zoom
 canvas.on("mouse:wheel", function(options) {
@@ -484,22 +540,8 @@ imageSelect.addEventListener('change', function(){
 
 // Emits to canvas whenever a change is made to any object so other clients can update
 canvas.on('object:modified', function () {
-    // console.log(canvas.getActiveObject());
-    // console.log(canvas.getActiveObjects());
-    // var select = canvas.getActiveObject();
-    // var objs = [];
-    // for (var i in select._objects) {
-    //     objs.push(select._objects[i]);
-    // }
-
-    // var ids = [];
-    // for (var i in objs) {
-    //     ids.push(objs[i].id);
-    // }
-
-    // for group move the individual objects top and left values bug out
-
     // for some reason id wouldn't carry over to server through "change" object
+    console.log(canvas.getActiveObject());
     socket.emit('canvasUpdate', {"change": canvas.getActiveObject(), "type": 'mod', "id": canvas.getActiveObject().id});
 });
 
@@ -546,146 +588,170 @@ socket.on('canvasUpdate', (data) => {
     // Use switch case to figure out what kind of update it is
     switch (data.type) {
         case 'add':
-            // find type of object to be added and construct with necessary values, make sure to set id of obj
-            if (data.change.type == 'rect') {
-                addObj = new fabric.Rect({
-                    left:data.change.left,
-                    top:data.change.top,
-                    fill:data.change.fill,
-                    width: data.change.width,
-                    height: data.change.height,
-                    scaleX: data.change.scaleX,
-                    scaleY: data.change.scaleY,
-                    angle: data.change.angle,
-                    id: data.change.id
-                });           
-            } else if (data.change.type == 'triangle') {
-                addObj = new fabric.Triangle({
-                    left: data.change.left,
-                    top: data.change.top,
-                    fill: data.change.fill,
-                    width:  data.change.width,
-                    height:  data.change.height,
-                    scaleX: data.change.scaleX,
-                    scaleY: data.change.scaleY,
-                    angle: data.change.angle,
-                    id: data.change.id
-                });
-            } else if (data.change.type == 'circle') {
-                addObj = new fabric.Circle({
-                    left: data.change.left,
-                    top: data.change.top,
-                    fill: data.change.fill,
-                    radius: data.change.radius,
-                    scaleX: data.change.scaleX,
-                    scaleY: data.change.scaleY,
-                    angle: data.change.angle,
-                    id: data.change.id
-                });
-            } else if (data.change.type == 'line') {
-                var points = [data.change.x1, data.change.y1, data.change.x2, data.change.y2]
-                addObj = new fabric.Line(points, {
-                    stroke: data.change.stroke,
-                    lineWidth: data.change.lineWidth,
-                    top: data.change.top,
-                    left: data.change.left,
-                    scaleX: data.change.scaleX,
-                    scaleY: data.change.scaleY,
-                    angle: data.change.angle,
-                    id: data.change.id 
-                });
-            } else if (data.change.type == 'textbox') {
-                addObj = new fabric.Textbox(data.change.text, {
-                    fontSize: data.change.fontSize,
-                    fontFamily: data.change.fontFamily,
-                    fill: data.change.fill,
-                    left: data.change.left,
-                    top: data.change.top,
-                    angle: data.change.angle,
-                    id: data.change.id
-                });
-            } else if (data.change.type == 'image') {
-                // newImg = document.createElement("img");
-                // newImg.setAttribute('src', data.change.src);
-                // document.getElementById("body").appendChild(newImg);
-
-                addObj = new fabric.Image.fromURL(data.change.src, function(oriImg){
-                    oriImg.set({
-                        top: data.change.top,
-                        left: data.change.left,
-                        height: data.change.height,
-                        width: data.change.width,
-                        angle: data.change.angle,
-                        scaleX: data.change.scaleX,
-                        scaleY: data.change.scaleY,
-                        id: data.change.id
-                    })
-                    
-                    canvas.add(oriImg);
-                    canvas.renderAll();
-                });
-            } else {    // this should cover both path and polyline
-                // on other clients, free drawing is recreated as a polyline
+            console.log(data.change.type);
+            if (data.change.type == undefined) {    // this code needs to be here as the enlivenObjects doesn't work with the way we do normal pencil drawing atm
                 canvas.isDrawingMode = true;
 
-                // this is if we want other clients to create instance of path instead of polyline
-                // var test = ["M"];
-                // for (var i in data.change.stack) {
-                //     console.log(data.change.stack[i]['x'])
-                //     test.push(data.change.stack[i]['x'] + " " + data.change.stack[i]['y'] + " L")
-                // }
-                // test = test.join(' ');
-                // test = test.slice(0, -1) + 'z';
+                addObj = new fabric.Path(data.change.path, {
+                    strokeWidth: data.change.lineWidth,
+                    stroke: data.change.stroke,
+                    strokeLineJoin: 'round',        // This is to avoid jagged edges especially at larger thicknesses
+                    strokeLineCap: 'round',
+                    fill: null,
+                    angle: data.change.angle,
+                    height: data.change.height,
+                    width: data.change.width,
+                    left: data.change.left,
+                    top: data.change.top,
+                    id: data.change.id
+                });
 
-
-                // Polyline works as a good constructor of the free draw
-                // uses a stack of points from the free drawn line to recreate it
-                if (data.change.stack) {
-                    addObj = new fabric.Polyline(data.change.stack, {
-                        strokeWidth: parseInt(data.change.lineWidth),
-                        stroke: data.change.stroke,
-                        strokeLineJoin: 'round',        // This is to avoid jagged edges especially at larger thicknesses
-                        strokeLineCap: 'round',
-                        fill: null,
-                        angle: data.change.angle,
-                        id: data.change.id
-                    });
-                } else {
-
-                    // This is triggered when a user joins after a free drawn line is created
-
-                    // This formats the path to have x: xCoord, y: yCoord such as a Polyline needs to be created
-                    for (var i in data.change.path) {
-                        delete data.change.path[i][0];
-                        data.change.path[i] = {x: data.change.path[i][1], y: data.change.path[i][2]};
-                    }
-
-                    // this needs more attributes because there are more possible modifications when it has been placed before a user joins
-                    addObj = new fabric.Polyline(data.change.path, {
-                        strokeWidth: parseInt(data.change.strokeWidth),
-                        stroke: data.change.stroke,
-                        strokeLineJoin: 'round',        // This is to avoid jagged edges especially at larger thicknesses
-                        strokeLineCap: 'round',
-                        fill: null,
-                        angle: data.change.angle,
-                        scaleX: data.change.scaleX,
-                        scaleY: data.change.scaleY,
-                        height: data.change.height,
-                        width: data.change.width,
-                        left: data.change.left,
-                        top: data.change.top,
-                        id: data.change.id
-                    });
-                } 
+                if (data.change.scaleX) {
+                    addObj.set({scaleX: data.change.scaleX, scaleY: data.change.scaleY});
+                }
+                
                 canvas.isDrawingMode = false;
-            }
 
-
-            if (data.change.type != 'image') {  //when loading image from url, need to use callback when the image has loaded, so ignore here
-                console.log(addObj);
                 canvas.add(addObj);
+            } else {    // this adds in new objects from other clients as they are drawn
+                fabric.util.enlivenObjects([data.change], function (enlivenObjects) {
+                    // canvas.remove(canvas._objects[i]);
+                    canvas.add(enlivenObjects[0]);
+                    canvas.renderAll()
+                });
             }
+
             
+            // somehow managed to reduce the below code to the stuff above
+
+            // // find type of object to be added and construct with necessary values, make sure to set id of obj
+            // if (data.change.type == 'rect') {
+            //     addObj = new fabric.Rect({
+            //         left:data.change.left,
+            //         top:data.change.top,
+            //         fill:data.change.fill,
+            //         width: data.change.width,
+            //         height: data.change.height,
+            //         scaleX: data.change.scaleX,
+            //         scaleY: data.change.scaleY,
+            //         angle: data.change.angle,
+            //         id: data.change.id
+            //     });           
+            // } else if (data.change.type == 'triangle') {
+            //     addObj = new fabric.Triangle({
+            //         left: data.change.left,
+            //         top: data.change.top,
+            //         fill: data.change.fill,
+            //         width:  data.change.width,
+            //         height:  data.change.height,
+            //         scaleX: data.change.scaleX,
+            //         scaleY: data.change.scaleY,
+            //         angle: data.change.angle,
+            //         id: data.change.id
+            //     });
+            // } else if (data.change.type == 'circle') {
+            //     addObj = new fabric.Circle({
+            //         left: data.change.left,
+            //         top: data.change.top,
+            //         fill: data.change.fill,
+            //         radius: data.change.radius,
+            //         scaleX: data.change.scaleX,
+            //         scaleY: data.change.scaleY,
+            //         angle: data.change.angle,
+            //         id: data.change.id
+            //     });
+            // } else if (data.change.type == 'line') {
+            //     var points = [data.change.x1, data.change.y1, data.change.x2, data.change.y2]
+            //     addObj = new fabric.Line(points, {
+            //         stroke: data.change.stroke,
+            //         lineWidth: data.change.lineWidth,
+            //         top: data.change.top,
+            //         left: data.change.left,
+            //         scaleX: data.change.scaleX,
+            //         scaleY: data.change.scaleY,
+            //         angle: data.change.angle,
+            //         id: data.change.id 
+            //     });
+            // } else if (data.change.type == 'textbox') {
+            //     addObj = new fabric.Textbox(data.change.text, {
+            //         fontSize: data.change.fontSize,
+            //         fontFamily: data.change.fontFamily,
+            //         fill: data.change.fill,
+            //         left: data.change.left,
+            //         top: data.change.top,
+            //         angle: data.change.angle,
+            //         id: data.change.id
+            //     });
+            // } else if (data.change.type == 'image') {
+            //     // newImg = document.createElement("img");
+            //     // newImg.setAttribute('src', data.change.src);
+            //     // document.getElementById("body").appendChild(newImg);
+
+            //     addObj = new fabric.Image.fromURL(data.change.src, function(oriImg){
+            //         oriImg.set({
+            //             top: data.change.top,
+            //             left: data.change.left,
+            //             height: data.change.height,
+            //             width: data.change.width,
+            //             angle: data.change.angle,
+            //             scaleX: data.change.scaleX,
+            //             scaleY: data.change.scaleY,
+            //             id: data.change.id
+            //         })
+                    
+            //         canvas.add(oriImg);
+            //         canvas.renderAll();
+            //     });
+            // } else {    // this should cover both path and polyline
+            //     // on other clients, free drawing is recreated as a polyline
+            //     canvas.isDrawingMode = true;
+
+            //     // canvas.freeDrawingBrush = new fabric.EraserBrush(canvas); // Make this its own case for 'eraser'. Could create a switch case just for brush patterns
+            //     // canvas.freeDrawingBrush.width = lineWidth;
+
+            //     // canvas.loadFromJSON(data.change.path);
+
+            //     addObj = new fabric.Path(data.change.path, {
+            //         strokeWidth: data.change.lineWidth,
+            //         stroke: data.change.stroke,
+            //         strokeLineJoin: 'round',        // This is to avoid jagged edges especially at larger thicknesses
+            //         strokeLineCap: 'round',
+            //         fill: null,
+            //         angle: data.change.angle,
+            //         height: data.change.height,
+            //         width: data.change.width,
+            //         left: data.change.left,
+            //         top: data.change.top,
+            //         id: data.change.id
+            //     });
+
+            //     if (data.change.scaleX) {
+            //         addObj.set({scaleX: data.change.scaleX, scaleY: data.change.scaleY});
+            //     }
+                
+            //     canvas.isDrawingMode = false;
+            // }
+
+
+            // if (data.change.type != 'image') {  //when loading image from url, need to use callback when the image has loaded, so ignore here
+            //     console.log(addObj);
+            //     canvas.add(addObj);
+            // }
+            
+        break;
+
+        case 'addErased':
+            for (var i in canvas._objects) {
+                if (canvas._objects[i].id == data.change.obj.id) {
+                    // canvas._objects[i] = data.change.obj;
+                    fabric.util.enlivenObjects([data.change.obj], function (enlivenObjects) {
+                        canvas.remove(canvas._objects[i]);
+                        canvas.add(enlivenObjects[0]);
+                        canvas.renderAll()
+                    })
+                    // console.log(JSON.parse(data.change))
+                }
+            }
         break;
 
         case 'remove':
@@ -701,9 +767,10 @@ socket.on('canvasUpdate', (data) => {
             }
         break;
         
-        case 'mod':
+        case 'mod':     // this is for general modifications to the object, not any eraser stuff
             for (var i in canvas._objects) {
                 if (canvas._objects[i].id == data.id) {
+                    console.log("canvasObj",canvas._objects[i]);
                     var oriObj = canvas._objects[i];
                     var newObj = data.change;
 
@@ -743,10 +810,7 @@ socket.on('canvasUpdate', (data) => {
 
 // this is server assigned id given when client creates obj
 socket.on('idUpdate', (data) => {
-    if (recentObj.path)         // this might've broken some stuff
-        recentObj.path.id = data;
-    else 
-        recentObj.id = data;
+    recentObj.id = data;
 });
 
 // Get room fucntion which takes in the room name when we create it from the server, then loop through them all and when that room == location.pathname we have our room
@@ -944,7 +1008,8 @@ function importTemplate(template, dontEmit) {
                 left: (canvasHeight - (img.width*img.scaleX)) / 2
             });
         }
-        
+        console.log(canvas.backgroundImage);
+
         canvas.renderAll();
     })
 }
