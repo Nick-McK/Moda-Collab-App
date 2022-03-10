@@ -1,6 +1,6 @@
 * [ ] posts
     * [X] ~~*Likes*~~ [2022-03-02]
-    * [ ] Comments
+    * [X] ~~*Comments*~~ [2022-03-10]
     * [ ] Notifications?
     * [X] ~~*Open post on click to view more details*~~ [2022-03-08]
         * [X] ~~*Move post from its position to centre screen*~~ [2022-03-08]
@@ -12,9 +12,9 @@
     * [ ] save designs from the posts menu
 
 * [ ] Tags
-    * [ ] Select tags
-    * [ ] Assign tags to profile
-    * [ ] Only see posts with tags you've flagged
+    * [X] ~~*Select tags*~~ [2022-03-09]
+    * [X] ~~*Assign tags to profile*~~ [2022-03-09]
+    * [ ] Only see posts with tags you've flagged -> Daniel
     * [ ] communities? -> lets you browse for different styles
 
 * [ ] Rooms
@@ -28,6 +28,11 @@
     * [ ] Add your posts to the page
     * [ ] Adding picture to your profile
 
+* [ ] Moderation
+    * [ ] Add a flagged status -> If a post is flagged its removed from homepage and placed on a mod page where it is decided if it should be removed
+    * [ ] If a post is removed after its flagged then add a strike to the users account
+
+
 * [ ] Friends?
     * [ ] Messaging
     * [ ] Searching for new friends
@@ -36,6 +41,9 @@
     * [ ] Give focus to the saved designs scroll before the browser
     * [ ] Styling
     * [ ] Encryption on database
+    * [ ] Error handling -> stops server from crashing
+    * [ ] Break shit
+    * [ ] 
 
 Bugs:
 * [ ] If you update a design in the collab room then it will automatically update on the feed -> Feature

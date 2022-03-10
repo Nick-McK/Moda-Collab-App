@@ -42,6 +42,7 @@ const postDContent = document.getElementById("addPostDesignsContent");
 const closePostSavedDesigns = document.getElementById("closePostSavedDesigns");
 const commentsContainer = document.getElementById("commentsContainer");
 const commentsContent = document.getElementById("commentsContent");
+const commentSection = document.getElementById("_comments")
 const commentText = document.getElementById("comment");
 
 const feed = document.getElementById("_feed");
@@ -349,6 +350,7 @@ this.onload = () => {
 }
 
 let posted = {};
+let commented = [];
 socket.on("posts", posts => {
     console.log("posts", posts);
     console.log("what isthis", posts[0].id);
@@ -424,6 +426,7 @@ socket.on("posts", posts => {
         postBar.appendChild(div3);
 
         postImage.setAttribute("src", post.design);
+        postImage.setAttribute("alt", post.id);
 
     
         gridItem.appendChild(postImage);
@@ -445,6 +448,8 @@ socket.on("posts", posts => {
             console.log("does this work", post.id);
             socket.emit("postComment", {comment: commentValue, postID: post.id, name: post.name, caption: post.caption});
         }
+
+        
 
 
     }
@@ -485,14 +490,60 @@ socket.on("posts", posts => {
             })
             
         });
+        
 
         let imageOldLeft = post.offsetLeft;
         let newLeftOffset = imageOldLeft - 384;
         // console.log("left before click", post.getBoundingClientRect().left);
 
-        // ANIMATION FOR OPENING COMMENTS -> TODO: EXPAND THE POST AFTER IT HAS FINISHED MOVING TO CENTRE SCREEN
+        // ANIMATION FOR OPENING COMMENTS
         image.addEventListener("click", () => {
+            // Retrieve the comments on click
+            socket.emit("getComments", {postID: image.getAttribute("alt")});
+            // If we don't do socket.on for the comments here, then they don't show on the first opening of a post
+            socket.on("returnComments", data => {
+                // TODO: WRITE THE COMMENTS TO THE SCREEN, CURRENTLY DUPLICATING COMMENTS ON EACH VISIT
+                console.log("here");
+                if (data.comments.length == 0) {
+                    commentSection.innerHTML = "";
+                }
+                for (let comment of data.comments) {
+                    console.log("comment", comment);
 
+                    let commentDiv = document.createElement("div");
+                    let profilePicDiv = document.createElement("div");
+                    let profilePicImg = document.createElement("img");
+                    let commentContent = document.createElement("p");
+
+                    commentContent.innerHTML = comment.comment;
+
+                    commentDiv.classList.add("comment");
+
+                    commentDiv.appendChild(profilePicDiv);
+                    profilePicDiv.appendChild(profilePicImg);
+
+                    profilePicDiv.classList.add("profile-pic");
+
+                    profilePicImg.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg");
+
+                    commentDiv.appendChild(commentContent);
+
+                    
+
+
+
+
+                    if (!commented.includes(comment)) {
+                        // console.log("commented", commented);
+                        commentSection.prepend(commentDiv);
+                        commented.push(comment);
+                    }
+                    
+                    // commented.push(comment);
+                    
+                
+                }
+            })
             const col2 = document.querySelector(".feed > :nth-child(3n-1");
             const col1 = document.querySelector(".feed > :nth-child(3n-2");
 
@@ -519,6 +570,8 @@ socket.on("posts", posts => {
                     }
                 }
             }
+
+            
             console.log("this is col value", col);
             const clientY = window.innerHeight / 2;
             const scrollY = document.documentElement.scrollTop;
@@ -574,10 +627,16 @@ socket.on("posts", posts => {
                             commentImage.setAttribute("src", postImage.src);
                             commentImage.style.width = "100%";
                             commentImage.style.height = "100%";
+                            console.log("commented", commented);
+                            
+                                
+                                
+                        
 
                             const close = document.getElementById("closeComments");
 
                             close.addEventListener("click", () => {
+                                
                                 commentsContainer.style.animation = "opacity-reverse 1.75s" // Could try use animationDirection but this is easier
                                 // commentsContainer.style.animationDelay = "1s";
                                 commentsContainer.style.display = "none";
@@ -587,6 +646,14 @@ socket.on("posts", posts => {
                                 post.style.left = -((postWidth) / postWidth) + 1;
                                 post.style.top = -(postHeight / postHeight) + 1;
                                 post.style.transition = "all 2s";
+                                
+                                
+
+                                
+                                
+                                
+
+
                             });
                             // post.style.animation = "grow 1.5s";
                             // post.style.animationDelay = "0.25s";
@@ -702,5 +769,7 @@ socket.on("posts", posts => {
     }
 
 });
+
+
 
 

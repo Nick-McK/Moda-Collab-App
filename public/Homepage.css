@@ -488,17 +488,26 @@ body {
   overflow: hidden;
   border: 1px solid grey;
 }
+/* This is the container for the comments */
 .comments {
   height: 45%;
   width: 100%;
   /* border: 1px solid grey; */
   border-radius: 20px;
+  color: white;
+  overflow-y: auto;
   /* flex-direction: row;;
   display: flex;
   align-items: center;
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid grey; */
+}
+/* This is the actual comment being shown under a post */
+.comment {
+  display: flex;
+  gap: 1em;
+
 }
 
 #selectImage {

@@ -864,11 +864,15 @@ io.sockets.on('connect', (socket) => {
                             if (result[i].likes == null) result[i].likes = 0;
                             postsName = {name: result[i].postName, caption: result[i].design, design: image, user: name, likes: result[i].likes, id: result[i].postID} // Send over name of the user who created it so that we can show who posted it
                             posts.push(postsName);
+
+                            
                             socket.emit("posts", posts);
-                        }) ;
+                            
+                        });
                 });
             }
         });
+        
     });
 
     socket.on("liked", data => {
@@ -926,6 +930,19 @@ io.sockets.on('connect', (socket) => {
             if (err) throw err;
             console.log("updated table posts with:", result);
         });
+    });
+
+    socket.on("getComments", (data) => {
+        con.query("SELECT * FROM comments WHERE postID = ?", [data.postID], (err, result) => {
+            if (err) throw err;
+            let comments = [];
+            for (let i = 0; i< result.length; i++) {
+                comments.push(result[i]);
+            }
+            console.log("comments", comments);
+            socket.emit("returnComments", {comments: comments});
+            
+        })
     })
 });
 
