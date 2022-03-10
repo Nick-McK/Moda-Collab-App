@@ -395,6 +395,9 @@ socket.on("posts", posts => {
 
         name.innerHTML = post.user;
 
+        postImage.setAttribute("src", post.design);
+        postImage.setAttribute("alt", post.id);
+
         barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
         let LIKES = post.likes; // Set this to the database value
         const LIKES_BEFORE = post.likes;
@@ -413,9 +416,16 @@ socket.on("posts", posts => {
             socket.emit("liked", {likes: LIKES, id: post.id});
         })
         barImage2.setAttribute("src", "/public/assets/icons/archive-box-inverted.png");
+
+        barImage2.addEventListener("click", () => {
+            socket.emit("savePostedDesign", {design: post.id, creator: post.user});
+        })
+        
         barImage3.setAttribute("src", "/public/assets/icons/chat-circle-inverted.png");
 
-        
+        barImage3.addEventListener("click", () => {
+            showComments(postImage);
+        });
 
         
 
@@ -429,12 +439,9 @@ socket.on("posts", posts => {
         postBar.appendChild(div2);
         postBar.appendChild(div3);
 
-        postImage.setAttribute("src", post.design);
-        postImage.setAttribute("alt", post.id);
+        
 
-        barImage3.addEventListener("click", () => {
-            showComments(postImage);
-        });
+        
 
     
         gridItem.appendChild(postImage);

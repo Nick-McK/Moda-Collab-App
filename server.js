@@ -942,7 +942,30 @@ io.sockets.on('connect', (socket) => {
             console.log("comments", comments);
             socket.emit("returnComments", {comments: comments});
             
-        })
+        });
+    });
+
+    socket.on("savePostedDesign", (data) => {
+        con.query("SELECT userID from users WHERE username = ?", [data.creator], (err, result) => {
+            if (err) throw err;
+
+            console.log("resuilt", result[0].userID);
+
+            con.query("SELECT design FROM posts WHERE postID = ?", [data.design], (err, res) => {
+                if (err) throw err;
+
+                console.log("ressssss", res[0].design);
+
+                con.query("INSERT INTO saveddesigns (savedBy, design, creatorID) VALUES (?, ?, ?)", [socket.request.session.userID, res[0].design, result[0].userID], (err, r) => {
+                    if (err) throw err;
+                    console.log("rrrrrrrrrrrr------------------", r);
+                });
+             });
+        });
+
+
+
+        
     })
 });
 
