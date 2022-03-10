@@ -51,4 +51,7 @@ Bugs:
 * [ ] when leaving a room last, if you then go on the room menu it will not be deleted. If you try access the room it will crash the server
     * [ ] Rereshing fixes this, possibly only way to fix is to put error handling on rooms that have been deleted when people try join
 
+* [ ] If you mouse over the image of a post when clicking on the comment button then the animation resets
+    * [ ] This also happens when click on the image of a post but you need to remove the mouse from the image and mouse over again
+
 
