@@ -9,7 +9,8 @@
         * [X] ~~*place post back in its position*~~ [2022-03-08]
     * [X] ~~*Navbar*~~ [2022-03-02]
         * [ ] Add media control so phone users get burger menu's
-    * [ ] save designs from the posts menu
+    * [X] ~~*save designs from the posts menu*~~ [2022-03-10]
+    * [ ] Liked posts menu
 
 * [ ] Tags
     * [X] ~~*Select tags*~~ [2022-03-09]
@@ -24,9 +25,9 @@
     * [X] ~~*Delete rooms after 5 minutes with nobody in them*~~ [2022-03-04]
 
 * [ ] Profile page
-    * [ ] Tilted pane of settings?
-    * [ ] Add your posts to the page
-    * [ ] Adding picture to your profile
+    * [ ] Sort routing for profile page, go to /account/:username
+    * [ ] Add your posts to the page -> carousel of most recent posts
+    * [ ] Adding picture to your profile -> socket.io file upload instead of express file upload
 
 * [ ] Moderation
     * [ ] Add a flagged status -> If a post is flagged its removed from homepage and placed on a mod page where it is decided if it should be removed
@@ -53,5 +54,6 @@ Bugs:
 
 * [ ] If you mouse over the image of a post when clicking on the comment button then the animation resets
     * [ ] This also happens when click on the image of a post but you need to remove the mouse from the image and mouse over again
+* [ ] Clicking on comments and having the animation fail will duplicate comments
 
 

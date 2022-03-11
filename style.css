@@ -303,7 +303,7 @@ option .Streetwear{
     transform: translateX(-50%);
     left: 30%;
     text-align: center;
-    background: white;
+    background: transparent;
     line-height: 30px;
     font-size: 15px;
     cursor: pointer;
@@ -317,7 +317,7 @@ option .Streetwear{
     transform: translateX(-50%);
     left: 61%;
     text-align: center;
-    background: white;
+    background: transparent;
     line-height: 30px;
     font-size: 15px;
     cursor: pointer;

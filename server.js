@@ -135,6 +135,7 @@ app.get("/", (req, res) => {
 })
 
 app.get("/account/login", (req, res) => {
+    req.session.loggedIn = false;
     res.sendFile(path.join(__dirname + "/login.html"))
 })
 
@@ -259,10 +260,18 @@ app.post("/profile", (req, res) => {
         return res.status(400).send("No files were uploaded");
     }
 
+    const folderName = "./server/" + req.session.userID;
 
+    try {
+        if (!fs.existsSync(folderName)) {
+            fs.mkdirSync(folderName);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+    
 
-
-    uploadPath = __dirname + "/server/" + req.files.profilePic.name;
+    uploadPath = __dirname + "/server/" + req.session.userID + "/" + req.files.profilePic.name;
 
     console.log("upload path", uploadPath);
 
@@ -272,7 +281,41 @@ app.post("/profile", (req, res) => {
 
         console.log("file uploaded");
 
-        res.send("file uploaded");
+
+        // get all names of files in /public/assests/templates folder
+        serverFolder = [];
+        serverFolderPath = './server/' + req.session.userID + "/";
+        fs.readdirSync(serverFolderPath).forEach(file => {
+            serverFolder.push(file);
+        });
+
+        // console.log("dataaaa", data.profileImg)
+
+        // con.query("SELECT userID FROM users WHERE username = ?", [data.username], (err, result) => {
+        //     if (err) throw err;
+        //     console.log("username from profile", result);
+
+            for (var i in serverFolder) {
+            
+                
+                const data = fs.readFileSync(serverFolderPath+serverFolder[i], {encoding:'base64'})
+                const buf = Buffer.from(data,"base64");
+                
+                con.query("UPDATE users SET profilePicture = ? WHERE userID = ?", [buf, req.session.userID], (err, res) => {
+                    if (err) throw err;
+    
+                    console.log("this is our new profile pic", res);
+                });
+            }
+        // });
+
+
+
+
+
+
+
+        res.sendFile(path.join(__dirname + "/profile.html"));
     });
     
     // res.sendFile(path.join(__dirname + "/profile.html"));
@@ -535,7 +578,7 @@ io.sockets.on('connect', (socket) => {
 
     socket.on("NewProfilePic", profilePic => {
         console.log("proffff", profilePic);
-        con.query("INSERT INTO user_details (profilePicture) VALUES = ?", [profilePic], (err, result) => {
+        con.query("UPDATE users (profilePicture) VALUES = ?", [profilePic], (err, result) => {
             console.log("profile pic added", result);
         })
     })
@@ -823,7 +866,15 @@ io.sockets.on('connect', (socket) => {
 
 
     socket.on("details", () => {
-        socket.emit("accountDetails", {username: socket.request.session.username});
+
+        con.query("SELECT * FROM users", (err, result) => {
+            if (err) throw err;
+            console.log("this is our resssssss", result);
+
+            socket.emit("accountDetails", {username: socket.request.session.username});
+        })
+
+        
     })
     
     socket.on("post", (postData) => {
@@ -962,11 +1013,62 @@ io.sockets.on('connect', (socket) => {
                 });
              });
         });
+    });
+
+    socket.on("setProfilePic", (data) => {
+
+        // // get all names of files in /public/assests/templates folder
+        // serverFolder = [];
+        // serverFolderPath = './server/'
+        // fs.readdirSync(serverFolderPath).forEach(file => {
+        //     serverFolder.push(file);
+        // });
+
+        // console.log("dataaaa", data.profileImg)
+
+        // con.query("SELECT userID FROM users WHERE username = ?", [data.username], (err, result) => {
+        //     if (err) throw err;
+        //     console.log("username from profile", result);
+
+        //     for (var i in serverFolder) {
+            
+                
+        //         const data = fs.readFileSync(serverFolderPath+serverFolder[i], {encoding:'base64'})
+        //         const buf = Buffer.from(data,"base64");
+                
+        //         con.query("UPDATE users SET profilePicture = ? WHERE userID = ?", [buf, result[0].userID], (err, res) => {
+        //             if (err) throw err;
+    
+        //             console.log("this is our new profile pic", res);
+        //         });
+        //     }
+        // });
+    });
 
 
+    socket.on("getProfile", (data) => {
+        console.log("we are logging", data.username);
+        
+        con.query("SELECT profilePicture FROM users WHERE username = ?", [data.username], (err, result) => {
+            if (err) throw err;
+            console.log("what is this", result);
+            if (result[0].profilePicture == undefined) result[0].profilePicture = "/public/assets/icons/empty-profile-picture.jpeg"
 
+            result[0].profilePicture = Buffer.from(result[0].profilePicture).toString('base64');
+            result[0].profilePicture = "data:image/png;base64," + result[0].profilePicture.toString("base64");
+
+            console.log("this is our picture stored", result);
+
+            socket.emit("returnProfile", {picture: result[0].profilePicture});
+        })
         
     })
+
+    socket.on("testing", (data) => {
+        console.log("testing");
+    })
+
+
 });
 
 app.use(router);
