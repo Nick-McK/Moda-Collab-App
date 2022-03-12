@@ -31,12 +31,12 @@ var recentObj;
 var obj;
 var newImg;
 
-
+var undoStack = [];
 
 // Initialise variables for changable attributes
 var colour = 'black';
-var pt = 40;
-var lineWidth = 1;
+var pt = 500;
+var lineWidth = 10;
 var fontFamily = "Times New Roman";
 var panning = false;
 var straightLineDraw = {toggled: false, isDrawing: false};
@@ -58,9 +58,11 @@ ptInput.addEventListener('keypress', function (e) {
 function setPtSize() {
     pt = parseInt(ptInput.value);
     console.log(pt)
-    if (canvas.getActiveObject()) {
-        if (canvas.getActiveObject().get('type') == 'textbox') {
-            canvas.getActiveObject().set('fontSize', pt);
+    var activeObj = canvas.getActiveObject();
+    if (activeObj) {
+        if (activeObj.get('type') == 'textbox') {
+            constructForUndoStack({id: activeObj.id, fontSize: activeObj.fontSize})    // Send ptSize before change to the undo stack
+            activeObj.set('fontSize', pt);
             canvas.renderAll();
             canvas.fire('object:modified')
 
@@ -86,10 +88,14 @@ function setLineWidth() {
     canvas.freeDrawingBrush.width = parseInt(lineWidth);
     console.log(canvas.getActiveObject())
     console.log(lineWidth)
-    if (canvas.getActiveObject()) {
+    var activeObj = canvas.getActiveObject();
+    if (activeObj) {
         // not sure if line is a type but just in case
-        if (canvas.getActiveObject().get('type') == 'path' || canvas.getActiveObject().get('type') == 'polyline' || canvas.getActiveObject().get('type') == 'line') 
-            canvas.getActiveObject().set("strokeWidth", parseInt(lineWidth));
+        if (activeObj.get('type') == 'path' || activeObj.get('type') == 'polyline' || activeObj.get('type') == 'line') {
+            constructForUndoStack({id: activeObj.id, strokeWidth: activeObj.strokeWidth})    // Send lineWidth before change to the undo stack
+            activeObj.set("strokeWidth", parseInt(lineWidth));
+        }
+            
         canvas.renderAll();
         canvas.fire('object:modified')
     }
@@ -99,9 +105,11 @@ const fontFamilyInput = document.getElementById('font');    // Gets font selecti
 // Event listener for change in selection box value
 fontFamilyInput.addEventListener('change', function () {
     fontFamily = fontFamilyInput.value;
-    if (canvas.getActiveObject()) {
-        if (canvas.getActiveObject().get('type') == 'textbox') {
-            canvas.getActiveObject().set('fontFamily', fontFamily);
+    var activeObj = canvas.getActiveObject();
+    if (activeObj) {
+        if (activeObj.get('type') == 'textbox') {
+            constructForUndoStack({id: activeObj.id, fontFamily: activeObj.fontFamily})    // Send font before change to the undo stack
+            activeObj.set('fontFamily', fontFamily);
             canvas.renderAll();
             canvas.fire('object:modified')
         }
@@ -113,22 +121,27 @@ function changeColour(col) {
     colour = col;
     canvas.freeDrawingBrush.color = colour;
     console.log(colour);
-    if (canvas.getActiveObject()) {
-        // not sure if line is a type but just in case
-        if (canvas.getActiveObject().get('type') == 'path' || canvas.getActiveObject().get('type') == 'polyline' || canvas.getActiveObject().get('type') == 'line') 
-            canvas.getActiveObject().set("stroke", colour);
+    var activeObj = canvas.getActiveObject();
+    if (activeObj) {
+        constructForUndoStack({id: activeObj.id, fill: activeObj.fill})    // Send the before colour change instance of the obj to the undo stack
+
+        if (activeObj.get('type') == 'path' || activeObj.get('type') == 'polyline' || activeObj.get('type') == 'line') 
+            activeObj.set("stroke", colour);
         else 
-            canvas.getActiveObject().set("fill", colour);
+            activeObj.set("fill", colour);
         canvas.renderAll();
-        canvas.fire('object:modified')
+        canvas.fire('object:modified', activeObj)
     }
 }
 
 function changeBgColour(col) {
     backgroundColor = col;
-    r.set({fill: backgroundColor});
+    // r.set({fill: backgroundColor});  // this would make it so templates are hidden
+    undoStack.push({attributes : {bgColour : canvas.backgroundColor}, type:"bgColour"}); // Send bgColour before change to the undo stack
+
+    canvas.backgroundColor = backgroundColor;
     canvas.renderAll();
-    canvas.fire('object:modified');
+    socket.emit('canvasUpdate', {"change": backgroundColor, "type": 'bgColour'});
 }
 
 // Uses a switch case to perform actions for each tool, triggered by onclick when selecting any tool
@@ -224,7 +237,14 @@ function changeTool(res, imgInfo) {
                 // this needs to be called here. Because of the callback, the code at the bottom of this section will not be able to add the img as it hadn't loaded at that point
                 canvas.add(oriImg).renderAll();
                 recentObj = oriImg;
-                socket.emit('canvasUpdate', {"change": oriImg, "type" : "add"});
+                socket.emit('canvasUpdate', {"change": oriImg, "type" : "add"}, function(id) {
+                    console.log(id);
+                    if (id != null) {
+                        recentObj.id = id;
+                    }
+                    undoStack.push({attributes: recentObj, type:"add"});
+                });
+                
             });
             obj = null; // need this otherwise errors will occur at bottom of this section
             break;
@@ -259,9 +279,16 @@ function changeTool(res, imgInfo) {
 
     if (obj && res != 'IMAGE') {    //Img check needed bc of use of callback in image loading
         canvas.add(obj).renderAll();
-        recentObj = obj;
         console.log("sending", obj);
-        socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
+        socket.emit('canvasUpdate', {"change": obj, "type" : "add"}, function(id) {
+            console.log(id);
+            if (id != null) {
+                obj.id = id;
+            }
+        });
+        recentObj = obj;
+        
+        undoStack.push({attributes: recentObj, type:"add"});
     }
 }
 
@@ -275,13 +302,16 @@ function freeDrawing(brushType) {
         break;
         case 'PENCIL':
             canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-            canvas.freeDrawingBrush.stroke = colour;
-            canvas.freeDrawingBrush.strokeWidth = lineWidth;
+            canvas.freeDrawingBrush.color = colour;
+            canvas.freeDrawingBrush.width = lineWidth;
+
+            console.log(canvas.freeDrawingBrush.strokeWidth)
+
         break;
         case 'CIRCLES':
-            canvas.freeDrawingBrush = new fabric.CircleBrush(canvas);
+            canvas.freeDrawingBrush = new fabric.CircleBrush(canvas);       // STILL NEED TO IMPLEMENT THIS, NOT SURE IF ITS POSSIBLE THOUGH
             canvas.freeDrawingBrush.radius = lineWidth;
-            canvas.freeDrawingBrush.stroke = colour;    // might be wrong values for circle
+            canvas.freeDrawingBrush.width = colour;    // might be wrong values for circle
         break;
     }
     // reset values of other tools possibly in use
@@ -336,11 +366,17 @@ function straightMouseUp(o) {
     obj.set({x2:pointer.x, y2:pointer.y});
     recentObj = obj;
     canvas.renderAll();
-    socket.emit('canvasUpdate', {"change": obj, "type" : "add"});
+    socket.emit('canvasUpdate', {"change": obj, "type" : "add"}, function(id) {
+        console.log(id);
+        if (id != null) {
+            obj.id = id;
+        }
+        undoStack.push({attributes: obj, type:"add"});
+    });
 }
 
 canvas.on("mouse:move", function (opt) {
-    if (drawFlag) {  // this pushed line points to a stack when drawing
+    if (drawFlag) {  // this pushed line points to a stack when drawing, NOT SURE ANY OF THIS IS NECESSARY NOW
         if (checkPointerInArea()) {
             stack.push(canvas.getPointer());
         } else if (canvas._isCurrentlyDrawing){
@@ -419,9 +455,14 @@ function sendPath(e) {
                 }
             }
         } else {
-            socket.emit('canvasUpdate', {"change": {path: e.path, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add"});
+            socket.emit('canvasUpdate', {"change": {path: e.path, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add"}, function(id) {
+                console.log(id);
+                if (id != null) {
+                    recentObj.id = id;
+                }
+                undoStack.push({attributes: recentObj, type:"add"});
+            });
         }
-        
     }
     drawFlag = false;
 }
@@ -511,6 +552,11 @@ canvas.on("mouse:wheel", function(options) {
         }
     }
     console.log(view[4], view[5])
+
+    // Used to recalculate the hitboxes of each object when zooming
+    for (var i of canvas._objects) {        // If there is major lag when zooming, this might be the cause
+        i.setCoords();
+    }
 });
 
 function checkPointerInArea() {
@@ -539,11 +585,40 @@ imageSelect.addEventListener('change', function(){
 
 
 // Emits to canvas whenever a change is made to any object so other clients can update
-canvas.on('object:modified', function () {
+canvas.on('object:modified', function (e) {
+    console.log(e);
+    if (e.transform && typeof e.transform != 'function') {
+        undoStack.push({attributes : e.transform, type: "mod"});
+    } else if (e.target && e.target.text) {         // handler for if a textbox is typed in, e.target has to exists because of type error issue
+        console.log("ithere")
+        constructForUndoStack({id : e.target.id, text : e.target._textBeforeEdit});
+    }
     // for some reason id wouldn't carry over to server through "change" object
     console.log(canvas.getActiveObject());
     socket.emit('canvasUpdate', {"change": canvas.getActiveObject(), "type": 'mod', "id": canvas.getActiveObject().id});
 });
+
+
+// this is to take in values that need to be pushed to the stack that are not covered in the general movement,scale,rotate etc values
+// should add to the undoStack in a structure that the current undo code can understand
+function constructForUndoStack(o) {
+    console.log(o);
+    var info = {};
+
+
+    for (const [key, value] of Object.entries(o)) {
+        if (key == 'id') continue;  // need to put id somewhere else in the structure
+        info[key] = value;
+    }
+
+    var structureHelp = []
+    structureHelp["original"] = info;
+    structureHelp["target"] = {id:o.id}
+
+    console.log({attributes: structureHelp, type : "mod"});
+
+    undoStack.push({attributes: structureHelp, type : "mod"})    // modify this to fit in with the structure in the undo function
+}
 
 
 // This is for debugging
@@ -554,6 +629,50 @@ canvas.on('selection:created', function() {
 // dont worry about this
 function delay(time) {
     return new Promise(resolve => setTimeout(resolve, time));
+}
+
+function undo() {
+    if (undoStack.length > 0) {
+        console.log(undoStack)
+
+        var change = undoStack.pop() 
+
+        if (change.type == 'mod') {
+            var moddedObj;
+
+            for (var i in canvas._objects) {
+                if (canvas._objects[i].id == change.attributes.target.id) {
+                    for (const [key, value] of Object.entries(change.attributes.original)) {
+                        console.log(key, value);
+                        if (key == 'originX' || key == 'originY') { // this messes things up, so skip them
+                            continue;
+                        }
+    
+                        canvas._objects[i].set({[key]:value}); //set the objects key value to be the key value that was used before the most recent modification
+                        canvas._objects[i].setCoords();
+                    }
+                    canvas.renderAll()
+                    console.log(canvas._objects[i])
+                    moddedObj = canvas._objects[i];
+                    break;
+                }
+            }
+            console.log(moddedObj)
+            socket.emit('canvasUpdate', {"change": moddedObj, "type": 'mod', "id": moddedObj.id});
+        } else if (change.type == 'add')   {        // this means we have to remove the object
+            for (var i in canvas._objects) {
+                if (canvas._objects[i].id == change.attributes.id) {
+                    canvas.setActiveObject(canvas._objects[i]); // this is necessary so deleteItem knows which obj to delete
+                    deleteItem()
+                }
+            }
+        } else if (change.type == 'bgColour') {
+            canvas.backgroundColor = change.attributes.bgColour;
+            canvas.renderAll();
+            socket.emit('canvasUpdate', {"change": canvas.backgroundColor, "type": 'bgColour'});    // need a socket emit for only this one bc the others are handled by event managers
+        }
+        
+    }
 }
 
 // This is triggered by an onclick on the delete button and also the delete key
@@ -576,6 +695,11 @@ function deleteItem() {
 document.onkeydown =  function (e) {        // This might cause issues for using the delete key anywhere else on the page
     if (e.key === 'Delete') {
         deleteItem();
+    }
+
+    // this bit is for dealing with an undo request
+    if (e.ctrlKey && e.key === 'z') {
+       undo();
     }
 };
 
@@ -754,6 +878,11 @@ socket.on('canvasUpdate', (data) => {
             }
         break;
 
+        case 'bgColour':
+            console.log(data);
+            canvas.backgroundColor = data.change;
+        break;
+
         case 'remove':
             // Loop through object to be deleted
             for (var i in data) {
@@ -809,9 +938,9 @@ socket.on('canvasUpdate', (data) => {
 });
 
 // this is server assigned id given when client creates obj
-socket.on('idUpdate', (data) => {
-    recentObj.id = data;
-});
+// socket.on('idUpdate', (data) => {
+//     recentObj.id = data;
+// });
 
 // Get room fucntion which takes in the room name when we create it from the server, then loop through them all and when that room == location.pathname we have our room
 const whiteboard = document.getElementById("whiteboard");
@@ -978,6 +1107,12 @@ socket.on('loadDesignResponse', (res) => {
 
 });
 // End of header code
+
+socket.on("backgroundColourUpdate", (data) => {
+    console.log("newBgColour", data)
+    canvas.backgroundColor = data;
+    canvas.renderAll()
+});
 
 
 // Below is code for buttons in footer

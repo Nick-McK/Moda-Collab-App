@@ -495,7 +495,7 @@ io.sockets.on('connect', (socket) => {
         roomName = data.roomName;
         io.to(roomName).emit("users", {usernames: userVals, sessionID: socket.request.session.id, room: roomName});     //do we need to send session and room?
 
-
+        // give new users existing collab room data
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
                 for (var j in roomList[i].objects) {
@@ -504,6 +504,10 @@ io.sockets.on('connect', (socket) => {
 
                 if (roomList[i].background) {
                     socket.emit("importTemplate", roomList[i].background);
+                }
+
+                if (roomList[i].backgroundColor) {
+                    socket.emit("backgroundColourUpdate", roomList[i].backgroundColor);
                 }
             }
         }
@@ -545,30 +549,29 @@ io.sockets.on('connect', (socket) => {
 		console.log(result);
 	})});
 
-    socket.on("canvasUpdate", (data) => {
+    socket.on("canvasUpdate", (data, callback) => {
         switch(data.type) {
             // each type of call is sent in a slightly different way
             case "add":
-                addObj(data.change);
-                
-                break;
+                var id = addObj(data.change);
+                callback(id);
+            break;
             case "addErased":
                 addErased(data.change);
             break;
+            case "bgColour":  // for background colour change
+                bgColourChange(data.change);
+            break;
             case "remove":
                 removeObj(data.change);
-
-                break
+            break;
             case "mod":
-                console.log(data);
                 data.change.id = data.id;
                 modObj(data.change);
-
-                break;
+            break;
             case "deleteDesign":
                 deleteDesign();
-
-                break;
+            break;
         }
 
         console.log("roomName to console", roomName);
@@ -599,13 +602,16 @@ io.sockets.on('connect', (socket) => {
             }
         }
 
-        if (!ignore) {
-            console.log("sending");
-            socket.emit("idUpdate", data.id);
+        if (ignore) { // this should be called on a user loading into the room, they need to add the objects but not assign new ids
+            // console.log("sending");
+            // socket.emit("idUpdate", data.id);
+            return null;
         }
+
+        return data.id;
     }
 
-    // Issue here is that we need to get the id's of the objects when getting toJSON, so we know which object is which when updating serverside
+    // This is for updating the objects that have been clipped by an eraser line
     function addErased(data) {
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
@@ -614,6 +620,14 @@ io.sockets.on('connect', (socket) => {
                         roomList[i].objects[j] = data.obj;
                     }
                 }
+            }
+        }
+    }
+
+    function bgColourChange(data) {
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                roomList[i].backgroundColor = data;
             }
         }
     }
