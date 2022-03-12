@@ -304,9 +304,6 @@ function freeDrawing(brushType) {
             canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
             canvas.freeDrawingBrush.color = colour;
             canvas.freeDrawingBrush.width = lineWidth;
-
-            console.log(canvas.freeDrawingBrush.strokeWidth)
-
         break;
         case 'CIRCLES':
             canvas.freeDrawingBrush = new fabric.CircleBrush(canvas);       // STILL NEED TO IMPLEMENT THIS, NOT SURE IF ITS POSSIBLE THOUGH
@@ -447,12 +444,27 @@ function sendPath(e) {
     if (e) {
        recentObj = e;
         if (canvas.freeDrawingBrush.type == 'eraser') { // if the line drawn is an eraser line
+            var intersectList = [];
             // find all of the objects it intersects with
             for (var i in canvas._objects) {
                 if (i==0) continue; //except the boundary box
                 if (e.intersectsWithObject(canvas._objects[i], true)) { // when this happens, it means that the eraser line becomes a clip path on the obj and the obj should be sent fully to the server and other clients
-                    socket.emit('canvasUpdate', {change: {obj: canvas._objects[i].toJSON(['id'])}, type: "addErased"});  //don't know why we need to include id but we do
+                    intersectList.push(canvas._objects[i].toJSON(['id']));
                 }
+            }
+        
+
+            if (intersectList != null) {
+                socket.emit('canvasUpdate', {change: intersectList, type: "addErased"});
+
+                for (var i in intersectList) {  // remove the most recent added erasure line from the obj to get the previous state of the obj before erased line
+                    intersectList[i].clipPath.objects.pop()
+                }
+
+
+
+                undoStack.push({attributes: intersectList, type:"addErased"})
+                console.log(intersectList)
             }
         } else {
             socket.emit('canvasUpdate', {"change": {path: e.path, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add"}, function(id) {
@@ -590,7 +602,6 @@ canvas.on('object:modified', function (e) {
     if (e.transform && typeof e.transform != 'function') {
         undoStack.push({attributes : e.transform, type: "mod"});
     } else if (e.target && e.target.text) {         // handler for if a textbox is typed in, e.target has to exists because of type error issue
-        console.log("ithere")
         constructForUndoStack({id : e.target.id, text : e.target._textBeforeEdit});
     }
     // for some reason id wouldn't carry over to server through "change" object
@@ -663,23 +674,36 @@ function undo() {
             for (var i in canvas._objects) {
                 if (canvas._objects[i].id == change.attributes.id) {
                     canvas.setActiveObject(canvas._objects[i]); // this is necessary so deleteItem knows which obj to delete
-                    deleteItem()
+                    deleteItem(true)    //true marks that we are using the undo feature, so don't re add this removal to the undo stack for infinite loop
                 }
             }
         } else if (change.type == 'bgColour') {
             canvas.backgroundColor = change.attributes.bgColour;
             canvas.renderAll();
             socket.emit('canvasUpdate', {"change": canvas.backgroundColor, "type": 'bgColour'});    // need a socket emit for only this one bc the others are handled by event managers
+        } else if (change.type == 'delete') {
+            for (var i in change.attributes) {
+                console.log(change.attributes[i].toJSON(['id']))
+                addItemFromData(change.attributes[i].toJSON(['id']));   // need to covert to json for enliven objects to work
+                socket.emit('canvasUpdate', {'change': change.attributes[i].toJSON(['id']),type: "add"});  //don't know why we need to include id but we do
+            }
+        } else if (change.type == 'addErased') {
+            addErasedFromData(change.attributes);
+            socket.emit('canvasUpdate', {'change': change.attributes,type: "addErased"});  //don't know why we need to include id but we do
         }
         
     }
 }
 
 // This is triggered by an onclick on the delete button and also the delete key
-function deleteItem() {
+function deleteItem(usingUndo) {
     obj = canvas.getActiveObjects();    // use Objects for group deletion
     var ids = obj.map(function (o) {return o.id});    //
 
+    console.log(obj);
+    if (!usingUndo) {
+        undoStack.push({attributes: obj, type: "delete"})
+    }
 
     // send emit for each obj and remove it from current client
     for (var i in ids) {
@@ -699,9 +723,63 @@ document.onkeydown =  function (e) {        // This might cause issues for using
 
     // this bit is for dealing with an undo request
     if (e.ctrlKey && e.key === 'z') {
+        console.log("undoStack before pop", undoStack)
        undo();
     }
 };
+
+function addItemFromData(data) {
+    if (data.type == undefined) {    // this code needs to be here as the enlivenObjects doesn't work with the way we do normal pencil drawing atm
+        canvas.isDrawingMode = true;
+
+        addObj = new fabric.Path(data.path, {
+            strokeWidth: data.lineWidth,
+            stroke: data.stroke,
+            strokeLineJoin: 'round',        // This is to avoid jagged edges especially at larger thicknesses
+            strokeLineCap: 'round',
+            fill: null,
+            angle: data.angle,
+            height: data.height,
+            width: data.width,
+            left: data.left,
+            top: data.top,
+            id: data.id
+        });
+
+        if (data.scaleX) {
+            addObj.set({scaleX: data.scaleX, scaleY: data.scaleY});
+        }
+        
+        canvas.isDrawingMode = false;
+
+        canvas.add(addObj);
+    } else {    // this adds in new objects from other clients as they are drawn
+        fabric.util.enlivenObjects([data], function (enlivenObjects) {
+            // canvas.remove(canvas._objects[i]);
+            console.log(enlivenObjects[0]);
+            canvas.add(enlivenObjects[0]);
+            canvas.renderAll()
+        });
+    }
+
+}
+
+function addErasedFromData(objs) {
+    console.log(objs);
+    for (var j in objs) {
+        for (var i in canvas._objects) {
+            if (canvas._objects[i].id == objs[j].id) {
+                console.log(objs[j])
+                fabric.util.enlivenObjects([objs[j]], function (enlivenObjects) {
+                    canvas.remove(canvas._objects[i]);
+                    canvas.add(enlivenObjects[0]);
+                    canvas.renderAll();
+                })
+                break;
+            };
+        }
+    }
+}
 
 
 // This handles all canvas updates, e.g. any additions, deletions, modifications, templates or design loads
@@ -712,39 +790,10 @@ socket.on('canvasUpdate', (data) => {
     // Use switch case to figure out what kind of update it is
     switch (data.type) {
         case 'add':
+            console.log("this one be addin",data)
             console.log(data.change.type);
-            if (data.change.type == undefined) {    // this code needs to be here as the enlivenObjects doesn't work with the way we do normal pencil drawing atm
-                canvas.isDrawingMode = true;
-
-                addObj = new fabric.Path(data.change.path, {
-                    strokeWidth: data.change.lineWidth,
-                    stroke: data.change.stroke,
-                    strokeLineJoin: 'round',        // This is to avoid jagged edges especially at larger thicknesses
-                    strokeLineCap: 'round',
-                    fill: null,
-                    angle: data.change.angle,
-                    height: data.change.height,
-                    width: data.change.width,
-                    left: data.change.left,
-                    top: data.change.top,
-                    id: data.change.id
-                });
-
-                if (data.change.scaleX) {
-                    addObj.set({scaleX: data.change.scaleX, scaleY: data.change.scaleY});
-                }
-                
-                canvas.isDrawingMode = false;
-
-                canvas.add(addObj);
-            } else {    // this adds in new objects from other clients as they are drawn
-                fabric.util.enlivenObjects([data.change], function (enlivenObjects) {
-                    // canvas.remove(canvas._objects[i]);
-                    canvas.add(enlivenObjects[0]);
-                    canvas.renderAll()
-                });
-            }
-
+            addItemFromData(data.change)
+            
             
             // somehow managed to reduce the below code to the stuff above
 
@@ -865,17 +914,9 @@ socket.on('canvasUpdate', (data) => {
         break;
 
         case 'addErased':
-            for (var i in canvas._objects) {
-                if (canvas._objects[i].id == data.change.obj.id) {
-                    // canvas._objects[i] = data.change.obj;
-                    fabric.util.enlivenObjects([data.change.obj], function (enlivenObjects) {
-                        canvas.remove(canvas._objects[i]);
-                        canvas.add(enlivenObjects[0]);
-                        canvas.renderAll()
-                    })
-                    // console.log(JSON.parse(data.change))
-                }
-            }
+            console.log("erasedshithere", data.change);
+            addErasedFromData(data.change);
+            
         break;
 
         case 'bgColour':

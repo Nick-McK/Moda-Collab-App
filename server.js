@@ -550,11 +550,16 @@ io.sockets.on('connect', (socket) => {
 	})});
 
     socket.on("canvasUpdate", (data, callback) => {
+        console.log(data.type,data);
+
         switch(data.type) {
             // each type of call is sent in a slightly different way
             case "add":
                 var id = addObj(data.change);
-                callback(id);
+                if (callback) {
+                    callback(id);
+                }
+                
             break;
             case "addErased":
                 addErased(data.change);
@@ -586,15 +591,17 @@ io.sockets.on('connect', (socket) => {
         })
     })
 
-    function addObj(data, ignore, loadDesign) {
+    function addObj(data, ignore, loadDesign) {     //ignore probably isn't needed anymore, not 100% sure though
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
-                data.id = roomList[i].objIdCounter;
+                if (data.id == null) {      // if id is unassigned, assign it and increment id counter
+                    data.id = roomList[i].objIdCounter;
+                    roomList[i].objIdCounter++;
+                }
+                
+                
                 roomList[i].objects.push(data);
-                roomList[i].objIdCounter++;
-
                 console.log("newObj", data)
-
 
                 if (loadDesign) {
                     io.to(roomList[i].roomName).emit('canvasUpdate', {change: data, type: "add"});            
@@ -602,22 +609,27 @@ io.sockets.on('connect', (socket) => {
             }
         }
 
-        if (ignore) { // this should be called on a user loading into the room, they need to add the objects but not assign new ids
-            // console.log("sending");
-            // socket.emit("idUpdate", data.id);
-            return null;
-        }
+        // if (ignore) { // this should be called on a user loading into the room, they need to add the objects but not assign new ids
+        //     // console.log("sending");
+        //     // socket.emit("idUpdate", data.id);
+        //     return null;
+        // }
 
         return data.id;
     }
 
     // This is for updating the objects that have been clipped by an eraser line
     function addErased(data) {
+        // for (var i in data.obj) {
+        //     console.log(data.obj[i].clipPath.objects);
+        // }
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
                 for (var j in roomList[i].objects) {
-                    if (data.obj.id == roomList[i].objects[j].id) {
-                        roomList[i].objects[j] = data.obj;
+                    for (var n in data.obj) {
+                        if (data.obj[n].id == roomList[i].objects[j].id) {
+                            roomList[i].objects[j] = data.obj[n];
+                        }
                     }
                 }
             }
@@ -640,6 +652,7 @@ io.sockets.on('connect', (socket) => {
                         delete roomList[i].objects[j];
                     }
                 }
+                console.log("roomObjs",roomList[i].objects);
             }
         }
     }
