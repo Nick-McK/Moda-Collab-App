@@ -911,9 +911,61 @@ io.sockets.on('connect', (socket) => {
             if (err) console.log(err);
             let image = result[0]._id;
             let design = image.toString();
-            con.query("INSERT INTO posts (postName, postCaption, design, userID) VALUES (?, ?, ?, ?)", [postData.postName, postData.postCaption, design, socket.request.session.userID], (err, result) => {
+            let tags = [];
+            if(postData.tagsList.length > 0){
+               
+                for(let i = 0; i<8; i++){
+                    tags[i] = 0;
+                }
+                if(postData.tagsList.includes('streetware')){
+                    tags[0] = 1;
+                }
+                if(postData.tagsList.includes('formal')){
+                    tags[1] = 1;
+                }
+                if(postData.tagsList.includes('casual')){
+                    tags[2] = 1;
+                }
+                if(postData.tagsList.includes('luxury')){
+                    tags[3] = 1;
+                }
+                if(postData.tagsList.includes('vintage')){
+                    tags[4] = 1;
+                }
+                if(postData.tagsList.includes('chic')){
+                    tags[5] = 1;
+                }
+                if(postData.tagsList.includes('punk')){
+                    tags[6] = 1;
+                }
+                if(postData.tagsList.includes('sportsware')){
+                    tags[7] = 1;
+                }
+            }
+            // code that's commented out is tags stuff
+            /* none of this works bruh 
+            con.query("SELECT postID FROM posts WHERE postName = ?", [postData.postName], (err, result) => {
+               if (err) throw err;
+               if(result.postID != null){
+                   socket.emit("postAlreadyExists", (postData.postName));
+               } else{
+
+               }
+            });
+            */
+            con.query("INSERT INTO posts (postName, postCaption, design, userID) VALUES (?, ?, ?, ?)", [postData.postName, postData.postCaption, design, socket.request.session.userID], (err) => {
+                if(err) throw err;
+                console.log("added post");
+                /* fixing this aint worth it bruh
                 if (err) throw err;
-                console.log(result);
+                con.query("SELECT postID FROM posts WHERE postName = ?",[postData.postName], (err, postResult) => {
+                    if(err) throw err;
+                    con.query("INSERT INTO posttags (postID, streetware, formal, casual, luxury, vintage, chic, punk, sportsware) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [postResult[0].postID, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]], (err, result) => {
+                        if(err) throw err;
+                        console.log("posts added to sql database");
+                    });
+                })
+                */
             });
         });
 
@@ -991,8 +1043,7 @@ io.sockets.on('connect', (socket) => {
             if(tagsList.includes('sportsware')){
                 tags[7] = 1;
             }
-            console.log(socket.request.session.userID);
-            con.query("INSERT INTO tags (userID, streetware, formal, casual, luxury, vintage, chic, punk, sportsware) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [socket.request.session.userID, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]], (err, result) => {
+            con.query("INSERT INTO usertags (userID, streetware, formal, casual, luxury, vintage, chic, punk, sportsware) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [socket.request.session.userID, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]], (err, result) => {
                 if(err) throw err;
             });
             (socket.emit("tagDataResponse", true))

@@ -261,16 +261,27 @@ socket.on("savedDesigns", (data) => {
 });
 
 postButton.onclick = () => {
+    let tags = []
+    if(postTags.selectedOptions.length > 0){
 
-    let postImage = designChoice.src;
-    let name = postName.value;
-    let caption = postCaption.value;
+    
+        for(let i=0; i<postTags.selectedOptions.length; i++){
+            tags.push(postTags.selectedOptions[i].innerHTML);
+        };
+        console.log(tags);
+        let postImage = designChoice.src;
+        let name = postName.value;
+        let caption = postCaption.value;
 
-    let data = {postName: name, postCaption: caption, image: postImage};
+    
+        let data = {postName: name, postCaption: caption, image: postImage, tagsList: tags};
 
-    console.log(data.image)
+        console.log(data.image)
 
-    socket.emit("post", (data));
+        socket.emit("post", (data));
+    }else{
+        alert("please select at least 1 tag");
+    }
 }
 
 
@@ -469,6 +480,9 @@ socket.on("posts", posts => {
 
     }
 
+    socket.on("postAlreadyExists", (postName) => {
+        alert("a post with the name " + postName + "already exists");
+    })
     // Adds event listeners to all the images so that we don't have growing posts
 
     const postImages = document.querySelectorAll(".post_img");
