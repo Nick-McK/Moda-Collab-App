@@ -83,21 +83,24 @@ body {
   position: relative;
   display: grid;
   grid-auto-columns: 5em;
-  grid-auto-flow: column;
+  /* grid-auto-flow: column; */
   grid-template-columns: repeat(4, 1fr);
   box-sizing: border-box;
 }
 
 .nav-menu > :nth-child(1):hover::before {
-  width: 83.5;
+  width: 145;
   filter: drop-shadow(0 0 25px var(--clr));
 }
-
-.nav-menu > :nth-child(3) {
-  grid-column: 4;
+.nav-menu > :nth-child(2):hover::before {
+  width: 84;
+  filter: drop-shadow(0 0 25px var(--clr));
 }
 .nav-menu > :nth-child(3):hover::before {
-  width: 92.5;
+  width: 88;
+}
+.nav-menu > :nth-child(4):hover::before {
+  width: 93;
   filter: drop-shadow(0 0 25px var(--clr));
 }
 
@@ -120,6 +123,9 @@ body {
   overflow: hidden;
   transition: 1s;
   -webkit-text-stroke: 1px var(--clr);
+}
+#mods {
+  
 }
 
 /* 
@@ -250,6 +256,13 @@ body {
   border-radius: 50%;
   margin-left: 0.5em;
 }
+.flag {
+  display: flex;
+  height: 2em;
+  width: 2em;
+  margin-left: auto;
+  cursor: pointer;
+}
 .account {
   color: white;
   padding-left: .5em;
@@ -353,6 +366,7 @@ body {
 .bar_img{
   width: 2em;
   height: 2em;
+  cursor: pointer;
 }
 
 

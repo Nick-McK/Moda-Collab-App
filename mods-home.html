@@ -1,0 +1,157 @@
+<html>
+
+  <head>
+    <link rel="stylesheet" href="/public/style.css">
+    <link rel="stylesheet" href="/public/Homepage.css">
+  </head>
+
+  <body>
+<!-- This is a popup that lets you start collaborating with others -->
+    <div class="collabContainer" id="_collabContainer">
+      <div class="collabContent" id="_collabContent">
+          <button class="roundBtn" id="startCollaborating">Start</button>
+          <button class="roundBtn" id="addCollaborators">Add Collaborators</button>
+      </div>
+      <button class="roundBtn_noBorder close" id="close">
+        <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+      </button>
+    </div>
+    
+    <div class="promptContainer" id="_promptContainer">
+      <div class="promptContent">
+        <form action ="/collab_room">
+          <h1>What would you like the chat to be called?</h1>
+            <input id="promptAnswer" type="text" name="roomName" placeholder="What do you want to call the room?"/>
+            <input id="passPrompt" type="text" name="roomPass" placeholder="What would you like the rooms password to be?" />
+            <span id="promptButtons">
+            <button class="roundBtn_noBorder" id="promptButton" type="submit" formmethod="post">
+              <img src="/public/assets/icons/check-inverted.png" style="height: 4vh; width: auto;"/>
+            </button>
+            <button class="roundBtn_noBorder" id="promptClose" type="button">
+              <img src="/public/assets/icons/x-inverted.png" style="height: 4vh; width: auto;"/>
+            </button>
+          </span>
+        </form>
+      </div>
+    </div>
+
+    <div class="collabContainer" id="addPostContainer">
+      <div class="postContent" id="_postContent">
+        <!-- <form class="postData" id="_postData"> -->
+          <section class="postImage">
+            <img src="/public/assets/tagAssets/games.jpg" id="designChoice" style="width:100%;"/>
+            <input type="button" id="selectBtn name="selectImage" style="display: none"/>
+            <label for="button" id="selectImage">Select Design</label>
+          </section>
+          <section class="postInfo">
+            
+              <textarea maxlength="100" rows="1" cols="86" placeholder="Give your post a name! (max 100 characters)"name="postName" id="_postName"></textarea>
+              <textarea maxlength="2200" rows="10" cols="86" placeholder="Write a caption for your post. (max 2200 characters)"name="postCaption" id="_postCaption"></textarea>
+              <select id="postTags" size="2" multiple>
+                <option value="streetware">streetware</option>
+                <option value="indie">indie</option>
+              </select>
+              <button class="roundBtn" id="post" name="post">Post!</button>
+          </section>
+        <!-- </form> -->
+      </div>
+      <button class="roundBtn_noBorder close" id="closePosts">
+        <img src="/icons/x-inverted.png" style="height: 4vh; width: auto; display: flex"/>
+      </button>
+    </div>
+    <div class="collabContainer" id="savedDesignsContainer">
+      <div class="collabContent" id="savedDesignsContent">
+          <section class="designContainer" id="designContainer"></section>
+          <button class="roundBtn" id="startCollaborating">Start</button>
+          <button class="roundBtn" id="addCollaborators">Add Collaborators</button>
+      </div>
+      <button class="roundBtn_noBorder close" id="closeSavedDesigns">
+        <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+      </button>
+    </div>
+    <div class="collabContainer" id="addPostDesignsContainer">
+      <div class="collabContent" id="addPostDesignsContent">
+        
+      </div>
+      <button class="roundBtn_noBorder close" id="closePostSavedDesigns">
+        <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+      </button>
+    </div>
+
+    <div class="collabContainer" id="commentsContainer">
+      <div class="collabContent" id="commentsContent">
+        <section class="postImage">
+          <img id="commentImage"></img>
+        </section>
+        <section class="comments" id="_comments">
+
+        </section>
+        <form class="commentForm">
+          <div class="comment-text">
+            <img src="/public/assets/icons/empty-profile-picture.jpeg" style="border-radius: 50%;"/>
+            <textarea id="comment" placeholder="Add a comment..." style="width: 90%; height: 100%;"></textarea>
+            <input class="roundBtn1"type="button" id="postComment" value="Post">
+          </div>
+        </form>
+        
+      </div>
+      <button class="roundBtn_noBorder close" id="closeComments">
+        <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+      </button>
+    </div>
+  
+    <div class="header flex">
+      <img id="logo" src="/public/assets/icons/logo.png" alt="Moda Lab">
+        <div class = "topnav">
+          <div class="nav-menu">
+            <a href="/moderator/posts" id="mods" target="_self" data-text="&nbsp;Moderation">&nbsp;Moderation</a>
+            <a href="profile" class="" target="_self" data-text="&nbsp;Profile">&nbsp;Profile</a>
+            <a href="profile" class="" target="_self" data-text="&nbsp;Friends">&nbsp;Friends</a>
+            
+            <a href="/account/login" class="" target="_self" data-text="&nbsp;Logout">&nbsp;Logout</a>
+          </div>
+            <!-- <img id="logo" src="public/assets/icons/logo.png" alt="Moda Lab"> -->
+            
+        </div>
+    </div>
+    <div class="feed" id="_feed">
+      <!-- <div class="post">
+        <div class="post-top">
+          <div class="profile-pic"> <img class="profile-pic" src="/public/assets/icons/empty-profile-picture.jpeg"/></div>
+          <div class="account" style="color: white; padding-left: .5em"></div>
+        </div>
+        <div class="grid-item"> <img class="post_img" src="public\assets\icons\logo.png" alt="Moda Lab"></div>
+        <div class="post-bar">
+          <div><img class="bar_img" src="public\assets\icons\heart-inverted.png" alt="save"><sup>1</sup></div>
+          <div><img class="bar_img" src="public\assets\icons\archive-box-inverted.png" alt="archive"></div>
+          <div><img class="bar_img" src="public\assets\icons\chat-circle-inverted.png" alt="more"></div>
+        </div>
+      </div> -->
+    </div>
+    <div class="footer1">
+      <div class="footer_item">
+        <button class="roundBtn_noBorder">
+          <img src="/public/assets/icons/thumbs-up-inverted.png" style="height: 4vh; width: auto"/>
+        </button>
+      </div>
+      <div class="footer_item">
+        <button class="roundBtn_noBorder" id="addPost">
+          <img src="/public/assets/icons/plus-inverted.png" style="height: 4vh; width: auto;"/>
+        </button>
+      </div>
+      <div class="footer_item">
+        <button class="roundBtn_noBorder" id="collaborate">
+          <img src="/public/assets/icons/phone-inverted.png" style="height: 4vh; width: auto;"/>
+        </button>
+      </div>
+      <div class="footer_item">
+        <button class="roundBtn_noBorder" id="savedDesigns">
+          <img src="/public/assets/icons/bookmarks-inverted.png" style="height: 4vh; width: auto; display: block"/>
+        </button>
+      </div>      
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- <script src="/public/Homepage.js"></script> -->
+    <script src="/public/mods-home.js"></script>
+  </body>
+</html>

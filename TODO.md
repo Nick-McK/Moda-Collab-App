@@ -11,6 +11,8 @@
         * [ ] Add media control so phone users get burger menu's
     * [X] ~~*save designs from the posts menu*~~ [2022-03-10]
     * [ ] Liked posts menu
+    * [ ] Discover page? where you can see all posts not just posts with your tags
+    * [ ] Delete posts -> Do this on the profile page, so we can easily tell if the post is yours
 
 * [ ] Tags
     * [X] ~~*Select tags*~~ [2022-03-09]
@@ -28,6 +30,13 @@
     * [ ] Sort routing for profile page, go to /account/:username
     * [ ] Add your posts to the page -> carousel of most recent posts
     * [ ] Adding picture to your profile -> socket.io file upload instead of express file upload
+    * [ ] Change tags somewhere either in here on in a settings page for editing profile
+
+* [ ] Settings page 
+    * [ ] Change username
+    * [ ] password
+    * [ ] Bio
+    * [ ] possible change real name 
 
 * [ ] Moderation
     * [ ] Add a flagged status -> If a post is flagged its removed from homepage and placed on a mod page where it is decided if it should be removed
@@ -52,8 +61,8 @@ Bugs:
 * [ ] when leaving a room last, if you then go on the room menu it will not be deleted. If you try access the room it will crash the server
     * [ ] Rereshing fixes this, possibly only way to fix is to put error handling on rooms that have been deleted when people try join
 
-* [ ] If you mouse over the image of a post when clicking on the comment button then the animation resets
+* [ ] If you mouse over the image of a post when clicking on the comment button then the animation resets -> Kinda fixed can be better tho
     * [ ] This also happens when click on the image of a post but you need to remove the mouse from the image and mouse over again
-* [ ] Clicking on comments and having the animation fail will duplicate comments
+    * [ ] Clicking on comments and having the animation fail will duplicate comments
 
-
+* [ ] If you like a post then refresh then you can like the post again, so 1 person can like a post as many times as they want -> callbacks?

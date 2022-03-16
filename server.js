@@ -162,8 +162,19 @@ app.post("/account/tags", (req, res) => {
                 req.session.userID = result.insertId; // This gives us the ID of the user so we dont need to query DB every time we want to know
                 console.log("user id: " + req.session.userID);
                 req.session.save();
+
+                con.query("INSERT INTO user_details (userID, email, contactNo, role, strikes, isMod) VALUES (?, ?, ?, ?, ?, ?)", [req.session.userID, req.body.email, req.body.contactNo, req.body.role, 0, false], (err,res) => {
+                    if (err) throw err;
+                    console.log("res", res);
+                    req.session.strikes = 0;
+                });
+
+
+
                 res.sendFile(path.join(__dirname + "/tags.html"));
             });
+
+           
         } else {
             // Do some error handling and tell them to make sure that password 1 and password 2 match
         }
@@ -345,9 +356,6 @@ function handleRoomCreation() {
 // }) 
     
 
-
-
-
 // this only runs when collab room is entered
 app.post("/collab_room", (req, res) => {
     if (rooms[req.body.roomName] != null) {
@@ -378,6 +386,9 @@ app.get("/collab_room/:roomName", (req, res) => {
     res.sendFile(__dirname + "/collab_room.html");
 })
 
+app.get("/moderator/posts", (req,res) => {
+    res.sendFile(__dirname + "/mods-home.html");
+})
 
 
 // This is to update the templates table if new templates have been added, runs every 5 mins, or on server start
@@ -880,7 +891,7 @@ io.sockets.on('connect', (socket) => {
             let TIMER = setInterval(() => {
                 start++;
                 
-            if (start == 10) { //300 for 5 mins
+            if (start == 300) { //300 for 5 mins
                 console.log("DELETED ROOM:", rooms[roomName]);
                 delete rooms[roomName]
                 roomList = roomList.filter(ro => ro.roomName != roomName);
@@ -891,7 +902,7 @@ io.sockets.on('connect', (socket) => {
         }
     });
 
-
+    
 
     socket.on("details", () => {
 
@@ -993,7 +1004,7 @@ io.sockets.on('connect', (socket) => {
                             let image = res[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             let name = r[0].username; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             if (result[i].likes == null) result[i].likes = 0;
-                            postsName = {name: result[i].postName, caption: result[i].design, design: image, user: name, likes: result[i].likes, id: result[i].postID} // Send over name of the user who created it so that we can show who posted it
+                            postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID} // Send over name of the user who created it so that we can show who posted it
                             posts.push(postsName);
 
                             
@@ -1143,11 +1154,79 @@ io.sockets.on('connect', (socket) => {
         
     })
 
-    socket.on("testing", (data) => {
-        console.log("testing");
+    socket.on("postFlagged", (data) => {
+        console.log("testing", data.postID);
+        con.query("SELECT * FROM posts WHERE postID = ?", [data.postID], (err, result) => {
+            if (err) throw err;
+            console.log("this is our result", result);
+            con.query("INSERT INTO flaggedPosts (postID, postName, postCaption, likes, design, userID) VALUES (?, ?, ?, ?, ?, ?)", [
+                result[0].postID, 
+                result[0].postName,
+                result[0].postCaption,
+                result[0].likes,
+                result[0].design,
+                result[0].userID], (err, res) => {
+                    if (err) throw err;
+                    console.log("inserted ", res);
+            });
+        });
+    });
+
+    socket.on("getModStatus", () => {
+        con.query("SELECT isMod FROM user_details WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+            if (err) throw err;
+            console.log("result", result);
+            socket.emit("returnModStatus", {isMod: result[0].isMod});
+        })
     })
 
-
+    socket.on("getFlagged", () => {
+        let flaggedPost = {}
+        let posts = [];
+            con.query("SELECT * FROM flaggedPosts", (err, result) => {
+                if (err) throw err;
+                console.log("flagged", result);
+                for (let i in result) {
+                    con.query("SELECT username FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
+                        if (err) console.log(err);
+                        designs.collection("Designs").find({_id: new ObjectId(result[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, res) => {
+                            let name = r[0].username;
+                            let image = res[0].thumbnail;
+                            flaggedPost = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID}
+                            posts.push(flaggedPost);
+                            socket.emit("returnFlagged", (posts));
+                        });
+                });       
+            }
+        });
+    });
+    // Removes the post from the flaggedPosts table and it stays on the homepage
+    socket.on("unflagPost", data => {
+        con.query("DELETE FROM flaggedPosts WHERE postID = ?", [data.postID], (err, result) => {
+            if (err) throw err;
+            console.log("result from deletion", result);
+        })
+    })
+    // Deletes the post from flaggedPosts and Posts, removing it from the homepage
+    // Then strike against the user who posted it
+    socket.on("deleteAndStrike", data => {
+        con.query("DELETE FROM flaggedPosts WHERE postID = ?", [data.postID], (err, result) => {
+            if (err) throw err;
+        })
+        con.query("DELETE FROM posts WHERE postID = ?", [data.postID], (err, result) => {
+            if (err) throw err;
+        })
+        con.query("SELECT userID FROM users WHERE username = ?", [data.username], (err, result) => {
+            if (err) throw err;
+            console.log("results from getting userID", result);
+            let strikesIncrement = socket.request.session.strikes;
+            strikesIncrement++;
+            con.query("UPDATE user_details SET strikes = ? WHERE userID = ?", [strikesIncrement, result[0].userID], (err, res) => {
+                if (err) throw err;
+                console.log("idek", res);
+            })
+        })
+    })
 });
 
 app.use(router);

@@ -1,6 +1,5 @@
 const socket = io();
 
-
 const collabContainer = document.getElementById("_collabContainer");
 const collabContent = document.getElementById("_collabContent");
 const promptContainer = document.getElementById("_promptContainer");
@@ -47,326 +46,16 @@ const commentText = document.getElementById("comment");
 
 const feed = document.getElementById("_feed");
 
-// CODE FOR POST TRANSITIONS IF I CAN MAKE IT STOP HALF WAY THROUGH AND REVERSE
-// Currently will go to the full size if we move out before its finished and this is quite jarring
-// for (let post of posts) {
-//     post.addEventListener("mouseenter", () => {
-//         // post.classList.add("active");
-//         post.style.animation = "highlightPost 1s ease-in-out 1s 1 normal forwards";
-        
-//         // post.style.animation = "delay 0.5s";
-//     });
-//     post.addEventListener("mouseleave", () => {
-//         post.style.animation = "out 1s ease-in-out";
-//         // post.style.opacity = 0;
-//         // post.classList.add("inactive");
-//         // post.classList.remove("active");
 
-        
-        
-
-//         // setTimeout(() => {
-//         //     post.classList.add("active");
-//         //     post.style.opacity = ""
-//         // }, 25);
-
-//         // post.addEventListener("animationend", onanimationend)
-//     })
-
-//     // function onanimationend() {
-//     //     console.log("what is this");
-//     //     post.classList.remove("active", "inactive");
-//     //     post.removeEventListener("animationend", onanimationend);
-//     // }
-    
-// }
-
-
-
-
-// Events for handling opening and closing the collaboration menu
-btnOpen.onclick =  () => {
-    socket.emit('giveRooms');
-    if (collabContainer.style.display == "flex") {
-        collabContainer.style.display = "none";
-        promptContainer.style.display = "none"; // Set the prompt container to hide if we close the collab menu
-    } else {
-        collabContainer.style.display = "flex";
-        collabContent.style.animation = "open 0.5s";
-    }
-};
-
-btnClose.onclick = () => {
-    collabContainer.style.display = "none";
-    promptContainer.style.display = "none";
-    addPostContainer.style.display = "none";
-}
-
-startCollab.addEventListener("click", () => {
-    promptContainer.style.display = "flex";
-})
-
-closePrompt.onclick = () => {
-    promptContainer.style.display = "none";
-}
-
-let recordedRooms = new Array();
-// Adding rooms to the collab menu
-// TODO: Try setting a timeout on this method so that we update the room list every minute so we dont need to refresh the page
-// once a room has been removed
-socket.on("roomNames", (roomList) => {
-
-    console.log("rooms", roomList);
-    for (let room of roomList) {
-        const collabContent = document.getElementById("_collabContent");
-        let roomDiv = document.createElement("div");
-        let roomBut = document.createElement("button");
-        roomBut.innerHTML = room;
-        // let roomLink = document.createElement("a");
-        let linkTitle = document.createTextNode(room);
-        roomDiv.classList.add("collabRoom");
-        // roomDiv.appendChild(roomLink);
-        roomDiv.appendChild(roomBut);
-        roomBut.classList.add("roundBtn_noBorder");
-
-        console.log("room", room);
-        roomBut.onclick = () => {
-            
-            let pass = prompt("What is this rooms password?");
-            // console.log("what is this", pass);
-            let data = {roomName: room, password: pass};
-            socket.emit("verify", data);
-        }
-        
-        if (!recordedRooms.includes(room)) {
-            collabContent.appendChild(roomDiv);
-        }
-        recordedRooms.push(room);
-    }
-})
-socket.on("redirect", (roomName) => {
-    window.location.href = "/collab_room/" + roomName;
-})
-addCollab.onclick = () => {
-
-}
-
-// Add post menu stuff
-
-addPost.onclick = () => {
-
-    if (addPostContainer.style.display == "flex") {
-        addPostContainer.style.display = "none";
-    } else {
-        addPostContainer.style.display = "flex";
-        postContent.style.animation = "open 0.5s";
-
-    }
-}
-// Needs to be seeperate button for some reason
-closePosts.onclick = () => {
-    addPostContainer.style.display = "none";
-}
-
-// Select multiple tags without having to hold CTRL
-window.onmousedown = (e) => {
-    let el = e.target;
-    // If the element has a tag of option and the select tag has multiple attribute
-    if (el.tagName.toLowerCase() == "option" && el.parentNode.hasAttribute("multiple")) {
-        e.preventDefault();
-        if(el.hasAttribute("selected")) el.removeAttribute("selected");
-        else el.setAttribute("selected", "");
-    }
-}
-
-// postButton.onclick = () => {
-//     console.log("hasodgasdg");
-//     socket.emit("newPost");
-// }
-
-
-// Saving posts
-
-// savePost.onclick = () => {
-//     socket.emit("savePost");
-// }
-
-savedDesignBtn.onclick = () => {
-    if (savedDesignsContainer.style.display == "flex") {
-        savedDesignsContainer.style.display = "none";
-    } else {
-        savedDesignsContainer.style.display = "flex";
-        savedDesignsContent.style.animation = "open 0.5s";
-        console.log("sending for designs with id: ", 0);
-        socket.emit("getSavedDesigns", (0));
-    }
-}
-let recordedDesigns = [];
-let recordedPostDesigns = [];
-socket.on("savedDesigns", (data) => {
-    console.log("desss", data.designs);
-    console.log("data", data.id);
-
-    let designList = Object.values(data.designs);
-    
-    for (let design of designList) {     
-        // Check if the designs have been added to their respective pages thumbnails for savedPosts(id=0) page and names to the addPost page(id=1)
-        // If they have not been then add them to the checked list and then carry on with adding them to the page
-        // If none of that is true, then continue because the design has been added to both pages and we don't want to add it a second time 
-        if (data.id == 0 && !recordedPostDesigns.includes(design.thumbnail)) {
-            recordedPostDesigns.push(design.thumbnail);
-        } else if (data.id == 1 && !recordedDesigns.includes(design.name)) {
-            recordedDesigns.push(design.name);
-        } else {
-            continue;
-        }
-        
-        // Handles adding design images to the savedPosts section with id == 0 and for adding posts section with id == 1
-        if (data.id == 0) {
-            // let sectionContainer = document.createElement("section");
-
-            let sectionContent = document.createElement("section");
-            let sectionImage = document.createElement("img");
-
-            // sectionContainer.classList.add("designContainer");
-            sectionContent.classList.add("designContent");
-            sectionImage.classList.add("designImage");
-            
-            sectionImage.setAttribute("src", design.thumbnail);
-
-            sectionContent.appendChild(sectionImage);
-            sectionContainer.appendChild(sectionContent);
-            // savedDesignsContent.appendChild(sectionContainer);
-        } else if (data.id == 1) {
-            console.log("are we here");
-            console.log("name", design.name);
-            let nameDiv = document.createElement("div");
-            let nameBut = document.createElement("button");
-
-            nameBut.innerHTML = design.name;
-
-            nameDiv.classList.add("collabRoom");
-            nameBut.classList.add("roundBtn_noBorder_room");
-
-            nameBut.onclick = () => {
-                designChoice.setAttribute("src", design.thumbnail);
-                // postThumb.value = design.thumbnail;
-                postdesign.style.display = "none";
-            }
-            nameDiv.appendChild(nameBut);
-
-            postDContent.appendChild(nameDiv);
-        }
-    }
-});
-
-postButton.onclick = () => {
-    let tags = []
-    if(postTags.selectedOptions.length > 0){
-
-    
-        for(let i=0; i<postTags.selectedOptions.length; i++){
-            tags.push(postTags.selectedOptions[i].innerHTML);
-        };
-        console.log(tags);
-        let postImage = designChoice.src;
-        let name = postName.value;
-        let caption = postCaption.value;
-
-    
-        let data = {postName: name, postCaption: caption, image: postImage, tagsList: tags};
-
-        console.log(data.image)
-
-        socket.emit("post", (data));
-    }else{
-        alert("please select at least 1 tag");
-    }
-}
-
-
-
-// TODO: Clean this up with a loop for the repeated elements
-socket.on("postAdded", (data) => {
-    console.log("new post")
-    let postDiv = document.createElement("div");
-    let gridItem = document.createElement("div");
-    let postBar = document.createElement("div");
-    let postImage = document.createElement("img");
-    let barImage1 = document.createElement("img");
-    let barImage2 = document.createElement("img");
-    let barImage3 = document.createElement("img");
-    
-    
-    let div1 = document.createElement("div");
-    let div2 = document.createElement("div");
-    let div3 = document.createElement("div");
-
-
-    barImage1.classList.add("bar_img");
-    barImage2.classList.add("bar_img");
-    barImage3.classList.add("bar_img");
-    postDiv.classList.add("post");
-    gridItem.classList.add("grid-item");
-    postBar.classList.add("post-bar");
-    postImage.classList.add("post_img");
-
-    barImage1.setAttribute("src", "/public/assets/icons/floppy-disk.png");
-    barImage2.setAttribute("src", "/public/assets/icons/archive-box.png");
-    barImage3.setAttribute("src", "/public/assets/icons/plus.png");
-
-    div1.appendChild(barImage1);
-    div2.appendChild(barImage2);
-    div3.appendChild(barImage3);
-    
-
-    postBar.appendChild(div1);
-    postBar.appendChild(div2);
-    postBar.appendChild(div3);
-
-    
-    
-
-    postImage.setAttribute("src", data.image);
-
-    gridItem.appendChild(postImage);
-    postDiv.appendChild(gridItem);
-    postDiv.appendChild(postBar);
-    const feed = document.getElementById("_feed");
-    feed.prepend(postDiv); // This is prepend as we want the newest posts at the top of the feed
-
-    
-    
-})
-
-
-
-closeSavedDesigns.onclick = () => {
-    savedDesignsContainer.style.display = "none";
-}
-
-selectImage.onclick = () => {
-    console.log("sending for designs with id: ", 1);
-    socket.emit("getSavedDesigns", (1));
-    postdesign.style.display = "flex";
-}
-
-closePostSavedDesigns.onclick = () => {
-    postdesign.style.display = "none";
-}
 
 this.onload = () => {
-    socket.emit("getPosts");
-    socket.emit("getModStatus");
-    
+    socket.emit("getFlagged");
 }
-
-let posted = {};
+let posted = [];
 let commented = [];
-socket.on("posts", posts => {
-    console.log("posts", posts);
-    console.log("what isthis", posts[0].id);
+socket.on("returnFlagged", posts => {
     for (let post of posts) {
+        // console.log("post", post);
         if (posted[post.name] == post.caption) {
             continue;
         }
@@ -389,12 +78,32 @@ socket.on("posts", posts => {
 
         flagDiv.classList.add("flag");
 
-        flagImg.setAttribute("src", "assets/icons/flag-fill.png");
+        flagImg.setAttribute("src", "/public/assets/icons/flag-fill.png");
         flagDiv.appendChild(flagImg);
 
-        
+        let confirmDiv = document.createElement("div")
+        let denyDiv = document.createElement("div");
+        let confirmImg = document.createElement("img");
+        let denyImg = document.createElement("img");
 
-        profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg")
+        confirmDiv.classList.add("flag");
+        denyDiv.classList.add("flag");
+
+        confirmDiv.appendChild(confirmImg);
+        denyDiv.appendChild(denyImg);
+
+        confirmImg.setAttribute("src", "/public/assets/icons/check-inverted.png");
+        denyImg.setAttribute("src", "/public/assets/icons/x-inverted.png");
+
+        confirmImg.addEventListener("click", () => {
+            socket.emit("unflagPost", {postID: post.id});
+        })
+
+        denyImg.addEventListener("click", () => {
+            socket.emit("deleteAndStrike", ({postID: post.id, username: post.user}));
+        })
+
+        profileImage.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg")
         
         
         let div1 = document.createElement("div");
@@ -469,7 +178,10 @@ socket.on("posts", posts => {
         gridItem.appendChild(postImage);
         postTop.appendChild(profilePic);
         postTop.appendChild(name);
+        postTop.appendChild(confirmDiv);
+        postTop.appendChild(denyDiv);
         postTop.appendChild(flagDiv);
+        
         profilePic.appendChild(profileImage);
         postDiv.appendChild(postTop);
         postDiv.appendChild(gridItem);
@@ -498,9 +210,6 @@ socket.on("posts", posts => {
 
     }
 
-    socket.on("postAlreadyExists", (postName) => {
-        alert("a post with the name " + postName + "already exists");
-    })
     // Adds event listeners to all the images so that we don't have growing posts
 
     const postImages = document.querySelectorAll(".post_img");
@@ -916,18 +625,3 @@ socket.on("posts", posts => {
     // }
 
 });
-
-socket.on("returnModStatus", data => {
-    let modNav = document.querySelector(".nav-menu > :nth-child(1)");
-
-    if (data.isMod == 0) {
-        let mods = document.getElementById("mods");
-        console.log("we are mod");
-        mods.style.display = "none";
-        // modNav.style.display = "grid";
-    }
-})
-
-
-
-
