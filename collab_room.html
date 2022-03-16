@@ -93,18 +93,18 @@
             <table>
                 <tr style="display: inline-block;">
                     <td>
-                        <label for="colourselect"> Colour: </label>
-                        <input type="color" id="colourselect" value="#000000" onchange="changeColour(document.getElementById('colourselect').value)">
+                        <label for="colourSelect"> Colour: </label>
+                        <input type="color" id="colourSelect" value="#000000">
                     </td>
 
                     <td>
                         <label for="bgColourSelect">Background Colour: </label>
-                        <input type="color" id="bgColourSelect" value="#c9cecf" onchange="changeBgColour(document.getElementById('bgColourSelect').value)">
+                        <input type="color" id="bgColourSelect" value="#c9cecf">
                     </td>
                 
                     <td>
-                        <input type="text" placeholder="Enter pt size" id="ptSize">
-                        <input type="text" placeholder="Enter line width" id="lineWidth">
+                        <input type="number" placeholder="Enter pt size" id="ptSize">
+                        <input type="number" placeholder="Enter line width" id="lineWidth">
                         <select id="font">
                             <option value="Times New Roman">Times New Roman</option>
                             <option value="Comic Sans MS">Comic Sans MS</option>
@@ -130,48 +130,48 @@
             <table>
                 <tr>
                     <td>
-                        <button id="draw" onclick="changeTool('DRAW'); const d = document.getElementById('draw'); if(d.style.backgroundColor == 'grey') d.style.backgroundColor = 'darkgrey'; else d.style.backgroundColor = 'grey';">
+                        <button id="pencil" onclick="freeDrawing('PENCIL');" title="Pencil">
                             <img src="/public/assets/icons/pencil-line.png"></img>
                         </button>
                     </td>
                     <td>
-                        <button id="figures" onclick="changeTool('ERASER')">
+                        <button id="eraser" onclick="freeDrawing('ERASER')" title="Eraser">
                             <img src="/public/assets/icons/eraser.png"></img>
                         </button>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <button id="text" onclick="changeTool('TEXT')">
+                        <button id="text" onclick="changeTool('TEXT')" title="Textbox">
                             <img src="/public/assets/icons/text-t.png"></img>
                         </button>
                     </td>
                     <td>
-                        <button id="pan" onclick="changeTool('PAN'); const p = document.getElementById('pan'); if(p.style.backgroundColor == 'grey') p.style.backgroundColor = 'darkgrey'; else p.style.backgroundColor = 'grey';">
+                        <button id="pan" onclick="changeTool('PAN');" title="Pan">
                             <img src="/public/assets/icons/arrows-out-cardinal-black.png"></img>
                         </button>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <button id="triangle" onclick="changeTool('TRIANGLE')">
+                        <button id="triangle" onclick="changeTool('TRIANGLE')" title="Triangle">
                             <img src="/public/assets/icons/triangle.png"></img>
                         </button>
                     </td>
                     <td>
-                        <button id="rectangle" onclick="changeTool('RECTANGLE')">
+                        <button id="rectangle" onclick="changeTool('RECTANGLE')" title="Rectangle">
                             <img src="/public/assets/icons/rectangle.png"></img>
                         </button>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <button id="circle" onclick="changeTool('CIRCLE')">
+                        <button id="circle" onclick="changeTool('CIRCLE')" title="Circle">
                             <img src="/public/assets/icons/circle.png"></img>
                         </button>
                     </td>
                     <td>
-                        <button id="line" onclick="changeTool('LINE'); const l = document.getElementById('line'); if(l.style.backgroundColor == 'grey') l.style.backgroundColor = 'darkgrey'; else l.style.backgroundColor = 'grey';">
+                        <button id="line" onclick="changeTool('LINE');" title="Straight Line">
                             <img src="/public/assets/icons/line-segment.png"></img>
                         </button>
 
@@ -180,58 +180,55 @@
                 <tr>
                     <td>
                         <button>
-                            <img src="/public/assets/icons/image.png" onclick="document.getElementById('image').click()"></img>
+                            <img src="/public/assets/icons/image.png" onclick="document.getElementById('image').click()" title="Image"></img>
                             <input id="image" type="file" style="display: none;"/>
                         </button>
                         
                     </td>
                     <td>
-                        <button id="delete" onclick="deleteItem()">
+                        <button id="delete" onclick="deleteItem()" title="Delete Item">
                             <img src="/public/assets/icons/trash-simple.png"></img>
                         </button>
                     </td>
-            </table>
-        </div>
-
-        <div class="collabRoomHeaderFooter" id="collabRoomFooter" style="top: 87.5%">
-            <table>
+                </tr>
                 <tr>
-                    <td style="width: 20vw;" align="center">
-                        <button class="collabBtn">
-                            <img src="/public/assets/icons/archive-inverted.png" align="center" onclick="importTemplatePopup()"></img>
-                            Browse Templates
+                    <td>
+                        <button id="undo" onclick="triggerUndo()" title="Undo">
+                            <img src="/public/assets/icons/arrow-counter-clockwise.png"></img>
                         </button>
                     </td>
-    
-                    <td style="width: 20vw;" align="center">
-                        <button class="collabBtn">
-                            <img src="/public/assets/icons/archive-box-inverted.png" align="center" onclick="importTemplate()"></img>
-                            Import Templates
-                        </button>
-                    </td>
-    
-                    <td style="width: 20vw;" align="center">
-                        <button class="collabBtn">
-                            <img src="/public/assets/icons/x-inverted.png" align="center" onclick="leaveRoom()"></img>
-                            Exit Call
-                        </button>
-                    </td>
-    
-                    <td style="width: 20vw;" align="center">
-                        <button class="collabBtn">
-                            <img src="/public/assets/icons/camera-inverted.png" align="center"></img>
-                            Add Images
-                        </button>
-                    </td>
-    
-                    <td style="width: 20vw;" align="center">
-                        <button class="collabBtn">
-                            <img src="/public/assets/icons/plus-inverted.png" align="center"></img>
-                            Invite Users
+                    <td>
+                        <button id="redo" onclick="triggerRedo()" title="Redo">
+                            <img src="/public/assets/icons/arrow-clockwise.png"></img>
                         </button>
                     </td>
                 </tr>
             </table>
+        </div>
+
+        <div id="collabRoomFooter">
+            <div class="collabRoomFooterContainer">
+                <button class="collabBtn">
+                    <img src="/public/assets/icons/archive-inverted.png" onclick="importTemplatePopup()"></img>
+                    Browse Templates
+                </button>
+
+                <button class="collabBtn">
+                    <img src="/public/assets/icons/camera-inverted.png" onclick="document.getElementById('image').click();"></img>
+                    <input id="image" type="file" style="display: none;"/>
+                    Add Images
+                </button>
+
+                <button class="collabBtn">
+                    <img src="/public/assets/icons/plus-inverted.png"></img>
+                    Invite Users
+                </button>
+
+                <button class="collabBtn">
+                    <img src="/public/assets/icons/x-inverted.png" onclick="leaveRoom()"></img>
+                    Exit Call
+                </button>
+            </div>
         </div>
         <script src="/public/collab_room_clientside.js"></script>       <!-- Links to clientside js code -->
     </body>

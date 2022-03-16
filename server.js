@@ -507,7 +507,7 @@ io.sockets.on('connect', (socket) => {
                 }
 
                 if (roomList[i].backgroundColor) {
-                    socket.emit("backgroundColourUpdate", roomList[i].backgroundColor);
+                    socket.emit("canvasUpdate", {change: roomList[i].backgroundColor, type:"bgColour"});
                 }
             }
         }
@@ -626,9 +626,10 @@ io.sockets.on('connect', (socket) => {
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
                 for (var j in roomList[i].objects) {
-                    for (var n in data.obj) {
-                        if (data.obj[n].id == roomList[i].objects[j].id) {
-                            roomList[i].objects[j] = data.obj[n];
+                    for (var n in data) {
+                        console.log("here",data[n])
+                        if (data[n].id == roomList[i].objects[j].id) {
+                            roomList[i].objects[j] = data[n];
                         }
                     }
                 }

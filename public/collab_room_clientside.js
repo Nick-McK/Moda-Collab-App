@@ -1,16 +1,39 @@
-// var socketPath = window.location.pathname + "socket.io";
-// var socket = io({path: socketPath});
-const socket = io();
+const socket = io();        // Initialise socket connection
 
+// Canvas attributes
 var canvasHeight = 4000;
 var canvasWidth = 4000;
 var backgroundColor = "#c9cecf"
+
+// Global for holding objects
+var obj;
+var recentlySelected;   // stores the most recently selected obj (or objects if group select is used)
+var newImg;
+
+// Global for tracking tool usage
+var panning = false;
+var straightLineDraw = {toggled: false, isDrawing: false};
+var brushType;  // To track logic for brush switching
+
+// Undo/Redo stack
+var undoStack = [];
+var redoStack = [];
+
+// Global for object attributes
+var colour = 'black';
+var pt = 500;
+var lineWidth = 10;
+var fontFamily = "Times New Roman";
+
+
 // Create the canvas and set its attributes
 let canvas = new fabric.Canvas("whiteboard");
 canvas.setHeight(window.innerHeight * 0.75);
-canvas.setWidth(window.outerWidth); // this can ignore console being open
+canvas.setWidth(window.outerWidth);
 canvas.backgroundColor = backgroundColor;
-let r = new fabric.Rect({       // don't need this, just for debugging panning and zooming area
+
+// Create Rect r to show boundaries of canvas area, give it no fill, not selectable, and a DONTDELETE id
+let r = new fabric.Rect({ 
     left:0,
     top:0,
     width:canvasWidth, //> 4k res
@@ -23,134 +46,135 @@ let r = new fabric.Rect({       // don't need this, just for debugging panning a
     erasable: false,
     id: "DONTDELETE"
 });
-
-canvas.add(r);
-
-// maybe add in an init for the start stuff
-var recentObj;
-var obj;
-var newImg;
-
-var undoStack = [];
-
-// Initialise variables for changable attributes
-var colour = 'black';
-var pt = 500;
-var lineWidth = 10;
-var fontFamily = "Times New Roman";
-var panning = false;
-var straightLineDraw = {toggled: false, isDrawing: false};
+canvas.add(r);  // Add to canvas
 
 
+// Allows user to modify font size
 const ptInput = document.getElementById('ptSize');      // Gets ptSize input box element
 ptInput.setAttribute('size', ptInput.getAttribute('placeholder').length);   // Modifies the size of the inputbox to fit the placeholder text
-// Event listeners for either a focus out (selecting the desired obj) or enter
-ptInput.addEventListener('focusout', function () {
-    setPtSize();
-});
-ptInput.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        setPtSize();
-    }
-});
+ptInput.addEventListener('onfocus', function () {recentlySelected = canvas.getActiveObjects();});   // takes in the selected objects when the value is being changed
+ptInput.addEventListener('change', function() {setPtSize(recentlySelected);});  // when value is changed, passed the selected objects to the pt size change function
 
 // Sets the ptSize of future and selected text to global ptSize value
-function setPtSize() {
-    pt = parseInt(ptInput.value);
-    console.log(pt)
-    var activeObj = canvas.getActiveObject();
-    if (activeObj) {
-        if (activeObj.get('type') == 'textbox') {
-            constructForUndoStack({id: activeObj.id, fontSize: activeObj.fontSize})    // Send ptSize before change to the undo stack
-            activeObj.set('fontSize', pt);
-            canvas.renderAll();
-            canvas.fire('object:modified')
-
+function setPtSize(objects) {
+    pt = parseInt(ptInput.value);  // Update global var
+    console.log(objects)
+    if (objects) {
+        for (var i of objects) {
+            if (i.get('type') == 'textbox') {
+                constructForUndoStack({id: i.id, fontSize: i.fontSize})    // Send ptSize before change to the undo stack
+                i.set('fontSize', pt);
+                canvas.renderAll();
+                canvas.fire('object:modified', {target:i});
+            }
         }
     }
 }
 
+
+// Allows user to modify line size
 const lineWidthInput = document.getElementById('lineWidth');    // Gets lineWidth input box element
 lineWidthInput.setAttribute('size', lineWidthInput.getAttribute('placeholder').length);
-// Event listeners for either a focus out (selecting the desired obj) or enter
-lineWidthInput.addEventListener('focusout', function () {
-    setLineWidth();
-});
-lineWidthInput.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        setLineWidth();
-    }
-});
+lineWidthInput.addEventListener('onfocus', function () {recentlySelected = canvas.getActiveObjects();});   // takes in the selected objects when the value is being changed
+lineWidthInput.addEventListener('change', function () {setLineWidth(recentlySelected);});   // when value is changed, passed the selected object to the line width change funciton
 
-// Sets the lineWidth of futute and selected lines to global lineWidth value
-function setLineWidth() {
-    lineWidth = lineWidthInput.value;
-    canvas.freeDrawingBrush.width = parseInt(lineWidth);
-    console.log(canvas.getActiveObject())
-    console.log(lineWidth)
-    var activeObj = canvas.getActiveObject();
-    if (activeObj) {
-        // not sure if line is a type but just in case
-        if (activeObj.get('type') == 'path' || activeObj.get('type') == 'polyline' || activeObj.get('type') == 'line') {
-            constructForUndoStack({id: activeObj.id, strokeWidth: activeObj.strokeWidth})    // Send lineWidth before change to the undo stack
-            activeObj.set("strokeWidth", parseInt(lineWidth));
+// Sets the lineWidth of future and selected lines to global lineWidth value
+function setLineWidth(objects) {
+    lineWidth = parseInt(lineWidthInput.value);  // Update global var
+    canvas.freeDrawingBrush.width = parseInt(lineWidth);    // set brush to entered width
+    if (objects) {
+        for (var i of objects) {
+            if (i.get('type') == 'path' || i.get('type') == 'line') {  // Check that the object is actually a line (path)
+                constructForUndoStack({id: i.id, strokeWidth: i.strokeWidth})    // Send lineWidth before change to the undo stack
+                i.set("strokeWidth", parseInt(lineWidth));
+                canvas.renderAll();
+                canvas.fire('object:modified', {target:i});
+            }
         }
-            
-        canvas.renderAll();
-        canvas.fire('object:modified')
     }
 }
 
+// Allows user to modify font family
 const fontFamilyInput = document.getElementById('font');    // Gets font selection box element
-// Event listener for change in selection box value
-fontFamilyInput.addEventListener('change', function () {
-    fontFamily = fontFamilyInput.value;
-    var activeObj = canvas.getActiveObject();
-    if (activeObj) {
-        if (activeObj.get('type') == 'textbox') {
-            constructForUndoStack({id: activeObj.id, fontFamily: activeObj.fontFamily})    // Send font before change to the undo stack
-            activeObj.set('fontFamily', fontFamily);
-            canvas.renderAll();
-            canvas.fire('object:modified')
-        }
-    }
-});
+fontFamilyInput.addEventListener('onfocus', function () {recentlySelected = canvas.getActiveObjects();});   // takes in the selected objects when the value is being changed
+fontFamilyInput.addEventListener('change', function () {setFontFamily(recentlySelected)});
 
-// This is triggered buy an onclick event when selecting any of the colours
-function changeColour(col) {
-    colour = col;
-    canvas.freeDrawingBrush.color = colour;
-    console.log(colour);
-    var activeObj = canvas.getActiveObject();
-    if (activeObj) {
-        constructForUndoStack({id: activeObj.id, fill: activeObj.fill})    // Send the before colour change instance of the obj to the undo stack
-
-        if (activeObj.get('type') == 'path' || activeObj.get('type') == 'polyline' || activeObj.get('type') == 'line') 
-            activeObj.set("stroke", colour);
-        else 
-            activeObj.set("fill", colour);
-        canvas.renderAll();
-        canvas.fire('object:modified', activeObj)
+// Sets the fontFamily of future and selected textboxes to global fontFamily value
+function setFontFamily(objects) {
+    fontFamily = fontFamilyInput.value;  // Update global var
+    if (objects) {
+        for (var i of objects) {
+            if (i.get('type') == 'textbox') {
+                constructForUndoStack({id: i.id, fontFamily: i.fontFamily})    // Send font before change to the undo stack
+                i.set('fontFamily', fontFamily);
+                canvas.renderAll();
+                canvas.fire('object:modified', {target : i});
+            }
+        } 
     }
 }
 
-function changeBgColour(col) {
-    backgroundColor = col;
-    // r.set({fill: backgroundColor});  // this would make it so templates are hidden
-    undoStack.push({attributes : {bgColour : canvas.backgroundColor}, type:"bgColour"}); // Send bgColour before change to the undo stack
 
+// Allows users to modify colour
+const colourInput = document.getElementById('colourSelect');
+colourInput.addEventListener('onfocus', function () {recentlySelected = canvas.getActiveObjects();});   // takes in the selected objects when the value is being changed
+colourInput.addEventListener('change', function () {changeColour(recentlySelected)});
+
+// This is triggered buy an chnage event when selecting any of the colours
+function changeColour(objects) {
+    colour = colourInput.value;  // Update global var
+    canvas.freeDrawingBrush.color = colour;     // set brush to entered colour
+    if (objects) {
+        for (var i of objects) {
+
+            if (i.get('type') == 'path' || i.get('type') == 'line')  {  // since line types have the unique "stroke" property for colour, set that
+                constructForUndoStack({id: i.id, stroke: i.stroke})    // Send the before colour change instance of the obj to the undo stack
+                i.set("stroke", colour);
+            }
+            else {
+                constructForUndoStack({id: i.id, fill: i.fill})    // Send the before colour change instance of the obj to the undo stack
+                i.set("fill", colour);  // Otherwise, set fill as normal
+            }
+            canvas.renderAll();
+            canvas.fire('object:modified', {target : i});
+        }
+    }
+}
+
+
+// Allows users to modify the colour of the background
+const bgColourInput = document.getElementById('bgColourSelect');
+// Don't need an onfocus event as there are no objects being effected here
+bgColourInput.addEventListener('change', function () {changeBgColour()});
+
+// This is triggered buy an change event when selecting any of the colours
+function changeBgColour() {
+    backgroundColor = bgColourInput.value;  // Update global var
+    undoStack.push({attributes : {bgColour : canvas.backgroundColor}, type:"bgColour"}); // Send bgColour before change to the undo stack
     canvas.backgroundColor = backgroundColor;
     canvas.renderAll();
+
+    redoStack = [];      // Wipe the redoStack when normal move is made
     socket.emit('canvasUpdate', {"change": backgroundColor, "type": 'bgColour'});
 }
 
+
+// This is for debugging and getting recently selected object for attribute manipulation
+canvas.on('selection:created', function() {
+    recentlySelected = canvas.getActiveObjects();
+    console.log(recentlySelected);
+})
+
 // Uses a switch case to perform actions for each tool, triggered by onclick when selecting any tool
-function changeTool(res, imgInfo) {
-    // Disable draw if other tool is selected
+function changeTool(res, imgUrl) {
+    obj = null;     // set obj to null to prevent any errors where the previous value is being modified accidentally
+
+    // Disable draw if other tool is selected, this is necessary
     if (res != 'DRAW') {
         canvas.isDrawingMode = false;
     }
-
+    
+    // Construct a base object depending on the item passed in
     switch (res) {
         case 'RECTANGLE':
             obj = new fabric.Rect({
@@ -178,75 +202,44 @@ function changeTool(res, imgInfo) {
                 height: 1000
             });
         break;
-        case 'ERASER':
-            // canvas.freeDrawingBrush = new fabric.EraserBrush(canvas); // Make this its own case for 'eraser', find out why it makes the most recently placed obj invisible. Could create a switch case just for brush patterns
-            // canvas.freeDrawingBrush.width = lineWidth;
-            // canvas.isDrawingMode = !canvas.isDrawingMode;
-            obj = null;
-
-            freeDrawing('ERASER');
-
-        break;
-        case 'DRAW':
-            // canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-            // canvas.freeDrawingBrush.stroke = colour;
-            // canvas.freeDrawingBrush.strokeWidth = lineWidth;
-            // // brush.color = 'red';
-            // // brush.width = 50;
-            // // brush.radius = 50;
-            // console.log(canvas.freeDrawingBrush)
-            // // canvas.freeDrawingBrush = brush;
-            // canvas.isDrawingMode = !canvas.isDrawingMode;
-            // // had to make the listeners global because more would be made each time this section is called
-            // panning = false;
-            // canvas.selection = true;
-            // straightLineDraw.toggled = false;
-            // straightLineDraw.isDrawing = false;
-            // document.getElementById('pan').style.backgroundColor = 'darkgrey';
-            // document.getElementById('line').style.backgroundColor = 'darkgrey';
-
-            obj = null;
-
-            freeDrawing('PENCIL')
-
-        break;
-        case 'LINE':        //gonna work on setting the coords through user input
+        case 'LINE':    // Straight line is set by User selecting two points
             straightLineDraw.toggled = !straightLineDraw.toggled;
 
-            document.getElementById('draw').style.backgroundColor = 'darkgrey';
-            document.getElementById('pan').style.backgroundColor = 'darkgrey';
-            canvas.isDrawingMode = false;
-            panning = false;
+            showToggledTool("line");    // Set the visual feedback of the buttons to show that the line tool is in use
+            togglePan(true);            // disable panning, but make sure that selection is still off
             canvas.selection = false;
+
+            // Update the cursor to show that use has activated the straight line tool
             if (straightLineDraw.toggled) {
                 r.set({hoverCursor: "crosshair"});
             } else {
                 r.set({hoverCursor: "default"});
-            }
-           
+            };
         break;
         case 'IMAGE':
-            // Images are created in a different way to the rest of the tools
             // Need to use from URL and then create a callback to add img to canvas after it has loaded
-            obj = new fabric.Image.fromURL(imgInfo, function(oriImg){
+            new fabric.Image.fromURL(imgUrl, function(oriImg){
                 oriImg.set({
                     top: 1000,
                     left:1000
                 });
 
-                // this needs to be called here. Because of the callback, the code at the bottom of this section will not be able to add the img as it hadn't loaded at that point
+                //Because of the callback, the code at the bottom of this section will not be able to add the img as it hadn't loaded at that point
                 canvas.add(oriImg).renderAll();
-                recentObj = oriImg;
+
+                // Emit the addition to the server
                 socket.emit('canvasUpdate', {"change": oriImg, "type" : "add"}, function(id) {
-                    console.log(id);
-                    if (id != null) {
-                        recentObj.id = id;
+                    if (id != null) {       // if there is an id returned from the callback, give the image that id
+                        oriImg.id = id;
                     }
-                    undoStack.push({attributes: recentObj, type:"add"});
+
+                    redoStack = [];      // Wipe the redoStack when normal move is made
+
+                    // push the change to the undo stack
+                    undoStack.push({attributes: oriImg, type:"add"});
                 });
                 
             });
-            obj = null; // need this otherwise errors will occur at bottom of this section
             break;
         case 'TEXT':
             obj = new fabric.Textbox("Enter Text Here...", {
@@ -257,86 +250,102 @@ function changeTool(res, imgInfo) {
             });
         break;
         case 'PAN':
-            // reset values for other tools that can be toggled
-            canvas.isDrawingMode = false;
-            document.getElementById('draw').style.backgroundColor = 'darkgrey';
-            document.getElementById('line').style.backgroundColor = 'darkgrey';
+            showToggledTool("pan")  // set the visual feedback of the buttons to show that the pan tool is in use
             straightLineDraw.toggled = false;
             straightLineDraw.isDrawing = false;
-
-            panning = !panning;
-            canvas.selection = !canvas.selection;
-
-            if (panning) {
-                r.hoverCursor = "move";
-            } else {
-                r.hoverCursor = "default";
-            }
+            togglePan();
         break;
-        default:
-            break;
     }
 
-    if (obj && res != 'IMAGE') {    //Img check needed bc of use of callback in image loading
-        canvas.add(obj).renderAll();
+    if (obj) {    // If this obj needs to be sent to the server from here
+        redoStack = [];      // Wipe the redoStack when normal move is made
+        canvas.add(obj).renderAll();        // Add obj and render canvas
         console.log("sending", obj);
         socket.emit('canvasUpdate', {"change": obj, "type" : "add"}, function(id) {
-            console.log(id);
-            if (id != null) {
+            if (id != null) {       // if there is an id returned from the callback, give the image that id
                 obj.id = id;
             }
         });
-        recentObj = obj;
         
-        undoStack.push({attributes: recentObj, type:"add"});
+        undoStack.push({attributes: obj, type:"add"});      // Push the addition to the undo stack
     }
 }
 
-function freeDrawing(brushType) {
-    canvas.isDrawingMode = !canvas.isDrawingMode;
+// Sets all of the non-selected tools to the default colour, sets the one in use to a different colour
+function showToggledTool(inUse) {
+    var using = document.getElementById(inUse);
+
+    if (using.style.backgroundColor == "grey") {        // If the tool is already in use, and the user is unselecting it, change the colour back to default
+        using.style.backgroundColor = "darkgrey";
+    } else {                                            // Otherwise, treat it as if the tool is being selected for use and set all other tools to default colour while setting the tool the different colour
+        var allSelectableTools = ["pencil", "eraser", "pan", "line"];
+        allSelectableTools.splice(allSelectableTools.indexOf(inUse), 1);
+        for (var i of allSelectableTools) {
+            document.getElementById(i).style.backgroundColor = "darkgrey";
+        }
+        using.style.backgroundColor = "grey";
+    }
+}
+
+// Toggles pan, if it needs to be explicity set to false, set disable parameter to true
+function togglePan(disable) {
+    if (panning || disable) {
+        panning = false;
+        r.set({hoverCursor: "default"});
+        canvas.selection = true;
+    } else {
+        panning = true;
+        r.set({hoverCursor : "move"});
+        canvas.freeDrawingBrush = false;
+        canvas.selection = false;
+    }
+}
+
+// Logic for switching brushes
+function drawingToggle(brush) {
+    if (canvas.isDrawingMode && brush == brushType) {   // if drawing is on and same brush has been selected, that means we are turning the free drawing off
+        canvas.selection = true;
+        canvas.isDrawingMode = false;
+    } else if (canvas.isDrawingMode && brush != brushType) {    // This just means we are swtiching from pencil/brush
+        // Allow freeDrawing to control this
+    } else {                                            // Otherwise, we are turning on the free drawing
+        canvas.isDrawingMode = true;
+        togglePan(true);    // toggle pan, with parameter true to show that you want to disable it
+        canvas.selection = false;
+    }
+}
+
+// Allows user to change what kind of brush they are using
+function freeDrawing(newBrush) {
+    drawingToggle(newBrush);
+    brushType = newBrush;
 
     switch (brushType) {
         case 'ERASER':
+            showToggledTool("eraser");
             canvas.freeDrawingBrush = new fabric.EraserBrush(canvas); // Make this its own case for 'eraser'. Could create a switch case just for brush patterns
             canvas.freeDrawingBrush.width = lineWidth;
         break;
         case 'PENCIL':
+            showToggledTool("pencil");
             canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
             canvas.freeDrawingBrush.color = colour;
             canvas.freeDrawingBrush.width = lineWidth;
+            
         break;
-        case 'CIRCLES':
+        case 'CIRCLE':
             canvas.freeDrawingBrush = new fabric.CircleBrush(canvas);       // STILL NEED TO IMPLEMENT THIS, NOT SURE IF ITS POSSIBLE THOUGH
             canvas.freeDrawingBrush.radius = lineWidth;
             canvas.freeDrawingBrush.width = colour;    // might be wrong values for circle
         break;
     }
-    // reset values of other tools possibly in use
-    panning = false;
-    canvas.selection = true;
-    straightLineDraw.toggled = false;
-    straightLineDraw.isDrawing = false;
-    document.getElementById('pan').style.backgroundColor = 'darkgrey';
-    document.getElementById('line').style.backgroundColor = 'darkgrey';
 }
 
 
 
-// this is for free drawing
-var drawFlag = false;
-var stack;  // Stack of points for the line to be recreated on other clients
-
 canvas.on("mouse:down", function (opt) {
-    if (canvas.isDrawingMode) {
-        if (!checkPointerInArea()) {
-            canvas.isDrawingMode = false;
-        } else {
-            drawFlag = true;
-        }
-        stack = [];
-    } else if (panning) { // this is for panning, refer the mouse:wheel listener for reference to tutorial
+    if (panning) { // this is for panning, refer the mouse:wheel listener for reference to tutorial
         this.isDragging = true;
-        // this.selection = false;
         this.lastPosX = opt.e.clientX;
         this.lastPosY = opt.e.clientY;
     } else if (straightLineDraw.toggled) {
@@ -344,6 +353,10 @@ canvas.on("mouse:down", function (opt) {
     }
 });
 
+
+// These functions are for the straight line tool
+
+// On mouse down, create a line object with initial start and end values as the mouse pointers x and y values
 function straightMouseDown(o) {
     straightLineDraw.isDrawing = true;
     var pointer = canvas.getPointer(o.e);
@@ -351,18 +364,24 @@ function straightMouseDown(o) {
     canvas.add(obj);
 }
 
+
+// When mouse is moving and a straight line is being drawn, update the last set of x and y coords as the users mouse moves
 function straightMouseMove(o) {
     var pointer = canvas.getPointer(o.e);
     obj.set({x2:pointer.x, y2:pointer.y});
     canvas.renderAll();
 }
 
+
+// On mouseup, finalise the coords of the line. Emit the line to the server, add to the undo stack
 function straightMouseUp(o) {
     straightLineDraw.isDrawing = false;
     var pointer = canvas.getPointer(o.e);
+
     obj.set({x2:pointer.x, y2:pointer.y});
-    recentObj = obj;
     canvas.renderAll();
+    obj.setCoords();
+
     socket.emit('canvasUpdate', {"change": obj, "type" : "add"}, function(id) {
         console.log(id);
         if (id != null) {
@@ -373,23 +392,7 @@ function straightMouseUp(o) {
 }
 
 canvas.on("mouse:move", function (opt) {
-    if (drawFlag) {  // this pushed line points to a stack when drawing, NOT SURE ANY OF THIS IS NECESSARY NOW
-        if (checkPointerInArea()) {
-            stack.push(canvas.getPointer());
-        } else if (canvas._isCurrentlyDrawing){
-            
-            
-            console.log("here");
-            canvas.isDrawingMode = false;
-
-            canvas.fire("path:created");
-            canvas.freeDrawingBrush.onMouseUp();
-
-            
-        }
-        console.log("x", canvas.getPointer().x, "y", canvas.getPointer().y);
-    }
-    else if (this.isDragging && !canvas.getActiveObject()) { // this is for panning, refer the mouse:wheel listener for reference to tutorial
+    if (this.isDragging && !canvas.getActiveObject()) { // this is for panning, refer the mouse:wheel listener for reference to tutorial
         var zoom = canvas.getZoom();    //gets the current zoom of the client
         var e = opt.e;
         var view = this.viewportTransform;
@@ -436,15 +439,30 @@ canvas.on("mouse:move", function (opt) {
     }
 });
 
-canvas.on("path:created", function (e) {
-    sendPath(e.path)    // send the 
+
+canvas.on('mouse:up', function(opt) {
+    if (panning) {
+        this.setViewportTransform(this.viewportTransform);
+        this.isDragging = false;
+    } else if (straightLineDraw.isDrawing) {
+        straightMouseUp(opt);
+    }
 });
+
+
+
+// This is triggered when a free drawn path is created
+canvas.on("path:created", function (e) {
+    redoStack = [];     // Wipe redo stack when actual move is made
+    sendPath(e.path)    // send the details of the path to the below function
+});
+
 
 function sendPath(e) {
     if (e) {
-       recentObj = e;
         if (canvas.freeDrawingBrush.type == 'eraser') { // if the line drawn is an eraser line
             var intersectList = [];
+
             // find all of the objects it intersects with
             for (var i in canvas._objects) {
                 if (i==0) continue; //except the boundary box
@@ -453,43 +471,28 @@ function sendPath(e) {
                 }
             }
         
-
             if (intersectList != null) {
-                socket.emit('canvasUpdate', {change: intersectList, type: "addErased"});
+                socket.emit('canvasUpdate', {change: intersectList, type: "addErased"});        // emit the list of clipped objects
 
-                for (var i in intersectList) {  // remove the most recent added erasure line from the obj to get the previous state of the obj before erased line
+                for (var i in intersectList) {  // remove the most recent added erasure line from each obj to get the previous state of the obj before erased line
                     intersectList[i].clipPath.objects.pop()
                 }
 
-
-
-                undoStack.push({attributes: intersectList, type:"addErased"})
-                console.log(intersectList)
+                undoStack.push({attributes: intersectList, type:"addErased"})       // push the previous state of the obj to the undo stack
             }
         } else {
+            // If the line drawn is with the pencil tool, send the relevant object details to the server
             socket.emit('canvasUpdate', {"change": {path: e.path, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add"}, function(id) {
-                console.log(id);
-                if (id != null) {
-                    recentObj.id = id;
+                if (id != null) {       // Get the id of the line from the server callback
+                    e.id = id;
                 }
-                undoStack.push({attributes: recentObj, type:"add"});
+                undoStack.push({attributes: e, type:"add"});        // Push the addition of the line to the undo stack
             });
         }
     }
-    drawFlag = false;
 }
-// end of free drawing code
 
 
-canvas.on('mouse:up', function(opt) {
-    if (panning) {
-        this.setViewportTransform(this.viewportTransform);
-        this.isDragging = false;
-        // this.selection = true;
-    } else if (straightLineDraw.isDrawing) {
-        straightMouseUp(opt);
-    }
-});
 
 // these concern when the user has zoomed out as far as allowed in regards to the canvas area
 var limitZoom = false;
@@ -516,7 +519,6 @@ canvas.on("mouse:wheel", function(options) {
         }
     } 
 
-    // console.log(zoom);
     if(zoom >= limitValue) {    //make sure there is no out of bounds zooming
         canvas.zoomToPoint({x: options.e.offsetX, y: options.e.offsetY}, zoom); // this adapts the zoom to zoom in relation to the location of the mouse pointer
     }
@@ -550,7 +552,6 @@ canvas.on("mouse:wheel", function(options) {
         }    
         
     } else {
-        // console.log("elsewhere", zoom, limitValue);
         limitZoom = false;
         if (view[4] >= 0) {
             view[4] = 0;
@@ -563,7 +564,6 @@ canvas.on("mouse:wheel", function(options) {
             view[5] = canvas.getHeight() - canvasHeight * zoom;
         }
     }
-    console.log(view[4], view[5])
 
     // Used to recalculate the hitboxes of each object when zooming
     for (var i of canvas._objects) {        // If there is major lag when zooming, this might be the cause
@@ -571,21 +571,16 @@ canvas.on("mouse:wheel", function(options) {
     }
 });
 
-function checkPointerInArea() {
-    if (canvas.getPointer().x >= 0 && canvas.getPointer().x <= canvasWidth && canvas.getPointer().y >= 0 && canvas.getPointer().y <= canvasHeight) 
-        return true;
-    else
-        return false;
-}
 
-const imageSelect = document.getElementById("image");
-imageSelect.addEventListener('change', function(){
+
+const imageSelect = document.getElementById("image");       // This gets the button that opens the file explorer for image selection
+// Allows user to upload image files into the collab room
+imageSelect.addEventListener('change', function(){          // This is triggered when a choice of file is made
     const chosenFile = this.files[0];
 
     if (chosenFile && (chosenFile.type=="image/jpeg" || chosenFile.type=="image/png")) {    //check the file chosen is of a valid filetype
         
         const reader = new FileReader(); 
-        console.log(reader)
         reader.onload = function(){
             changeTool('IMAGE', reader.result);
         };
@@ -598,110 +593,208 @@ imageSelect.addEventListener('change', function(){
 
 // Emits to canvas whenever a change is made to any object so other clients can update
 canvas.on('object:modified', function (e) {
-    console.log(e);
+    console.log("this is modified aaaaaaaaaaaa");
+    redoStack = [];         // Empty the redo stack when a normal move has been made
     if (e.transform && typeof e.transform != 'function') {
         undoStack.push({attributes : e.transform, type: "mod"});
-    } else if (e.target && e.target.text) {         // handler for if a textbox is typed in, e.target has to exists because of type error issue
+    } else if (e.target && e.target._textBeforeEdit) {         // handler for if a textbox is typed in, e.target has to exists because of type error issue
+        // this exists because there is not a direct handler section for a change of text
         constructForUndoStack({id : e.target.id, text : e.target._textBeforeEdit});
     }
-    // for some reason id wouldn't carry over to server through "change" object
-    console.log(canvas.getActiveObject());
-    socket.emit('canvasUpdate', {"change": canvas.getActiveObject(), "type": 'mod', "id": canvas.getActiveObject().id});
+    socket.emit('canvasUpdate', {"change": e.target, "type": 'mod', "id": e.target.id});
 });
 
 
 // this is to take in values that need to be pushed to the stack that are not covered in the general movement,scale,rotate etc values
 // should add to the undoStack in a structure that the current undo code can understand
 function constructForUndoStack(o) {
-    console.log(o);
     var info = {};
 
-
+    // Go through each of the values given in the passed object and set the info list to contain all key:value pairs
     for (const [key, value] of Object.entries(o)) {
         if (key == 'id') continue;  // need to put id somewhere else in the structure
         info[key] = value;
     }
 
+    // StructureHelp is to provide additional assistance in the construction of the structure used in the undo stack
     var structureHelp = []
     structureHelp["original"] = info;
     structureHelp["target"] = {id:o.id}
 
     console.log({attributes: structureHelp, type : "mod"});
-
-    undoStack.push({attributes: structureHelp, type : "mod"})    // modify this to fit in with the structure in the undo function
+    undoStack.push({attributes: structureHelp, type : "mod"})    // push to the undo stack in the necessary format
 }
 
 
-// This is for debugging
-canvas.on('selection:created', function() {
-    console.log(canvas.getActiveObject());
-})
-
-// dont worry about this
-function delay(time) {
-    return new Promise(resolve => setTimeout(resolve, time));
-}
-
+// Releases and reimplements the most recent change in the undo stack, has handlers for every possible kind of change
 function undo() {
-    if (undoStack.length > 0) {
-        console.log(undoStack)
-
-        var change = undoStack.pop() 
-
+    if (undoStack.length > 0) {             // Make sure there are changes to undo
+        var change = undoStack.pop();       // Get most recent change
+        console.log(change)
+        // Modded objects, for the most part, are stored as a collection of the primary attributes of the original object
         if (change.type == 'mod') {
             var moddedObj;
 
-            for (var i in canvas._objects) {
+            for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
                 if (canvas._objects[i].id == change.attributes.target.id) {
-                    for (const [key, value] of Object.entries(change.attributes.original)) {
-                        console.log(key, value);
-                        if (key == 'originX' || key == 'originY') { // this messes things up, so skip them
+
+                    // Create a copy of the object before undo for the redo stack
+                    canvas._objects[i].clone(function (o) {
+                        redoStack.push({attributes : o, type:"mod"});
+                    }, ['id']);
+                    
+                    for (const [key, value] of Object.entries(change.attributes.original)) {        // Go through each of the attributes in the object before the change
+
+                        if (key == 'originX' || key == 'originY') { // these mess obj positioning things up, so skip them
                             continue;
                         }
-    
+
                         canvas._objects[i].set({[key]:value}); //set the objects key value to be the key value that was used before the most recent modification
-                        canvas._objects[i].setCoords();
+                        canvas.renderAll(); // need to have this here otherwise some attributes aren't rendered properly
                     }
-                    canvas.renderAll()
-                    console.log(canvas._objects[i])
+
+                    canvas._objects[i].setCoords();
                     moddedObj = canvas._objects[i];
                     break;
                 }
             }
-            console.log(moddedObj)
-            socket.emit('canvasUpdate', {"change": moddedObj, "type": 'mod', "id": moddedObj.id});
+
+            socket.emit('canvasUpdate', {"change": moddedObj, "type": 'mod', "id": moddedObj.id});      // Emit the change to server
+
         } else if (change.type == 'add')   {        // this means we have to remove the object
             for (var i in canvas._objects) {
-                if (canvas._objects[i].id == change.attributes.id) {
+                if (canvas._objects[i].id == change.attributes.id) {        // Find object in canvas._objects by matching the ids
+
+                    // Create a copy of the object before undo for the redo stack
+                    canvas._objects[i].clone(function (o) {
+                        redoStack.push({attributes : o, type:"add"});
+                    }, ['id']);
+
                     canvas.setActiveObject(canvas._objects[i]); // this is necessary so deleteItem knows which obj to delete
                     deleteItem(true)    //true marks that we are using the undo feature, so don't re add this removal to the undo stack for infinite loop
                 }
             }
-        } else if (change.type == 'bgColour') {
+
+        } else if (change.type == 'bgColour') {         // This should revert the background colour to previous colour
+
+            redoStack.push({attributes: canvas.backgroundColor, type:"bgColour"});
+
             canvas.backgroundColor = change.attributes.bgColour;
             canvas.renderAll();
-            socket.emit('canvasUpdate', {"change": canvas.backgroundColor, "type": 'bgColour'});    // need a socket emit for only this one bc the others are handled by event managers
-        } else if (change.type == 'delete') {
+            socket.emit('canvasUpdate', {"change": canvas.backgroundColor, "type": 'bgColour'});    // need a socket emit for this one bc the others above are handled by event managers
+
+        } else if (change.type == 'delete') {           // This means we need to re-add an object from the undo stack
             for (var i in change.attributes) {
-                console.log(change.attributes[i].toJSON(['id']))
+                redoStack.push({attributes: change.attributes[i].id, type:"delete"});
+
                 addItemFromData(change.attributes[i].toJSON(['id']));   // need to covert to json for enliven objects to work
                 socket.emit('canvasUpdate', {'change': change.attributes[i].toJSON(['id']),type: "add"});  //don't know why we need to include id but we do
             }
-        } else if (change.type == 'addErased') {
+        } else if (change.type == 'addErased') {        // This means we need to re-add a version of the object without the most recent eraser clip path
+            // Create a copy of the object before undo for the redo stack
+
+            for (var i in canvas._objects) {
+                for (var j in change.attributes){
+                    if (canvas._objects[i].id == change.attributes[j].id) {
+                        redoStack.push({attributes : canvas._objects[i].toJSON(['id']), type:"addErased"})
+                        break;
+                    }
+                }
+            }
+
             addErasedFromData(change.attributes);
             socket.emit('canvasUpdate', {'change': change.attributes,type: "addErased"});  //don't know why we need to include id but we do
         }
-        
     }
 }
+
+
+
+// Function for redoing undo changes, activated by Crtl+y.
+// If there is issues with this, all code is in this function and any redoStack.push in undo()
+// The use for redo is reversing the most recent undo's. The redo stack is wiped when a normal move is made so this will only be in use if the last n moves by the user must be undo's
+function redo() {
+    if (redoStack.length > 0) {
+        var redoChange = redoStack.pop();
+
+        console.log(redoChange)
+        switch (redoChange.type) {
+            case 'mod':
+                var moddedObj;
+
+                for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
+                    if (canvas._objects[i].id == redoChange.attributes.id) {
+                        constructForUndoStack(canvas._objects[i]);
+                        for (const [key, value] of Object.entries(redoChange.attributes)) {        // Go through each of the attributes in the object before the change
+
+                            if (key == 'originX' || key == 'originY') { // these mess obj positioning things up, so skip them
+                                continue;
+                            }
+        
+                            canvas._objects[i].set({[key]:value}); //set the objects key value to be the key value that was used before the most recent modification
+                            canvas._objects[i].setCoords();
+                        }
+
+                        canvas.renderAll();
+                        moddedObj = canvas._objects[i];
+                        break;
+                    }
+                }
+
+                 socket.emit('canvasUpdate', {"change": moddedObj, "type": 'mod', "id": moddedObj.id});      // Emit the change to server
+            break;
+
+            case 'add':
+                undoStack.push({attributes:redoChange.attributes, type:"add"});
+                addItemFromData(redoChange.attributes.toJSON(['id']));   // need to covert to json for enliven objects to work
+                socket.emit('canvasUpdate', {'change': redoChange.attributes.toJSON(['id']),type: "add"});  //don't know why we need to include id but we do
+            break;
+
+            case 'bgColour':
+                console.log(canvas.backgroundColor);
+                undoStack.push({attributes: {bgColour: canvas.backgroundColor}, type:"bgColour"});
+                canvas.backgroundColor = redoChange.attributes;     // In this case, redoChange.attributes is just backgroundColor
+                canvas.renderAll();
+                socket.emit('canvasUpdate', {"change": canvas.backgroundColor, "type": 'bgColour'});    // need a socket emit for this one bc the others above are handled by event managers
+            break;
+
+            case 'delete':
+                for (var i in canvas._objects) {
+                    if (canvas._objects[i].id == redoChange.attributes) {       // In this case, redoChange.attributes is just id
+                        undoStack.push({attributes:[canvas._objects[i]], type:"delete"});
+                        canvas.setActiveObject(canvas._objects[i]); // this is necessary so deleteItem knows which obj to delete
+                        deleteItem(true)    //true marks that we are using the undo feature, so don't re add this removal to the undo stack for infinite loop
+                        break;
+                    }
+                }
+            break;
+
+            case 'addErased':
+
+                // This loop is to find the pre-redo version of the clipped object and push it to the undo stack
+                for (var i in canvas._objects) {
+                    if (canvas._objects[i].id == redoChange.attributes.id) {
+                        undoStack.push({attributes:[canvas._objects[i].toJSON(['id'])], type:"addErased"});
+                        break;
+                    }
+                }
+                
+                var dataToSend = [redoChange.attributes]
+                addErasedFromData(dataToSend); // need to put in into a list as the function expects a list
+                socket.emit('canvasUpdate', {'change': dataToSend,type: "addErased"});  // need to put in into a list as the function expects a list
+            break;
+        }
+    }
+}
+
 
 // This is triggered by an onclick on the delete button and also the delete key
 function deleteItem(usingUndo) {
     obj = canvas.getActiveObjects();    // use Objects for group deletion
-    var ids = obj.map(function (o) {return o.id});    //
+    var ids = obj.map(function (o) {return o.id});    // Get the ids of the selected objects
 
-    console.log(obj);
-    if (!usingUndo) {
+    if (!usingUndo) {       // Don't push this deletion to the undo stack if it is being popped from the undo stack, prevents infinite loops
+        redoStack = [];     // There may be some use cases where this wipes the redo stack when it wasn't meant to
         undoStack.push({attributes: obj, type: "delete"})
     }
 
@@ -715,24 +808,47 @@ function deleteItem(usingUndo) {
     ids = null;
 }
 
-// deletes an object when delete key is pressed
-document.onkeydown =  function (e) {        // This might cause issues for using the delete key anywhere else on the page
+
+// The below two functions are in place mainly for debugging purposes
+// The HTML button could just call undo() and redo() directly, but this allows us to trace errors a bit better
+// Almost redundant though
+
+// This is accessed when a user clicks the undo button or presses the Ctrl+z keybind shortcut
+function triggerUndo(){
+    console.log("undoStack before pop", undoStack)
+    undo();
+}
+
+
+// This is accessed when a user clicks the redo button or presses the Ctrl+y keybind shortcut
+function triggerRedo(){
+    console.log("redo stack", redoStack);
+    redo();
+}
+
+document.onkeydown =  function (e) {
+    // deletes an object when delete key is pressed
     if (e.key === 'Delete') {
         deleteItem();
     }
 
-    // this bit is for dealing with an undo request
+    // pops from the undo stack when Ctrl+Z is pressed
     if (e.ctrlKey && e.key === 'z') {
-        console.log("undoStack before pop", undoStack)
-       undo();
+        triggerUndo();
+    }
+
+    if (e.ctrlKey && e.key === 'y') {
+        triggerRedo();
     }
 };
 
-function addItemFromData(data) {
-    if (data.type == undefined) {    // this code needs to be here as the enlivenObjects doesn't work with the way we do normal pencil drawing atm
-        canvas.isDrawingMode = true;
 
-        addObj = new fabric.Path(data.path, {
+// This adds objects that other clients have created
+function addItemFromData(data) {
+    if (data.type == undefined) {    // this code needs to be here as the enlivenObjects doesn't work with the way we do normal pencil drawing, the type of pencil drawings are considered undefined here
+
+        // build Path object
+        obj = new fabric.Path(data.path, {
             strokeWidth: data.lineWidth,
             stroke: data.stroke,
             strokeLineJoin: 'round',        // This is to avoid jagged edges especially at larger thicknesses
@@ -746,16 +862,13 @@ function addItemFromData(data) {
             id: data.id
         });
 
-        if (data.scaleX) {
-            addObj.set({scaleX: data.scaleX, scaleY: data.scaleY});
+        if (data.scaleX || data.scaleY) {      // if the obj has been scaled in some way, set that too
+            obj.set({scaleX: data.scaleX, scaleY: data.scaleY});
         }
         
-        canvas.isDrawingMode = false;
-
-        canvas.add(addObj);
+        canvas.add(obj);
     } else {    // this adds in new objects from other clients as they are drawn
         fabric.util.enlivenObjects([data], function (enlivenObjects) {
-            // canvas.remove(canvas._objects[i]);
             console.log(enlivenObjects[0]);
             canvas.add(enlivenObjects[0]);
             canvas.renderAll()
@@ -764,12 +877,13 @@ function addItemFromData(data) {
 
 }
 
+
+// This replaces objects with updated versions when another user draws an eraser line through the object
 function addErasedFromData(objs) {
-    console.log(objs);
     for (var j in objs) {
         for (var i in canvas._objects) {
+            console.log("canvas", canvas._objects[i].id, "obj", objs[j])
             if (canvas._objects[i].id == objs[j].id) {
-                console.log(objs[j])
                 fabric.util.enlivenObjects([objs[j]], function (enlivenObjects) {
                     canvas.remove(canvas._objects[i]);
                     canvas.add(enlivenObjects[0]);
@@ -784,144 +898,20 @@ function addErasedFromData(objs) {
 
 // This handles all canvas updates, e.g. any additions, deletions, modifications, templates or design loads
 socket.on('canvasUpdate', (data) => {
-    var addObj;     // Create variable to store object to be added (will have to be created from data given from server)
     console.log(data.change);   // Debugging
 
     // Use switch case to figure out what kind of update it is
     switch (data.type) {
         case 'add':
-            console.log("this one be addin",data)
-            console.log(data.change.type);
-            addItemFromData(data.change)
-            
-            
-            // somehow managed to reduce the below code to the stuff above
-
-            // // find type of object to be added and construct with necessary values, make sure to set id of obj
-            // if (data.change.type == 'rect') {
-            //     addObj = new fabric.Rect({
-            //         left:data.change.left,
-            //         top:data.change.top,
-            //         fill:data.change.fill,
-            //         width: data.change.width,
-            //         height: data.change.height,
-            //         scaleX: data.change.scaleX,
-            //         scaleY: data.change.scaleY,
-            //         angle: data.change.angle,
-            //         id: data.change.id
-            //     });           
-            // } else if (data.change.type == 'triangle') {
-            //     addObj = new fabric.Triangle({
-            //         left: data.change.left,
-            //         top: data.change.top,
-            //         fill: data.change.fill,
-            //         width:  data.change.width,
-            //         height:  data.change.height,
-            //         scaleX: data.change.scaleX,
-            //         scaleY: data.change.scaleY,
-            //         angle: data.change.angle,
-            //         id: data.change.id
-            //     });
-            // } else if (data.change.type == 'circle') {
-            //     addObj = new fabric.Circle({
-            //         left: data.change.left,
-            //         top: data.change.top,
-            //         fill: data.change.fill,
-            //         radius: data.change.radius,
-            //         scaleX: data.change.scaleX,
-            //         scaleY: data.change.scaleY,
-            //         angle: data.change.angle,
-            //         id: data.change.id
-            //     });
-            // } else if (data.change.type == 'line') {
-            //     var points = [data.change.x1, data.change.y1, data.change.x2, data.change.y2]
-            //     addObj = new fabric.Line(points, {
-            //         stroke: data.change.stroke,
-            //         lineWidth: data.change.lineWidth,
-            //         top: data.change.top,
-            //         left: data.change.left,
-            //         scaleX: data.change.scaleX,
-            //         scaleY: data.change.scaleY,
-            //         angle: data.change.angle,
-            //         id: data.change.id 
-            //     });
-            // } else if (data.change.type == 'textbox') {
-            //     addObj = new fabric.Textbox(data.change.text, {
-            //         fontSize: data.change.fontSize,
-            //         fontFamily: data.change.fontFamily,
-            //         fill: data.change.fill,
-            //         left: data.change.left,
-            //         top: data.change.top,
-            //         angle: data.change.angle,
-            //         id: data.change.id
-            //     });
-            // } else if (data.change.type == 'image') {
-            //     // newImg = document.createElement("img");
-            //     // newImg.setAttribute('src', data.change.src);
-            //     // document.getElementById("body").appendChild(newImg);
-
-            //     addObj = new fabric.Image.fromURL(data.change.src, function(oriImg){
-            //         oriImg.set({
-            //             top: data.change.top,
-            //             left: data.change.left,
-            //             height: data.change.height,
-            //             width: data.change.width,
-            //             angle: data.change.angle,
-            //             scaleX: data.change.scaleX,
-            //             scaleY: data.change.scaleY,
-            //             id: data.change.id
-            //         })
-                    
-            //         canvas.add(oriImg);
-            //         canvas.renderAll();
-            //     });
-            // } else {    // this should cover both path and polyline
-            //     // on other clients, free drawing is recreated as a polyline
-            //     canvas.isDrawingMode = true;
-
-            //     // canvas.freeDrawingBrush = new fabric.EraserBrush(canvas); // Make this its own case for 'eraser'. Could create a switch case just for brush patterns
-            //     // canvas.freeDrawingBrush.width = lineWidth;
-
-            //     // canvas.loadFromJSON(data.change.path);
-
-            //     addObj = new fabric.Path(data.change.path, {
-            //         strokeWidth: data.change.lineWidth,
-            //         stroke: data.change.stroke,
-            //         strokeLineJoin: 'round',        // This is to avoid jagged edges especially at larger thicknesses
-            //         strokeLineCap: 'round',
-            //         fill: null,
-            //         angle: data.change.angle,
-            //         height: data.change.height,
-            //         width: data.change.width,
-            //         left: data.change.left,
-            //         top: data.change.top,
-            //         id: data.change.id
-            //     });
-
-            //     if (data.change.scaleX) {
-            //         addObj.set({scaleX: data.change.scaleX, scaleY: data.change.scaleY});
-            //     }
-                
-            //     canvas.isDrawingMode = false;
-            // }
-
-
-            // if (data.change.type != 'image') {  //when loading image from url, need to use callback when the image has loaded, so ignore here
-            //     console.log(addObj);
-            //     canvas.add(addObj);
-            // }
-            
+            addItemFromData(data.change);               // Add objects from other users
         break;
 
         case 'addErased':
-            console.log("erasedshithere", data.change);
-            addErasedFromData(data.change);
-            
+            addErasedFromData(data.change);             // Updated objects with erased lines
         break;
 
         case 'bgColour':
-            console.log(data);
-            canvas.backgroundColor = data.change;
+            canvas.backgroundColor = data.change;       // Set background colour
         break;
 
         case 'remove':
@@ -939,18 +929,15 @@ socket.on('canvasUpdate', (data) => {
         
         case 'mod':     // this is for general modifications to the object, not any eraser stuff
             for (var i in canvas._objects) {
-                if (canvas._objects[i].id == data.id) {
-                    console.log("canvasObj",canvas._objects[i]);
+                if (canvas._objects[i].id == data.id) {     // Find this clients instance of the object by matching the ids
                     var oriObj = canvas._objects[i];
                     var newObj = data.change;
-
                     
                     oriObj.set("left", newObj.left);
                     oriObj.set("top", newObj.top);
                     oriObj.setCoords(); //this is needed, trust me
 
-
-                    // future proofing, might need more
+                    // set these values of the object with the passed values
                     oriObj.set("fill", newObj.fill);
                     oriObj.set("width", newObj.width);
                     oriObj.set("height", newObj.height);
@@ -965,6 +952,7 @@ socket.on('canvasUpdate', (data) => {
                 }
             }
         break;
+
         case 'deleteDesign':
             for (var i of canvas.getObjects()) {
                 if (i.id != 'DONTDELETE') { // this makes sure that the delete function doesn't remove the background rectangle that shows the borders
@@ -975,15 +963,13 @@ socket.on('canvasUpdate', (data) => {
             canvas.renderAll();
         break;
     }
-   canvas.renderAll();
+
+    canvas.renderAll();          // Makes sure that the canvas is fully rendered
 });
 
-// this is server assigned id given when client creates obj
-// socket.on('idUpdate', (data) => {
-//     recentObj.id = data;
-// });
 
-// Get room fucntion which takes in the room name when we create it from the server, then loop through them all and when that room == location.pathname we have our room
+// This is all stuff pertaining to the joining and leaving of users from the collaboration room
+// Get room function which takes in the room name when we create it from the server, then loop through them all and when that room == location.pathname we have our room
 const whiteboard = document.getElementById("whiteboard");
 
 if (whiteboard != null) {
@@ -1049,13 +1035,13 @@ document.getElementById("newDesign").onclick = () => {
     socket.emit(socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, prompt("Name your design")));
 }
 var recordedSaveNames = [];
+
+
 // Below is the code pertaining to the buttons in the header
 
 // Emit to server design JSON data to be stored in a file for saving
+// This also creates a form for the saving of designs
 function saveDesign() {
-    //socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})});
-    //var win = window.open();
-    //win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg'})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
     document.getElementById('save').style.display = "grid";
     socket.emit('getDesignNames');
     socket.on('retrieveDesignNames', (names) => {
@@ -1067,7 +1053,7 @@ function saveDesign() {
             nameBut.innerHTML = name;
             nameBut.onclick = () => {
                 document.getElementById('save').style.display = "none";
-                socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})}, name);
+                socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})}, name);     // the canvas.toDataUrl creates an image of the whole collab room, using logic to get the correct width and height
             }
             if(!recordedSaveNames.includes(name)){
                 currentName.appendChild(nameBut);
@@ -1077,17 +1063,12 @@ function saveDesign() {
         });
         
     })
-    /*
-    let designName = prompt("Name your deisgn");
-    designName.trim();
-    if(designName.length > 0){
-        socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, designName);
-    }
-    */
-    // socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', left:"0", top: "0", height:canvasHeight, width: canvasWidth})});    // the parameters other than format do not work currently
+
+    // Gives users an idea of the image they have saved
     var win = window.open();
     win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
 }
+
 
 // Recieves alert on success of save
 socket.on('saveDesignResponse', (res) => {
@@ -1097,11 +1078,12 @@ socket.on('saveDesignResponse', (res) => {
         alert("error");
 });
 
+
 // Deletes all objects on canvas and sends emit telling other clients to do so as well
 function deleteDesign() {
     socket.emit('canvasUpdate', {type: "deleteDesign"});
     for (var i of canvas.getObjects()) {
-        if (i.id != 'DONTDELETE') {
+        if (i.id != 'DONTDELETE') {         // Ignores boundary rectangle
             canvas.remove(i);
         }
     }    
@@ -1109,13 +1091,16 @@ function deleteDesign() {
     canvas.renderAll();
 }
 
+// CSS to close the form
 document.getElementById("close").onclick = () => {
     document.getElementById("load").style.display = "none";
     document.getElementById("save").style.display = "none";
 }
 
+
 let recordedLoadNames = [];
-// Sends to the server asking for data of hardcoded design
+
+// Function creates a form that shows all available designs to load
 function loadDesign() {
     document.getElementById('load').style.display = "grid";
     socket.emit('getDesignNames');
@@ -1138,35 +1123,24 @@ function loadDesign() {
                 }
                 recordedLoadNames.push(name);
             });
-            
         }
     });
 }
-
-// Server responds with JSON design data, load it onto canvas
-socket.on('loadDesignResponse', (res) => {
-
-});
 // End of header code
-
-socket.on("backgroundColourUpdate", (data) => {
-    console.log("newBgColour", data)
-    canvas.backgroundColor = data;
-    canvas.renderAll()
-});
 
 
 // Below is code for buttons in footer
 // Get template image and format it as canvas background image, send emit to ell other client to do so
 function importTemplate(template, dontEmit) {
     fabric.Image.fromURL(template, function (img) {
-        // The don't emit thing will be implemented later
+        // Don't emit is true when the importTemplate function is being called by a client that did not import the template, but has to load it because another user has
         if (!dontEmit) {
             socket.emit('importTemplate', template)
         }
 
+        // Create formatting of template that suits either landscape or portrait resolutions
         if (img.height < img.width) {
-            // Scale to height (means it works better on landscape resolutions)
+            // Scale to height (means it works better on portrait resolutions)
             img.scaleToWidth(canvasWidth, true);
 
             // Center the template and set at background image
@@ -1184,29 +1158,31 @@ function importTemplate(template, dontEmit) {
                 left: (canvasHeight - (img.width*img.scaleX)) / 2
             });
         }
-        console.log(canvas.backgroundImage);
 
         canvas.renderAll();
     })
 }
 
+
+// This is called when the "Browse Template" button is pressed, makes the form viewable
 function importTemplatePopup() {
     const popup = document.getElementById("_templateContainer");
     popup.style.display = "flex";
 }
+
 
 window.onload = function() {
     // Since templates will only be updated infrequently, request templates should only be called on page load rather than each time template window is opened
     socket.emit('requestTemplates');
 }
 
+// This populates the "Browse Templates" form
 socket.on('templateResponse', (templates) => {
-    console.log(templates);  //Start by converting this to an image
     const templateGrid = document.getElementById("_templateGrid");
-    if (templates.length == 0) {
+    if (templates.length == 0) {        // Check that there is templates to load (should always be)
         alert("No templates to show");
     } else {
-        templates.forEach((template) => {
+        templates.forEach((template) => {       // Create image listing for each template and add it to the form
             let curImg = document.createElement("img");
             let imgContainer = document.createElement("div");
             let templateName = document.createElement("p");
@@ -1224,10 +1200,14 @@ socket.on('templateResponse', (templates) => {
     }
 });
 
+
+// When another user imports a template, add that template to this client
 socket.on('importTemplate', (template) => {
     importTemplate(template, true); // figure out solution for the first param later
 })
 
+
+// Called when the "Exit Call" button is pressed
 function leaveRoom() {
     socket.emit("leaveRoom");
     window.location.href = "/home";

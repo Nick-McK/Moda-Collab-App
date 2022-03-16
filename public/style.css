@@ -113,8 +113,9 @@ button:hover {
 /* CSS for upper and lower section of collab room */
 .collabRoomHeaderFooter{
     width: 100%;
-    height: 12.5%;
-    position: fixed;
+    height: 12%;
+    position: absolute;
+    border: 0px;
 }
 
 /* Users in the top right of the collab rooms */
