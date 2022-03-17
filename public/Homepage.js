@@ -599,11 +599,12 @@ function displayPost(posts) {
                 profilePicDiv.classList.add("profile-pic");
                 profilePicImg.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg");
                 commentDiv.appendChild(commentContent);
-                if (!commented.includes(comment)) {
+                if (!commented.includes(comment.comment)) {
                     commentSection.prepend(commentDiv);
+                    console.log("doesnt include");
                 }
-                
-                commented.push(comment);
+                console.log("commented", commented);
+                commented.push(comment.comment);
                 
             
             }

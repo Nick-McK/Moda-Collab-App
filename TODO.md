@@ -64,8 +64,8 @@ Bugs:
     * [ ] Rereshing fixes this, possibly only way to fix is to put error handling on rooms that have been deleted when people try join
 
 * [ ] If you mouse over the image of a post when clicking on the comment button then the animation resets -> Kinda fixed can be better tho
-    * [ ] This also happens when click on the image of a post but you need to remove the mouse from the image and mouse over again
-    * [ ] Clicking on comments and having the animation fail will duplicate comments
+    * [X] ~~*This also happens when click on the image of a post but you need to remove the mouse from the image and mouse over again*~~ [2022-03-17]
+    * [X] ~~*Clicking on comments and having the animation fail will duplicate comments*~~ [2022-03-17]
 
 * [X] ~~*If you like a post then refresh then you can like the post again, so 1 person can like a post as many times as they want*~~ [2022-03-17]
 

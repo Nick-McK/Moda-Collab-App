@@ -1138,7 +1138,7 @@ io.sockets.on('connect', (socket) => {
 
     // Adds comments to the comments table with foreign key of postID
     socket.on("postComment", data => {
-        con.query("INSERT INTO comments (postID, comment, userID) VALUES (?, ?, ?)", [data.postID, data.comment, data.user], (err, result) => {
+        con.query("INSERT INTO comments (postID, comment, userID) VALUES (?, ?, ?)", [data.postID, data.comment, socket.request.session.userID], (err, result) => {
             if (err) throw err;
             console.log("updated table posts with:", result);
         });
@@ -1147,6 +1147,7 @@ io.sockets.on('connect', (socket) => {
     socket.on("getComments", (data) => {
         con.query("SELECT * FROM comments WHERE postID = ?", [data.postID], (err, result) => {
             if (err) throw err;
+            console.log("comments lenght", result.length);
             let comments = [];
             for (let i = 0; i< result.length; i++) {
                 comments.push(result[i]);
