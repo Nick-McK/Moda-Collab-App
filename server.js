@@ -969,7 +969,7 @@ io.sockets.on('connect', (socket) => {
                }
             });
             */
-            con.query("INSERT INTO posts (postName, postCaption, design, userID) VALUES (?, ?, ?, ?)", [postData.postName, postData.postCaption, design, socket.request.session.userID], (err) => {
+            con.query("INSERT INTO posts (postName, postCaption, likes, design, userID) VALUES (?, ?, ?, ?, ?)", [postData.postName, postData.postCaption, 0, design, socket.request.session.userID], (err, result) => {
                 if(err) throw err;
                 console.log("added post");
                 /* fixing this aint worth it bruh
@@ -982,11 +982,22 @@ io.sockets.on('connect', (socket) => {
                     });
                 })
                 */
-            });
-        });
+                let post = {name: postData.postName, caption: postData.postCaption, design: postData.image, user: socket.request.session.username, likes: 0, id: result.insertId, sessionID: socket.request.session.userID}
 
-        // Use io.emit to give it to all connected clients
-        io.emit("postAdded", (postData));
+                let posts = [];
+                posts.push(post);
+
+                // Use io.emit to give it to all connected clients
+                io.emit("postAdded", (posts));
+            });
+        
+        
+            
+
+            
+        })
+
+        
         
     })
 

@@ -287,53 +287,9 @@ postButton.onclick = () => {
 
 
 // TODO: Clean this up with a loop for the repeated elements
-socket.on("postAdded", (data) => {
+socket.on("postAdded", (posts) => {
     console.log("new post")
-    let postDiv = document.createElement("div");
-    let gridItem = document.createElement("div");
-    let postBar = document.createElement("div");
-    let postImage = document.createElement("img");
-    let barImage1 = document.createElement("img");
-    let barImage2 = document.createElement("img");
-    let barImage3 = document.createElement("img");
-    
-    
-    let div1 = document.createElement("div");
-    let div2 = document.createElement("div");
-    let div3 = document.createElement("div");
-
-
-    barImage1.classList.add("bar_img");
-    barImage2.classList.add("bar_img");
-    barImage3.classList.add("bar_img");
-    postDiv.classList.add("post");
-    gridItem.classList.add("grid-item");
-    postBar.classList.add("post-bar");
-    postImage.classList.add("post_img");
-
-    barImage1.setAttribute("src", "/public/assets/icons/floppy-disk.png");
-    barImage2.setAttribute("src", "/public/assets/icons/archive-box.png");
-    barImage3.setAttribute("src", "/public/assets/icons/plus.png");
-
-    div1.appendChild(barImage1);
-    div2.appendChild(barImage2);
-    div3.appendChild(barImage3);
-    
-
-    postBar.appendChild(div1);
-    postBar.appendChild(div2);
-    postBar.appendChild(div3);
-
-    
-    
-
-    postImage.setAttribute("src", data.image);
-
-    gridItem.appendChild(postImage);
-    postDiv.appendChild(gridItem);
-    postDiv.appendChild(postBar);
-    const feed = document.getElementById("_feed");
-    feed.prepend(postDiv); // This is prepend as we want the newest posts at the top of the feed
+    displayPost(posts)
 
     
     
@@ -366,6 +322,11 @@ let commented = [];
 socket.on("posts", posts => {
     console.log("posts", posts);
     console.log("what isthis", posts[0].id);
+    displayPost(posts);
+
+});
+
+function displayPost(posts) {
     for (let post of posts) {
         if (posted[post.name] == post.caption) {
             continue;
@@ -937,7 +898,7 @@ socket.on("posts", posts => {
     //     })
     // }
 
-});
+}
 
 socket.on("returnModStatus", data => {
     if (data.isMod == 0) {
