@@ -144,6 +144,8 @@ app.get("/account/register", (req, res) => {
 })
 
 app.get("/account/tags", (req,res) => {
+    let initialStrikes = 0;
+    req.session.strikes = initialStrikes;
     res.sendFile(__dirname + "/tags.html");
 });
 
@@ -166,7 +168,8 @@ app.post("/account/tags", (req, res) => {
                 con.query("INSERT INTO user_details (userID, email, contactNo, role, strikes, isMod) VALUES (?, ?, ?, ?, ?, ?)", [req.session.userID, req.body.email, req.body.contactNo, req.body.role, 0, false], (err,res) => {
                     if (err) throw err;
                     console.log("res", res);
-                    req.session.strikes = 0;
+                    let initialStrikes = 0; // cannot set a session variable to just a number so set a variable to 0 and set to strike count -> only done on register
+                    req.session.strikes = initialStrikes;
                 });
 
 
@@ -186,7 +189,8 @@ app.post("/home", (req, res) => {
     // Doing thus lets us make mulitple post requests to the homepage and have different results based on the page
     if(req.body.username) {
 
-    
+        
+
         const username = req.body.username;
 
         const password = req.body.password;
@@ -248,7 +252,8 @@ app.post("/home", (req, res) => {
 app.get("/home", (req, res) => {
     // If the user is logged in then let them access page
     if (req.session.loggedIn) {
-        res.sendFile(path.join(__dirname + "/Homepage.html")); 
+        console.log("strikes", req.session.strikes);
+        res.sendFile(path.join(__dirname + "/Homepage.html"));
     } else {
         // res.send("log in");
         res.sendFile(path.join(__dirname + "/Homepage.html"));
@@ -891,7 +896,7 @@ io.sockets.on('connect', (socket) => {
             let TIMER = setInterval(() => {
                 start++;
                 
-            if (start == 300) { //300 for 5 mins
+            if (start == 10) { //300 for 5 mins
                 console.log("DELETED ROOM:", rooms[roomName]);
                 delete rooms[roomName]
                 roomList = roomList.filter(ro => ro.roomName != roomName);
@@ -1055,7 +1060,7 @@ io.sockets.on('connect', (socket) => {
             if(tagsList.includes('sportsware')){
                 tags[7] = 1;
             }
-            con.query("INSERT INTO usertags (userID, streetware, formal, casual, luxury, vintage, chic, punk, sportsware) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [socket.request.session.userID, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]], (err, result) => {
+            con.query("INSERT INTO tags (userID, streetware, formal, casual, luxury, vintage, chic, punk, sportsware) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [socket.request.session.userID, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]], (err, result) => {
                 if(err) throw err;
             });
             (socket.emit("tagDataResponse", true))
@@ -1153,7 +1158,7 @@ io.sockets.on('connect', (socket) => {
         })
         
     })
-
+    // Flags a post and inserts into the flagged posts table
     socket.on("postFlagged", (data) => {
         console.log("testing", data.postID);
         con.query("SELECT * FROM posts WHERE postID = ?", [data.postID], (err, result) => {
@@ -1166,8 +1171,7 @@ io.sockets.on('connect', (socket) => {
                 result[0].likes,
                 result[0].design,
                 result[0].userID], (err, res) => {
-                    if (err) throw err;
-                    console.log("inserted ", res);
+                    if (err & err != "ER_DUP_ENTRY") throw err; // If there is a duplicate entry skip it
             });
         });
     });
@@ -1175,11 +1179,11 @@ io.sockets.on('connect', (socket) => {
     socket.on("getModStatus", () => {
         con.query("SELECT isMod FROM user_details WHERE userID = ?", [socket.request.session.userID], (err, result) => {
             if (err) throw err;
-            console.log("result", result);
+            console.log("mod status", result);
             socket.emit("returnModStatus", {isMod: result[0].isMod});
         })
     })
-
+    // Gets all the flagged posts to display on moderator page
     socket.on("getFlagged", () => {
         let flaggedPost = {}
         let posts = [];
@@ -1219,12 +1223,16 @@ io.sockets.on('connect', (socket) => {
         con.query("SELECT userID FROM users WHERE username = ?", [data.username], (err, result) => {
             if (err) throw err;
             console.log("results from getting userID", result);
-            let strikesIncrement = socket.request.session.strikes;
-            strikesIncrement++;
-            con.query("UPDATE user_details SET strikes = ? WHERE userID = ?", [strikesIncrement, result[0].userID], (err, res) => {
-                if (err) throw err;
-                console.log("idek", res);
-            })
+            // Quite inefficient querying the database for the number of strikes, but this doesn't happen often
+            con.query("SELECT strikes FROM user_details WHERE userID = ?", [result[0].userID], (err, r) => {
+                let strikes = r[0].strikes;
+                strikes++;
+                // console.log("strikes", socket.request.session.strikes)
+                con.query("UPDATE user_details SET strikes = ? WHERE userID = ?", [strikes, result[0].userID], (err, res) => {
+                    if (err) throw err;
+                    console.log("idek", res);
+                })
+            });
         })
     })
 });

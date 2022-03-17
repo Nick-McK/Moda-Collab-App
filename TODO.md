@@ -66,3 +66,7 @@ Bugs:
     * [ ] Clicking on comments and having the animation fail will duplicate comments
 
 * [ ] If you like a post then refresh then you can like the post again, so 1 person can like a post as many times as they want -> callbacks?
+
+* [ ] After leaving a room and joining, the room is still deleted then crashes server.
+
+* [X] ~~*Error handling for flagging posts twice.*~~ [2022-03-17]
