@@ -284,15 +284,9 @@ postButton.onclick = () => {
     }
 }
 
-
-
-// TODO: Clean this up with a loop for the repeated elements
 socket.on("postAdded", (posts) => {
     console.log("new post")
     displayPost(posts)
-
-    
-    
 })
 
 
@@ -325,7 +319,14 @@ socket.on("posts", posts => {
     displayPost(posts);
 
 });
-
+/**
+ * 
+ * @param {Array} posts An array of objects that contains details about each post to be displayed to the screen
+ * This is abstracted to reduce code duplication. This method takes all posts in the array and creates an element
+ * for them on screen, conforming to the post layout determined in the commented out post class in the Homepage
+ * 
+ * We also add event listeners to play for our animations to work.
+ */
 function displayPost(posts) {
     for (let post of posts) {
         if (posted[post.name] == post.caption) {
