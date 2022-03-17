@@ -1171,6 +1171,23 @@ function importTemplatePopup() {
 }
 
 
+function removeTemplate(dontEmit) {
+    if (canvas.backgroundImage != null) {
+        
+        if (!dontEmit) {        // Only emit if the delete request originated from this client
+            socket.emit('removeTemplate');
+        }
+
+        const i = new fabric.Image('');
+        canvas.setBackgroundImage(i, canvas.renderAll.bind(canvas));        // Set background to an empty image to remove the template
+
+        canvas.backgroundImage = null;  // for the alert to work on repeated calls to this without adding new template
+    } else {
+        alert("No template to remove");
+    }
+}
+
+
 window.onload = function() {
     // Since templates will only be updated infrequently, request templates should only be called on page load rather than each time template window is opened
     socket.emit('requestTemplates');
@@ -1204,6 +1221,10 @@ socket.on('templateResponse', (templates) => {
 // When another user imports a template, add that template to this client
 socket.on('importTemplate', (template) => {
     importTemplate(template, true); // figure out solution for the first param later
+});
+
+socket.on('removeTemplate', () => {
+    removeTemplate(true);
 })
 
 
