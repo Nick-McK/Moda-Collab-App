@@ -473,7 +473,18 @@ io.sockets.on('connect', (socket) => {
     console.log("A user connected", socket.id);
     connectedUsers.push(socket);
 
-    
+
+    // This is triggered on focusout of the username input box for register
+    // Runs a query to make sure username is unique
+    socket.on('usernameValidationRequest', (username, callback) => {
+        con.query("SELECT * FROM users WHERE username = ?", [username], (err, result) => {
+            if (result.length > 0) {
+                callback(true);     // the callback returns true if there is an existing account with same username
+            } else {
+                callback(false);
+            }
+        })
+    })
 
     // Use session to save the users socket and add them to the room when they click join room
 
@@ -862,10 +873,21 @@ io.sockets.on('connect', (socket) => {
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
                 roomList[i].background = data;
-                socket.to(roomList[i].roomName).emit("importTemplate", data);
+                socket.to(roomName).emit("importTemplate", data);
             }
         }
     });
+
+    socket.on("removeTemplate", () => {
+        console.log("template delete request to room ", roomName)
+        
+        for (var i in roomList) {
+            if (roomList[i].roomName == roomName) {
+                roomList[i].background = null;
+                socket.to(roomName).emit("removeTemplate");
+            }
+        }
+    })
 
     socket.on("requestTemplates", () => {
         con.query("SELECT name, image FROM templates", (err, result) => {
@@ -890,7 +912,7 @@ io.sockets.on('connect', (socket) => {
         delete rooms[roomName].users[socket.request.session.id];
         
         // If there are no people in the room then after 5 mins delete
-        if (rooms[roomName].users.length == undefined) {
+        if (Object.keys(rooms[roomName].users).length == 0 || Object.keys(rooms[roomName].users).length == undefined) {
             let start = 0;
             let TIMER = setInterval(() => {
                 start++;
