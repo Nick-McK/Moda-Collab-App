@@ -69,6 +69,7 @@ function setPtSize(objects) {
             }
         }
     }
+    recentlySelected = [];
 }
 
 
@@ -92,6 +93,7 @@ function setLineWidth(objects) {
             }
         }
     }
+    recentlySelected = [];
 }
 
 // Allows user to modify font family
@@ -112,6 +114,7 @@ function setFontFamily(objects) {
             }
         } 
     }
+    recentlySelected = [];
 }
 
 
@@ -139,6 +142,7 @@ function changeColour(objects) {
             canvas.fire('object:modified', {target : i});
         }
     }
+    recentlySelected = [];
 }
 
 
@@ -1032,7 +1036,13 @@ socket.on("chatMessage", data => {
 
 document.getElementById("newDesign").onclick = () => {
     document.getElementById('save').style.display = "none";
-    socket.emit(socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, prompt("Name your design")));
+
+    // Force user to enter design name before sending design
+    var dName = prompt("Name your design");
+    while(dName == "" || dName == null) {
+        dName = prompt("Name your design");
+    }
+    socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, dName);
 }
 var recordedSaveNames = [];
 
@@ -1047,6 +1057,8 @@ function saveDesign() {
     socket.on('retrieveDesignNames', (names) => {
         console.log("design names got");
         names.forEach((name) => {
+            console.log("this is name", name)
+
             let currentName = document.createElement("div");
             let nameBut = document.createElement("button");
             nameBut.classList.add("saveButton");
@@ -1065,8 +1077,8 @@ function saveDesign() {
     })
 
     // Gives users an idea of the image they have saved
-    var win = window.open();
-    win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
+    // var win = window.open();
+    // win.document.write('<iframe src="' + canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'); // this gives a preview of the image, can be commented out if needs be
 }
 
 

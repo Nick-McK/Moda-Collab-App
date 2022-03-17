@@ -237,7 +237,8 @@ app.post("/home", (req, res) => {
                 })
             } else {
                 req.session.loggedIn = false;
-                res.send("you dont have an account");
+                // If login attempt doesn't success, reroute client back to login page w/ failed login paramater in url
+                res.redirect('/account/login?login=' + encodeURIComponent('failed'));
             }
         });
     }
@@ -245,16 +246,19 @@ app.post("/home", (req, res) => {
 })
 
 
-
 //TODO: Put in error handling if we are not logged in
 app.get("/home", (req, res) => {
+    console.log("login status", req.session.loggedIn);
+
     // If the user is logged in then let them access page
     if (req.session.loggedIn) {
         console.log("strikes", req.session.strikes);
         res.sendFile(path.join(__dirname + "/Homepage.html"));
     } else {
-        // res.send("log in");
-        res.sendFile(path.join(__dirname + "/Homepage.html"));
+        console.log("should redirect")
+        res.writeHead(301, {
+            Location: '/account/login'
+        }).end();
     }
     
     
