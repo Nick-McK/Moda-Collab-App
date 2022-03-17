@@ -420,22 +420,44 @@ socket.on("posts", posts => {
         postImage.setAttribute("alt", post.id);
 
         barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
-        let LIKES = post.likes; // Set this to the database value
-        const LIKES_BEFORE = post.likes;
 
-        likeCounter.innerHTML = LIKES;
-        
-        barImage1.addEventListener("click", () => {
-            if (LIKES_BEFORE != LIKES) {
-                LIKES--;
-                // likeCounter.style.color = 
-                barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
-            } else {
-                LIKES++;
+        socket.on("likedByUsers", data => {
+            let likes = data.likes;
+
+            // Need this for when the post has just been added, as we create the userIDs part if the post has more than 0 likes
+            // And because it makes it work, kinda not sure why because it worked without it
+            if (likes[post.id] == undefined) {
+                LIKED = false;
+            } else if (likes[post.id].userIDs[post.sessionID] == post.sessionID) {
+                console.log("I exist!");
+                var LIKED = true;
                 barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
+            } else {
+                LIKED = false;
+                console.log("values");
             }
+        
+            let LIKES = post.likes; // Set this to the database value
+            const LIKES_BEFORE = post.likes;
+
             likeCounter.innerHTML = LIKES;
-            socket.emit("liked", {likes: LIKES, id: post.id});
+            
+            barImage1.addEventListener("click", () => {
+                if (LIKED == true) {
+                    LIKES--;
+                    LIKED = false;
+                    // likeCounter.style.color = 
+                    barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
+                    socket.emit("liked", {likes: LIKES, id: post.id, liked: LIKED});
+                } else if (LIKED == false) {
+                    LIKES++;
+                    LIKED = true;
+                    barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
+                    socket.emit("liked", {likes: LIKES, id: post.id, liked: LIKED});
+                }
+                likeCounter.innerHTML = LIKES;
+                
+            })
         })
         barImage2.setAttribute("src", "/public/assets/icons/archive-box-inverted.png");
 
@@ -486,7 +508,7 @@ socket.on("posts", posts => {
             console.log("content", commentValue);
             commentText.value = "";
             console.log("does this work", post.id);
-            socket.emit("postComment", {comment: commentValue, postID: post.id, name: post.name, caption: post.caption});
+            socket.emit("postComment", {comment: commentValue, postID: post.id, name: post.name, caption: post.caption, user: post.user});
         }
         // Flagging event
         flagImg.addEventListener("click", () => {
@@ -918,11 +940,8 @@ socket.on("posts", posts => {
 });
 
 socket.on("returnModStatus", data => {
-    let modNav = document.querySelector(".nav-menu > :nth-child(1)");
-
     if (data.isMod == 0) {
         let mods = document.getElementById("mods");
-        console.log("we are mod");
         mods.style.display = "none";
         // modNav.style.display = "grid";
     }

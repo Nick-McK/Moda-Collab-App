@@ -84,13 +84,13 @@ const sessionMiddleware = session({
     genid: (req) => {
         return uuidv4();
     },
-    secret: "secret", // This should be some random string of characters ideally
+    secret: "secret", // This should be some random string of characters ideally not anything guessable
     name: "sid", // Name of the cookie storing the session id
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
-        maxAge: 300000, // 1000 * 60 * 60 * 24 Sets the cookie to last for 1 day. (Set to 60000 for testing)
+        maxAge: 1000*60*60*24, // 1000 * 60 * 60 * 24 Sets the cookie to last for 1 day. (Set to 300000 for testing -> 5 mins)
         sameSite: "lax", // Lax means cookies can be saved across the same domain
         // Ideally we would use secure: true, however this requires a HTTPS website which we do not have for this project
     }
@@ -144,8 +144,6 @@ app.get("/account/register", (req, res) => {
 })
 
 app.get("/account/tags", (req,res) => {
-    let initialStrikes = 0;
-    req.session.strikes = initialStrikes;
     res.sendFile(__dirname + "/tags.html");
 });
 
@@ -169,7 +167,7 @@ app.post("/account/tags", (req, res) => {
                     if (err) throw err;
                     console.log("res", res);
                     let initialStrikes = 0; // cannot set a session variable to just a number so set a variable to 0 and set to strike count -> only done on register
-                    req.session.strikes = initialStrikes;
+                    req.session.strikes = initialStrikes; // Not sure we want to store our strikes in session data
                 });
 
 
@@ -442,6 +440,7 @@ let roomName; // Used to assign the users room to a global variable to be used o
 let usersInRoom;
 // When we connect give every use the rooms available
 io.sockets.on('connect', (socket) => {
+    // if (!socket.request.session.userID) 
 
     // console.log("socket sessionID", socket.request.session)
     // Store the socket id from socket just in case we need it (not sure if we will)
@@ -896,7 +895,7 @@ io.sockets.on('connect', (socket) => {
             let TIMER = setInterval(() => {
                 start++;
                 
-            if (start == 10) { //300 for 5 mins
+            if (start == 300) { //300 for 5 mins
                 console.log("DELETED ROOM:", rooms[roomName]);
                 delete rooms[roomName]
                 roomList = roomList.filter(ro => ro.roomName != roomName);
@@ -995,12 +994,16 @@ io.sockets.on('connect', (socket) => {
     socket.on("getPosts", () => {
         let posts = [];
         let postsName = {};
+
+        let postLikes = {};
+        let userIDs = {};
         con.query("SELECT postID, postName, postCaption, design, userID, likes FROM posts", (err, result) => {
             if (err) throw err;
             if (result.length == 0) {return}
             console.log("resulllll", result);
             console.log("this sis our result", result);
             for (let i = 0; i < result.length; i++) {
+                
                 con.query("SELECT username FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
                     if (err) console.log(err);
                     console.log("r value", r);
@@ -1009,11 +1012,30 @@ io.sockets.on('connect', (socket) => {
                             let image = res[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             let name = r[0].username; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             if (result[i].likes == null) result[i].likes = 0;
-                            postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID} // Send over name of the user who created it so that we can show who posted it
+                            postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
                             posts.push(postsName);
 
                             
                             socket.emit("posts", posts);
+                            
+                            if (result[i].likes == 0) {
+                                socket.emit("likedByUsers", {likes: 0})
+                            } else {
+                                
+                                con.query("SELECT * FROM likes WHERE postID = ?", [result[i].postID], (err, res) => {
+                                    if (err) throw err;
+                                    for (let i of res) {
+                                        
+                                        con.query("SELECT username FROM users WHERE userID = ?", [i.userID], (err, r) => {
+                                            postLikes[i.postID] = {userIDs: {}}
+                                            postLikes[i.postID].userIDs[i.userID] = i.userID
+                                            
+                                            socket.emit("likedByUsers", {likes: postLikes});
+                                        })
+                                        
+                                    }
+                                })
+                            }
                             
                         });
                 });
@@ -1021,13 +1043,24 @@ io.sockets.on('connect', (socket) => {
         });
         
     });
-
+    // Updates the likes for the post in the posts table
+    // Then adds the like to the likes table in the db to show that the user has liked the post
+    // This also prevents a single user from liking then refreshing and liking again.
     socket.on("liked", data => {
         console.log("data", data.id);
         con.query("UPDATE posts SET likes = ? WHERE postID = ?", [data.likes, data.id], (err, result) => {
             if (err) throw err;
             console.log("updated the table posts with likes ", result)
         })
+        if (data.liked == true) {
+            con.query("INSERT INTO likes (postID, userID) VALUES (?, ?)", [data.id, socket.request.session.userID], (err, result) => {
+                if (err) throw err;
+            })
+        } else if (data.liked == false) {
+            con.query("DELETE FROM likes WHERE postID = ? AND userID = ?", [data.id, socket.request.session.userID], (err, result) => {
+                if (err) throw err;
+            })
+        }
     })
     
     socket.on("sendTagData", (tagsList) => {
@@ -1072,7 +1105,7 @@ io.sockets.on('connect', (socket) => {
 
     // Adds comments to the comments table with foreign key of postID
     socket.on("postComment", data => {
-        con.query("INSERT INTO comments (postID, comment) VALUES (?, ?)", [data.postID, data.comment], (err, result) => {
+        con.query("INSERT INTO comments (postID, comment, userID) VALUES (?, ?, ?)", [data.postID, data.comment, data.user], (err, result) => {
             if (err) throw err;
             console.log("updated table posts with:", result);
         });
@@ -1180,6 +1213,8 @@ io.sockets.on('connect', (socket) => {
         con.query("SELECT isMod FROM user_details WHERE userID = ?", [socket.request.session.userID], (err, result) => {
             if (err) throw err;
             console.log("mod status", result);
+            console.log("result[0].isMod", socket.request.session.userID);
+            if (result.length === undefined) result[0].isMod = 0;
             socket.emit("returnModStatus", {isMod: result[0].isMod});
         })
     })
@@ -1235,6 +1270,8 @@ io.sockets.on('connect', (socket) => {
             });
         })
     })
+
+    
 });
 
 app.use(router);

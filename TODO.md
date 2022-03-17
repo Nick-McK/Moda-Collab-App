@@ -36,11 +36,13 @@
     * [ ] Change username
     * [ ] password
     * [ ] Bio
-    * [ ] possible change real name 
+    * [ ] possible change real name
+    * [ ] Change profile pic -> move from just being on profile page maybe
 
 * [ ] Moderation
-    * [ ] Add a flagged status -> If a post is flagged its removed from homepage and placed on a mod page where it is decided if it should be removed
-    * [ ] If a post is removed after its flagged then add a strike to the users account
+    * [X] ~~*Add a flagged status -> If a post is flagged its removed from homepage and placed on a mod page where it is decided if it should be removed*~~ [2022-03-17]
+    * [X] ~~*If a post is removed after its flagged then add a strike to the users account*~~ [2022-03-17]
+    * [ ] Add a method to apply for moderation status to the site -> currently only available to people if its hacked into the table itself
 
 
 * [ ] Friends?
@@ -65,8 +67,9 @@ Bugs:
     * [ ] This also happens when click on the image of a post but you need to remove the mouse from the image and mouse over again
     * [ ] Clicking on comments and having the animation fail will duplicate comments
 
-* [ ] If you like a post then refresh then you can like the post again, so 1 person can like a post as many times as they want -> callbacks?
+* [X] ~~*If you like a post then refresh then you can like the post again, so 1 person can like a post as many times as they want*~~ [2022-03-17]
 
-* [ ] After leaving a room and joining, the room is still deleted then crashes server.
+* [X] ~~*After leaving a room and joining, the room is still deleted then crashes server.*~~ [2022-03-17]
 
 * [X] ~~*Error handling for flagging posts twice.*~~ [2022-03-17]
+* [ ] If there are no posts in the second column of the feed then we get an error and the animation for viewing comments cannoy play
