@@ -37,6 +37,7 @@ h1 {
     grid-template-columns: auto auto auto;
     grid-gap: 4em;
     top: 30em;
+    left: 22.5em;
 }
 /* When we hover over the tags container blur all the other images except the one we are hovering over */
 .tagContainer:hover .tags img:not(:hover) {
