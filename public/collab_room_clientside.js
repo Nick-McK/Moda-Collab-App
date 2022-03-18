@@ -19,6 +19,11 @@ var brushType;  // To track logic for brush switching
 var undoStack = [];
 var redoStack = [];
 
+// Global var for normal and selected colour of the tool buttons
+// May need to manually change the starting colour in the CSS
+var normalToolColour = "darkgrey";
+var selectedToolColour = "grey";
+
 // Global for object attributes
 var colour = 'black';
 var pt = 500;
@@ -279,15 +284,15 @@ function changeTool(res, imgUrl) {
 function showToggledTool(inUse) {
     var using = document.getElementById(inUse);
 
-    if (using.style.backgroundColor == "grey") {        // If the tool is already in use, and the user is unselecting it, change the colour back to default
-        using.style.backgroundColor = "darkgrey";
+    if (using.style.backgroundColor == selectedToolColour) {        // If the tool is already in use, and the user is unselecting it, change the colour back to default
+        using.style.backgroundColor = normalToolColour;
     } else {                                            // Otherwise, treat it as if the tool is being selected for use and set all other tools to default colour while setting the tool the different colour
         var allSelectableTools = ["pencil", "eraser", "pan", "line"];
         allSelectableTools.splice(allSelectableTools.indexOf(inUse), 1);
         for (var i of allSelectableTools) {
-            document.getElementById(i).style.backgroundColor = "darkgrey";
+            document.getElementById(i).style.backgroundColor = normalToolColour;
         }
-        using.style.backgroundColor = "grey";
+        using.style.backgroundColor = selectedToolColour;
     }
 }
 
@@ -1015,7 +1020,7 @@ socket.on("userLeave", (data) => {
 })
 
 function getRoom() {
-    let path = location.pathname;
+    let path = decodeURI(location.pathname);        // Decode URI sorts out any special characters like spaces
     let room = path.split("/")[2]
     return room;
 }
@@ -1201,6 +1206,8 @@ function removeTemplate(dontEmit) {
 
 
 window.onload = function() {
+    socket.emit('inRoom')   // This allows the socket to be marked as one that connects to a user within a room
+
     // Since templates will only be updated infrequently, request templates should only be called on page load rather than each time template window is opened
     socket.emit('requestTemplates');
 }
@@ -1238,7 +1245,6 @@ socket.on('importTemplate', (template) => {
 socket.on('removeTemplate', () => {
     removeTemplate(true);
 })
-
 
 // Called when the "Exit Call" button is pressed
 function leaveRoom() {

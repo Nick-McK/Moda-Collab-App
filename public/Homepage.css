@@ -1,6 +1,13 @@
 body {
   font-family: "fira code";
-  background: rgba(15,15,15,255)
+  background: rgba(15,15,15,255);
+  /* This hides the scrollbar for some browsers */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 /* General Button stuff - placed at the top so we can overwrite with classes later eg headerBtn */

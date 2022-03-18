@@ -384,14 +384,26 @@ let usersSocketMap = new Map();
 let sessionMap = new Map();
 
 app.get("/collab_room/:roomName", (req, res) => {
-    // console.log("rooms", rooms);
-    // users[req.sessionID] = req.session.username;
-    
-    
     console.log("users in room: ", req.params.roomName, " are: ", users)
-    
-    res.sendFile(__dirname + "/collab_room.html");
-})
+
+    // If the user is logged in then let them access page
+    if (req.session.loggedIn) {
+        console.log("strikes", req.session.strikes);
+
+        // If room does not exist, return to home page
+        if (rooms[req.params.roomName]) {           
+            res.sendFile(__dirname + "/collab_room.html");
+        } else {
+            console.log("room " + req.params.roomName + "not found, returning to homepage");
+            return res.redirect("/home");
+        }
+    } else {
+        console.log("User not logged in, returning to login page");
+        res.writeHead(301, {
+            Location: '/account/login'
+        }).end();
+    }
+});
 
 app.get("/moderator/posts", (req,res) => {
     res.sendFile(__dirname + "/mods-home.html");
@@ -498,15 +510,19 @@ io.sockets.on('connect', (socket) => {
 
         // rooms[data.roomName].roomPass = data.roomPass;
 
-        if (rooms[data.roomPass]?.roomPass === undefined) {
+        if (rooms[data.roomName] == undefined || rooms[data.roomName].roomPass == undefined) {
             console.log("no room password, server would've crashed")
         } else {
             console.log("room password", rooms[data.roomName].roomPass);
         }
         
+        roomName = data.roomName;
 
+        // If the room was in the process of being deleted because of no members in the room, stop the countdown
+        if (rooms[roomName] && rooms[roomName].TIMER) {
+            roomDeleteTimer(true);
+        }
 
-        
         usersSocketMap.set(socket.request.session.id, socket.id);
 
         console.log("socketMap", usersSocketMap);
@@ -514,7 +530,11 @@ io.sockets.on('connect', (socket) => {
 
         users[socket.request.session.id] = socket.request.session.username;
         console.log("users", users);
-        rooms[data.roomName].users[socket.request.session.id] = socket.request.session.username;
+        if (rooms[roomName]) {     // this might fix an error
+            rooms[roomName].users[socket.request.session.id] = socket.request.session.username;
+        } else {
+            console.log("rooms[roomName] where roomName = " + roomName + "was undefined and would've crashed the server")
+        }
         console.log("rooms", rooms)
         socket.join(data.roomName);
         
@@ -522,8 +542,8 @@ io.sockets.on('connect', (socket) => {
         // use rooms[roomToJoin].users instead of users to get only users in the given room
         let userVals = Object.values(rooms[data.roomName].users); // Pass this to the client and we can loop through to find the usernames
         
-        roomName = data.roomName;
         io.to(roomName).emit("users", {usernames: userVals, sessionID: socket.request.session.id, room: roomName});     //do we need to send session and room?
+
 
         // give new users existing collab room data
         for (var i in roomList) {
@@ -545,6 +565,12 @@ io.sockets.on('connect', (socket) => {
 
     socket.on("verify", (data) => {
         console.log("password for the room", data.password);
+        // If room no longer exists (most likely due to room deletion not updating client room list)
+        if (rooms[data.roomName] == undefined) {
+            socket.emit('roomNotFound', (data.roomName));
+            return;
+        }
+
         if (data.password == rooms[data.roomName].roomPass) {
             socket.emit("redirect", (data.roomName));
         }
@@ -907,30 +933,64 @@ io.sockets.on('connect', (socket) => {
         })
     })
 
-    socket.on("leaveRoom" , () => {
-        
+    
+    socket.on('inRoom', () => {
+        // Give an inRoom value to this socket to denote that it connects to user within a collab room
+        socket.inRoom = true;       
+    })
+
+
+    // Don't think this is necessary because disconnect works
+    // socket.on("leaveRoom" , () => {
+    //     leaveRoom()
+    // });
+
+    socket.on('disconnect', function() {
+        console.log("InRoom?", socket.inRoom);
+        // If the socket connects to a user that was in a room, call the appropriate leaveRoom function
+        if (socket.inRoom) {
+            leaveRoom();
+        }
+    })
+
+    function leaveRoom() {
         socket.leave(roomName);
-        console.log("")
         console.log("leaving room:", rooms[roomName],"username leaving", rooms[roomName].users[socket.request.session.id])
         io.to(roomName).emit("userLeave", {username: rooms[roomName].users[socket.request.session.id]}); // allow other clients to update participants
         delete rooms[roomName].users[socket.request.session.id];
         
         // If there are no people in the room then after 5 mins delete
         if (Object.keys(rooms[roomName].users).length == 0 || Object.keys(rooms[roomName].users).length == undefined) {
+            roomDeleteTimer();
+        }
+    }
+
+    function roomDeleteTimer(cancel) {
+        // Convert the roomName to a String object
+        // This is necessary because roomName can become overwritten while still in the interval, thus deleting the wrong room
+        var roomToDelete = new String(roomName);        // Also, you have to create an object here, just doing = roomName is by reference, not by value
+
+        // If the call to this function requests the countdown for a room to be cancelled (this happens when someone enters the room that is counting down to deletion)
+        // clear the interval and remove the timer
+        if (cancel && rooms[roomToDelete].TIMER) {          
+            clearInterval(rooms[roomToDelete].TIMER);
+            delete rooms[roomToDelete].TIMER;
+        } else {
             let start = 0;
-            let TIMER = setInterval(() => {
+
+            rooms[roomToDelete].TIMER = setInterval(() => {
                 start++;
-                
-            if (start == 300) { //300 for 5 mins
-                console.log("DELETED ROOM:", rooms[roomName]);
-                delete rooms[roomName]
-                roomList = roomList.filter(ro => ro.roomName != roomName);
-                clearInterval(TIMER);
-                io.emit("roomNames", roomList);
-            }
+
+                if (start == 300) { //300 for 5 mins
+                    roomToDelete = roomToDelete.valueOf();      // Use value of to convert roomName back to a primitive so it can be used as needed
+                    roomList = roomList.filter(ro => ro.roomName != roomToDelete);  // Remove from roomList
+                    clearInterval(this);        // Clear this interval
+                    delete rooms[roomToDelete]; // Delete from the rooms tracker
+                    io.emit("roomNames", roomList.map(function (ro) {return ro.roomName}));     // Emit the roomNames
+                }
             }, 1000);
         }
-    });
+    }
 
     
 
@@ -1026,6 +1086,7 @@ io.sockets.on('connect', (socket) => {
         
         
     })
+
 
     // Deals with sending posts to new users that join the page
     socket.on("getPosts", () => {

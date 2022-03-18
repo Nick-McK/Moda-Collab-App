@@ -112,13 +112,20 @@ closePrompt.onclick = () => {
 
 let recordedRooms = new Array();
 // Adding rooms to the collab menu
-// TODO: Try setting a timeout on this method so that we update the room list every minute so we dont need to refresh the page
-// once a room has been removed
 socket.on("roomNames", (roomList) => {
+    const collabContent = document.getElementById("_collabContent");
 
-    console.log("rooms", roomList);
+    // If the incoming roomList is less than the existing elements - 2 (for the buttons) remove all elements of class collabRoom from form
+    if (roomList.length < (collabContent.childElementCount - 2)) {
+        var roomListings = document.querySelectorAll(".collabRoom")
+        roomListings.forEach(room => {
+            room.remove();
+        });
+        // Empty the recordedRooms tracker
+        recordedRooms = [];
+    }
+
     for (let room of roomList) {
-        const collabContent = document.getElementById("_collabContent");
         let roomDiv = document.createElement("div");
         let roomBut = document.createElement("button");
         roomBut.innerHTML = room;
@@ -140,8 +147,8 @@ socket.on("roomNames", (roomList) => {
         
         if (!recordedRooms.includes(room)) {
             collabContent.appendChild(roomDiv);
+            recordedRooms.push(room);
         }
-        recordedRooms.push(room);
     }
 })
 socket.on("redirect", (roomName) => {
@@ -329,10 +336,10 @@ socket.on("posts", posts => {
  */
 function displayPost(posts) {
     for (let post of posts) {
-        if (posted[post.name] == post.caption) {
+        if (posted[post.id] == post.caption) {
             continue;
         }
-        posted[post.name] = post.caption;
+        posted[post.id] = post.caption;
         let postDiv = document.createElement("div");
         let gridItem = document.createElement("div");
         let postTop = document.createElement("div");
@@ -901,6 +908,10 @@ function displayPost(posts) {
     // }
 
 }
+
+socket.on('roomNotFound', (roomName) => {
+    alert('Room "' + roomName + '" not found. Please close form and reopen');
+})
 
 socket.on("returnModStatus", data => {
     if (data.isMod == 0) {
