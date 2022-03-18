@@ -7,7 +7,10 @@ class Profile {
     getTags() {
         return this.profile;
     }
-
-    
 }
+
+con.query("SELECT (whatever) FROM posts WHERE userUD = ?", [username], (err, result) => {
+
+});
+
 export {Profile};

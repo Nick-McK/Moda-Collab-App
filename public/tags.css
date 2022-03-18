@@ -49,6 +49,34 @@ h1 {
 }
 
 
+.Streetwear{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Streetwear.png)
+}
+.Grunge{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Grunge.png)
+}
+.Formal{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Formal.png)
+}
+.Sportswear{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Athletic.png)
+}
+.Urban{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Urban.png)
+}
+.Chic{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Avante-Garde.png)
+}
+.Punk{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Runway.png)
+}
 
 
 #animal {
