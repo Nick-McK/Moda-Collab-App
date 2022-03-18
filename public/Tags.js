@@ -6,10 +6,10 @@ let tagList = [];
 function updateTag(tagName){
     if(!tagList.includes(tagName)){
         tagList.push(tagName);
-        document.getElementById(tagName).innerHTML = "checked";
+        document.getElementById(tagName).style.color = "rgb(0, 150, 0)";
     }else{
         tagList.splice(tagList.indexOf(tagName), 1);
-        document.getElementById(tagName).innerHTML = tagName;
+        document.getElementById(tagName).style.color = "white";
     }
     console.log(tagList);
 }

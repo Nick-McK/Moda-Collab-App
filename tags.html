@@ -1,32 +1,26 @@
 <html>
     <head>
-
         <title>Tags Page</title>
-        <link rel="stylesheet" href="../style.css">
+        <link rel="stylesheet" href="../public/style.css">
         <link rel="stylesheet" href="../public/tags.css">
     </head>
     
     <body>
-        <section class = "header">
-            <div class = "inner">
-                <div class="topnav">
-                    <img id="logo" src="/public/assets/icons/logo.png" alt="Moda Lab">
-                </div>
-            </div>
+        <section class = "header flex">
+            <img id="logo" src="/public/assets/icons/logo.png" alt="Moda Lab">
         </section>
-        <div class = "clearfix"> </div>
-        <section class = "txt">
+        <section class = "info">
             <div class = "tags_txt">
-                <h2> Tags Registration Page </h2>
+                <h2> Tags Registration </h2>
             </div>
             <div class = "tags_txt">
-                    <p> Select the fashion genres that you most identify with so that we <br>
-                        can better match you with communities that you will be interested in.
+                    <p> Select the fashion genres that you most identify with so that we 
+                        can better match you<br> with communities that you will be interested in.
                         Click the checkboxes of the styles <br> you are interested in and press submit.
                     </p>
             </div>
         </section>
-        <div class = "clearfix"> </div>
+
         
 <!--
         <div class = "select">
@@ -53,43 +47,49 @@
           <div class="tagContainer">
             
           <div class = "tagButton">
-            <button id="streetware" onclick="updateTag('streetware')">Streetware</button>
+            <button id="streetware" onclick="updateTag('streetware')">Streetwear</button>
+            <img src="/public/assets/tagAssets/Streetwear.png">
           </div>
             
           <div class = "tagButton">
             <button id="formal" onclick="updateTag('formal')">Formal</button>
+            <img src="/public/assets/tagAssets/Formal.png">
           </div>
               
          <div class = "tagButton">
             <button id="casual" onclick="updateTag('casual')">Casual</button>
+            <img src="/public/assets/tagAssets/casual.png">
          </div>
 
           <div class = "tagButton">
             <button id="luxury" onclick="updateTag('luxury')">Luxury</button>
+            <img src="/public/assets/tagAssets/luxury.png">
           </div>
 
          <div class = "tagButton">
           <button id="vintage" onclick="updateTag('vintage')">Vintage</button> 
+          <img src="/public/assets/tagAssets/Vintage.png">
          </div>
 
          <div class = "tagButton">
           <button id="chic" onclick="updateTag('chic')">Chic</button>   
+          <img src="/public/assets/tagAssets/chic.png">
          </div>
              
          <div class = "tagButton">
           <button id="punk" onclick="updateTag('punk')">Punk</button>   
+          <img src="/public/assets/tagAssets/punk.png">
          </div>
         
          <div class = "tagButton">
             <button id="sportswear" onclick="updateTag('sportsware')">Sportsware</button>   
-           </div>
+            <img src="/public/assets/tagAssets/sportswear.png">
         </div>
         
-        <div class = "tags_button">
+        <div class = "tagButton">
             <button id="button" onclick="sendTagData()">Submit</button>
         </div>
-        <div class = "clearfix"></div>
- 
+    </div>
 
             
 <!-- This was me testing how to add photos as selectable options

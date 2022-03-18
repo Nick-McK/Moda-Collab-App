@@ -1,6 +1,7 @@
-body {
-    background-color: rgb(32, 32, 32);
+body{
+    background: rgba(15,15,15,255);
 }
+
 h1 {
     display: center;
     text-align: center;
@@ -32,7 +33,10 @@ h1 {
 }
 .tagContainer{
     display: grid;
-    grid-template-columns: auto auto;
+    position:absolute;
+    grid-template-columns: auto auto auto;
+    grid-gap: 4em;
+    top: 30em;
 }
 /* When we hover over the tags container blur all the other images except the one we are hovering over */
 .tagContainer:hover .tags img:not(:hover) {
@@ -48,6 +52,87 @@ h1 {
     background-color: black;
 }
 
+.tags_txt {
+    overflow:hidden;
+    text-decoration: none;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .tags_txt h2 {
+    font-size: 60px;
+    text-align: center;
+  }
+  
+  .tags_txt p {
+    font-family:sans-serif;
+    font-size: 25px;
+    text-align: justify;
+    font-weight: lighter;
+  }
+  
+  .my-select-box{
+    display:grid !important;
+    width:100%;
+    overflow:hidden;
+    border:none;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;  
+    color: aliceblue;
+    font-size: 60px;
+    text-align: center;
+  }
+  
+  .streetwear{
+      padding:120px;
+      background-image:url(public\assets\tagAssets\Streetwear.png)
+  }
+  .grunge{
+      padding:120px;
+      background-image:url(public/assets/tagAssets/Grunge.png)
+  }
+  .formal{
+      padding:120px;
+      background-image:url(public/assets/tagAssets/Formal.png)
+  }
+  .sportswear{
+      padding:120px;
+      background-image:url(public/assets/tagAssets/Athletic.png)
+  }
+  .urban{
+      padding:120px;
+      background-image:url(public/assets/tagAssets/Urban.png)
+  }
+  .punk{
+      padding:120px;
+      background-image:url(public/assets/tagAssets/Avante-Garde.png)
+  }
+  .chic{
+      padding:120px;
+      background-image:url(public/assets/tagAssets/Runway.png)
+  }
+  
+  .tags_button #button{
+    border: none;
+    background-color: whitesmoke;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 20px;
+    text-decoration: none;
+    margin-left: 20px;
+    cursor: pointer;
+    position: relative;
+    transition-duration: 0.4s;
+  }
+  
+  .tags_button #button:hover{
+      color: white;
+      background-color: inherit;
+      border: 2px solid white;
+  }
+  
 
 .Streetwear{
     padding:120px;
@@ -89,3 +174,40 @@ h1 {
     object-fit: cover;
 }
 
+.tagButton{
+    width:20em;
+    height:15em;
+}
+
+.tagButton img{
+    width: inherit;
+    height: inherit;
+}
+
+.tagButton button{
+    width: inherit;
+    height: inherit;
+    background-color: transparent;
+    position:absolute;
+    font-size: 2em;
+    text-decoration: none;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: transparent;
+    -webkit-text-stroke: 1px rgb(27, 27, 27);
+    transition: font-size .5s;
+    border:0;
+    font-weight: bolder;
+    color: white;
+}
+
+.tagButton button:hover{
+    font-size:2.5em;
+}
+
+.info{
+    position: absolute;
+    width:100%;
+    height: auto;
+    top:5em;
+}

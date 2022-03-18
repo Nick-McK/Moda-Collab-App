@@ -1,4 +1,5 @@
 body {
+    font-family: "fira code";
     margin: 0;
     padding: 0;
     background-color: rgb(29, 29, 29);
@@ -218,3 +219,79 @@ button:hover {
   display: block;
 }
 
+.topnav {
+  --clr: #ff6492;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  
+  width: 100%;
+  gap: 20px;
+}
+
+.nav-menu {
+  position: relative;
+  display: grid;
+  grid-auto-columns: 5em;
+  /* grid-auto-flow: column; */
+  grid-template-columns: repeat(4, 1fr);
+  box-sizing: border-box;
+}
+
+
+
+.nav-menu > :nth-child(1):hover::before {
+  width: 145;
+  filter: drop-shadow(0 0 25px var(--clr));
+}
+.nav-menu > :nth-child(2):hover::before {
+  width: 84;
+  filter: drop-shadow(0 0 25px var(--clr));
+}
+.nav-menu > :nth-child(3):hover::before {
+  width: 88;
+}
+.nav-menu > :nth-child(4):hover::before {
+  width: 93;
+  filter: drop-shadow(0 0 25px var(--clr));
+}
+
+.nav-menu a {
+  font-size: 1.125em;
+  text-decoration: none;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255,255,255,0.5);
+}
+.nav-menu a:hover {
+  background: transparent;
+}
+.nav-menu a::before {
+  content: attr(data-text);
+  position: absolute;
+  color: var(--clr);
+  width: 0;
+  overflow: hidden;
+  transition: 1s;
+  -webkit-text-stroke: 1px var(--clr);
+}
+
+.header {
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  width: 100%;
+  height: 5%;
+  border-bottom: solid 0.5px;
+  border-color: rgb(75, 71, 71);
+}
+
+.flex {
+  display: flex;
+  gap: var(--gap, 2rem);
+}
+
+/*
+CSS for the Tags page
+*/

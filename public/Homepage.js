@@ -134,7 +134,7 @@ socket.on("roomNames", (roomList) => {
         roomDiv.classList.add("collabRoom");
         // roomDiv.appendChild(roomLink);
         roomDiv.appendChild(roomBut);
-        roomBut.classList.add("roundBtn_noBorder");
+        roomBut.classList.add("roundBtn");
 
         console.log("room", room);
         roomBut.onclick = () => {
