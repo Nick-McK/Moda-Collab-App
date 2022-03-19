@@ -171,7 +171,7 @@ function changeBgColour() {
 // This is for debugging and getting recently selected object for attribute manipulation
 canvas.on('selection:created', function() {
     recentlySelected = canvas.getActiveObjects();
-    console.log(recentlySelected);
+    console.log(JSON.parse(JSON.stringify(recentlySelected)));
 })
 
 // Uses a switch case to perform actions for each tool, triggered by onclick when selecting any tool
@@ -603,14 +603,41 @@ imageSelect.addEventListener('change', function(){          // This is triggered
 // Emits to canvas whenever a change is made to any object so other clients can update
 canvas.on('object:modified', function (e) {
     console.log("this is modified aaaaaaaaaaaa");
+    console.log(e);
+    var state = e.target.saveState();
+    console.log("state", state);
     redoStack = [];         // Empty the redo stack when a normal move has been made
     if (e.transform && typeof e.transform != 'function') {
+        if (e.transform.target._objects) {      // If the modified object is a group, add some relevant values to the transform section of the obj
+            e.transform.grouped = true;
+            e.transform.height = e.target.height;
+            e.transform.left = e.target.left;
+            e.transform.top = e.target.top;
+        }
         undoStack.push({attributes : e.transform, type: "mod"});
     } else if (e.target && e.target._textBeforeEdit) {         // handler for if a textbox is typed in, e.target has to exists because of type error issue
         // this exists because there is not a direct handler section for a change of text
         constructForUndoStack({id : e.target.id, text : e.target._textBeforeEdit});
     }
-    socket.emit('canvasUpdate', {"change": e.target, "type": 'mod', "id": e.target.id});
+    if (e.target._objects) {
+        for (var i in e.target._objects) {
+            var thisObj = JSON.parse(JSON.stringify(e.target._objects[i]));
+            var group = e.target._objects[i].group;
+
+            console.log(group);
+
+            // Calculate the new borders 
+            thisObj.left = group.left + ((group.width + (2 * thisObj.left))/2)
+            thisObj.top = group.top + ((group.height + (2 * thisObj.top))/2)
+
+            socket.emit('canvasUpdate', {"change": thisObj, "type": 'mod', "id": e.target._objects[i].id});
+        }
+        
+    } else {
+        console.log(e.target.calcTransformMatrix());
+        socket.emit('canvasUpdate', {"change": e.target, "type": 'mod', "id": e.target.id});
+    }
+    
 });
 
 
@@ -634,6 +661,49 @@ function constructForUndoStack(o) {
     undoStack.push({attributes: structureHelp, type : "mod"})    // push to the undo stack in the necessary format
 }
 
+function undoRedoneUndo(group) {
+    var listForGroup = [];
+    // Deselect the group otherwise it gives the object coordinates in relation to their position within the group
+    canvas.discardActiveObject().renderAll();
+    for (var i in canvas._objects) {
+        for (var j in group._objects) {
+            if (canvas._objects[i].id == group._objects[j].id) {
+                canvas._objects[i].clone(function (o) {
+                    listForGroup.push(o);
+                }, ['id']);
+            }
+        }
+    }
+
+    var redoGroup = new fabric.Group(listForGroup);
+    // redoToUndoConstructor({attributes : undoGroup, type: "mod"})
+    redoGroup.set("grouped", true);
+    redoGroup.set("handledBefore", true);
+    redoStack.push({attributes : redoGroup, type: "mod"});
+    console.log(redoGroup);
+
+
+    for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
+        for (var j in group._objects) {
+            if (canvas._objects[i].id == group._objects[j].id) {
+                var thisObj = group._objects[j];
+    
+                // This calculates the correct left and top values of the redone object
+                var leftVal = group.left + ((group.width + (2 * thisObj.left))/2);
+                var topVal = group.top + ((group.height + (2 * thisObj.top))/2);
+
+                // Assign new top left values
+                canvas._objects[i].set("left", leftVal);
+                canvas._objects[i].set("top", topVal);
+                canvas.renderAll();
+
+                socket.emit('canvasUpdate', {"change": canvas._objects[i], "type": 'mod', "id": canvas._objects[i].id});
+            }
+        }
+    }
+}
+
+
 
 // Releases and reimplements the most recent change in the undo stack, has handlers for every possible kind of change
 function undo() {
@@ -644,32 +714,112 @@ function undo() {
         if (change.type == 'mod') {
             var moddedObj;
 
-            for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
-                if (canvas._objects[i].id == change.attributes.target.id) {
-
-                    // Create a copy of the object before undo for the redo stack
-                    canvas._objects[i].clone(function (o) {
-                        redoStack.push({attributes : o, type:"mod"});
-                    }, ['id']);
-                    
-                    for (const [key, value] of Object.entries(change.attributes.original)) {        // Go through each of the attributes in the object before the change
-
-                        if (key == 'originX' || key == 'originY') { // these mess obj positioning things up, so skip them
-                            continue;
+            // If the undo holds a group object modification
+            if (change.attributes.grouped) {
+                // If this group has already been undone, redone, pass to here as the structure will be different
+                if (change.attributes.handledBefore) {
+                    undoRedoneUndo(change.attributes);
+                } else {
+                    var listForGroup = [];
+                    // Deselect the group otherwise it gives the object coordinates in relation to their position within the group
+                    canvas.discardActiveObject().renderAll();
+                    for (var i in canvas._objects) {
+                        for (var j in change.attributes.target._objects) {
+                            if (canvas._objects[i].id == change.attributes.target._objects[j].id) {
+                                canvas._objects[i].clone(function (o) {
+                                    listForGroup.push(o);
+                                }, ['id']);
+                            }
                         }
-
-                        canvas._objects[i].set({[key]:value}); //set the objects key value to be the key value that was used before the most recent modification
-                        canvas.renderAll(); // need to have this here otherwise some attributes aren't rendered properly
                     }
-
-                    canvas._objects[i].setCoords();
-                    moddedObj = canvas._objects[i];
-                    break;
+    
+                    var redoGroup = new fabric.Group(listForGroup);
+                    redoStack.push({attributes : redoGroup, type: "mod"});
+                    console.log(redoGroup);
+    
+                    for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
+                        for (var j in change.attributes.target._objects) {
+                            if (canvas._objects[i].id == change.attributes.target._objects[j].id) {
+    
+                                // Deselect the group otherwise it gives the object coordinates in relation to their position within the group
+                                canvas.discardActiveObject().renderAll();
+    
+                                // Create a copy of the object before undo for the redo stack
+                                // canvas._objects[i].clone(function (o) {
+                                //     redoStack.push({attributes : o, type:"mod"});
+                                // }, ['id']);
+    
+                                // 1 Calculate the top and left value differences between the group boundary and obj in the group
+                                console.log("Before undo group left val: ", change.attributes.left);
+                                console.log("Before undo object left val: ", change.attributes.target._objects[j].left);
+                                var leftObjGroupDiff = Math.abs(change.attributes.left - change.attributes.target._objects[j].left);
+                                var topObjGroupDiff = Math.abs(change.attributes.top - change.attributes.target._objects[j].top);
+                                console.log("Before undo left difference", leftObjGroupDiff);
+    
+                                // 2 Get the original left and top values of the group
+                                var origLeft = change.attributes.original.left;
+                                var origTop = change.attributes.original.top;
+                                console.log("After undo group left val: ", origLeft);
+                                
+                                // 3 Add the objects left and top differences to the original left and top group values for the correct undone values
+                                var afterUndoLeft = origLeft + leftObjGroupDiff;
+                                var afterUndoTop = origTop + topObjGroupDiff;
+                                console.log("After undo object offset left val: ", afterUndoLeft);
+    
+                                // Set the coordinates of the object
+                                canvas._objects[i].set("left", afterUndoLeft);
+                                canvas._objects[i].set("top", afterUndoTop);
+                                canvas.renderAll();
+    
+                                
+                                // Basically for any rotations or size changes here
+                                for (const [key, value] of Object.entries(change.attributes.original)) {        // Go through each of the attributes in the object before the change
+            
+                                    if (key == 'originX' || key == 'originY' || key == 'left' || key == 'top') { // these mess obj positioning things up, so skip them
+                                        continue;
+                                    }
+            
+                                    canvas._objects[i].set({[key]:value}); //set the objects key value to be the key value that was used before the most recent modification
+                                    canvas.renderAll(); // need to have this here otherwise some attributes aren't rendered properly
+                                }
+    
+                                canvas._objects[i].setCoords();
+    
+                                moddedObj = canvas._objects[i];
+                                socket.emit('canvasUpdate', {"change": moddedObj, "type": 'mod', "id": moddedObj.id});      // Emit the change to server
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
+                    for (var j in change.attributes.target) {
+                        if (canvas._objects[i].id == change.attributes.target.id) {
+    
+                            // Create a copy of the object before undo for the redo stack
+                            canvas._objects[i].clone(function (o) {
+                                redoStack.push({attributes : o, type:"mod"});
+                            }, ['id']);
+                            
+                            for (const [key, value] of Object.entries(change.attributes.original)) {        // Go through each of the attributes in the object before the change
+        
+                                if (key == 'originX' || key == 'originY') { // these mess obj positioning things up, so skip them
+                                    continue;
+                                }
+        
+                                canvas._objects[i].set({[key]:value}); //set the objects key value to be the key value that was used before the most recent modification
+                                canvas.renderAll(); // need to have this here otherwise some attributes aren't rendered properly
+                            }
+        
+                            canvas._objects[i].setCoords();
+                            moddedObj = canvas._objects[i];
+                            socket.emit('canvasUpdate', {"change": moddedObj, "type": 'mod', "id": moddedObj.id});      // Emit the change to server
+                            break;
+                        }
+                    }
                 }
             }
-
-            socket.emit('canvasUpdate', {"change": moddedObj, "type": 'mod', "id": moddedObj.id});      // Emit the change to server
-
         } else if (change.type == 'add')   {        // this means we have to remove the object
             for (var i in canvas._objects) {
                 if (canvas._objects[i].id == change.attributes.id) {        // Find object in canvas._objects by matching the ids
@@ -730,27 +880,68 @@ function redo() {
         switch (redoChange.type) {
             case 'mod':
                 var moddedObj;
-
-                for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
-                    if (canvas._objects[i].id == redoChange.attributes.id) {
-                        constructForUndoStack(canvas._objects[i]);
-                        for (const [key, value] of Object.entries(redoChange.attributes)) {        // Go through each of the attributes in the object before the change
-
-                            if (key == 'originX' || key == 'originY') { // these mess obj positioning things up, so skip them
-                                continue;
-                            }
-        
-                            canvas._objects[i].set({[key]:value}); //set the objects key value to be the key value that was used before the most recent modification
-                            canvas._objects[i].setCoords();
+                
+                var listForGroup = [];
+                // Deselect the group otherwise it gives the object coordinates in relation to their position within the group
+                canvas.discardActiveObject().renderAll();
+                for (var i in canvas._objects) {
+                    for (var j in redoChange.attributes._objects) {
+                        if (canvas._objects[i].id == redoChange.attributes._objects[j].id) {
+                            canvas._objects[i].clone(function (o) {
+                                listForGroup.push(o);
+                            }, ['id']);
                         }
-
-                        canvas.renderAll();
-                        moddedObj = canvas._objects[i];
-                        break;
                     }
                 }
 
-                 socket.emit('canvasUpdate', {"change": moddedObj, "type": 'mod', "id": moddedObj.id});      // Emit the change to server
+                var undoGroup = new fabric.Group(listForGroup);
+                // redoToUndoConstructor({attributes : undoGroup, type: "mod"})
+                undoGroup.set("grouped", true);
+                undoGroup.set("handledBefore", true);
+                undoStack.push({attributes : undoGroup, type: "mod"});
+                console.log(undoGroup);
+
+
+                if (redoChange.attributes._objects) {
+                    for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
+                        for (var j in redoChange.attributes._objects) {
+                            if (canvas._objects[i].id == redoChange.attributes._objects[j].id) {
+                                var thisObj = redoChange.attributes._objects[j];
+                    
+                                // This calculates the correct left and top values of the redone object
+                                var leftVal = redoChange.attributes.left + ((redoChange.attributes.width + (2 * thisObj.left))/2);
+                                var topVal = redoChange.attributes.top + ((redoChange.attributes.height + (2 * thisObj.top))/2);
+
+                                // Assign new top left values
+                                canvas._objects[i].set("left", leftVal);
+                                canvas._objects[i].set("top", topVal);
+                                canvas.renderAll();
+    
+                                socket.emit('canvasUpdate', {"change": canvas._objects[i], "type": 'mod', "id": canvas._objects[i].id});
+                            }
+                        }
+                    }
+                } else {
+                    for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
+                        if (canvas._objects[i].id == redoChange.attributes.id) {
+                            constructForUndoStack(canvas._objects[i]);
+                            for (const [key, value] of Object.entries(redoChange.attributes)) {        // Go through each of the attributes in the object before the change
+    
+                                if (key == 'originX' || key == 'originY') { // these mess obj positioning things up, so skip them
+                                    continue;
+                                }
+            
+                                canvas._objects[i].set({[key]:value}); //set the objects key value to be the key value that was used before the most recent modification
+                                canvas._objects[i].setCoords();
+                            }
+    
+                            canvas.renderAll();
+                            moddedObj = canvas._objects[i];
+                            socket.emit('canvasUpdate', {"change": moddedObj, "type": 'mod', "id": moddedObj.id});      // Emit the change to server
+                            break;
+                        }
+                    }
+                }
             break;
 
             case 'add':
@@ -958,6 +1149,7 @@ socket.on('canvasUpdate', (data) => {
                     oriObj.set("text", newObj.text);
                     oriObj.set("fontSize", newObj.fontSize);
                     oriObj.set("fontFamily", newObj.fontFamily);
+                    break;
                 }
             }
         break;
