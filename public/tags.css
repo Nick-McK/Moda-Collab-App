@@ -2,6 +2,10 @@ body{
     background: rgba(15,15,15,255);
 }
 
+body::-webkit-scrollbar {
+    display: none;
+  }
+
 h1 {
     display: center;
     text-align: center;
@@ -68,7 +72,6 @@ h1 {
   .tags_txt p {
     font-family:sans-serif;
     font-size: 25px;
-    text-align: justify;
     font-weight: lighter;
   }
   
@@ -211,4 +214,5 @@ h1 {
     width:100%;
     height: auto;
     top:5em;
+    text-align: center;
 }

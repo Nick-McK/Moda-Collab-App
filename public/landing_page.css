@@ -24,27 +24,31 @@ h3{
 }
 .txt{
   position:absolute;
-  left:0;
+  width: 100%;
+  height: auto;
+  text-align: center;
+  left:5em;
 }
 
 .comp_txt {
     overflow:hidden;
     text-decoration: none;
     display: flex;
+    margin-left: 20px;
 }
 
 .comp_txt h2 {
     font-size: 60px;
     position: fixed;
-    margin-left: 20px;
     top: 150px;
+    left: 6em;
 }
 
 .comp_txt p {
     font-family:sans-serif;
     font-size: 25px;
     position: fixed;
-    margin-left: 20px;
+    left:20em;
     top: 400px;
     font-weight: lighter;
 }
@@ -103,6 +107,7 @@ h3{
   position: fixed;
   cursor: pointer;
   top: 540px;
+  left:38.5em;
   transition-duration: 0.4s;
 }
 
