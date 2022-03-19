@@ -150,14 +150,12 @@ body::-webkit-scrollbar {
   left: calc(24em);
   top: 10px;
 }
-
 .feed > :nth-child(3n) {
   left: calc(24em + 24em + 110px + 100px);
   top: 10px;
   left: calc(24em + 110px);
   top: 10px;
 }
-
 .feed > :nth-child(3n-2) {
   left: 10px;
   top: 10px; 
@@ -587,5 +585,3 @@ sup {
     
   }
 } */
-
-

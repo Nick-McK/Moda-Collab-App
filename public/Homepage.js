@@ -324,7 +324,6 @@ socket.on("posts", posts => {
     console.log("posts", posts);
     console.log("what isthis", posts[0].id);
     displayPost(posts);
-
 });
 /**
  * 
@@ -483,10 +482,6 @@ function displayPost(posts) {
         flagImg.addEventListener("click", () => {
             socket.emit("postFlagged", {postID: post.id})
         })
-
-        
-
-
     }
 
     socket.on("postAlreadyExists", (postName) => {
