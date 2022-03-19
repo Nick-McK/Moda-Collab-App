@@ -58,7 +58,7 @@ let con = mysql.createConnection({
 // Connect to the database and give an error if there are any errors, keep this
 con.connect((err) => {
     if (err) throw err;
-    console.log("connected to database");
+    console.log("connected to SQL database");
 })
 
 let options = {
@@ -160,12 +160,11 @@ app.post("/account/tags", (req, res) => {
                 if (err) throw err;
                 console.log("inserted into table users the username: " + req.body.username + " and password: " + req.body.pass1, "and ID: ", result.insertId);
                 req.session.userID = result.insertId; // This gives us the ID of the user so we dont need to query DB every time we want to know
-                console.log("user id: " + req.session.userID);
                 req.session.save();
 
                 con.query("INSERT INTO user_details (userID, email, contactNo, role, strikes, isMod) VALUES (?, ?, ?, ?, ?, ?)", [req.session.userID, req.body.email, req.body.contactNo, req.body.role, 0, false], (err,res) => {
                     if (err) throw err;
-                    console.log("res", res);
+                    console.log("user details success", res);
                     let initialStrikes = 0; // cannot set a session variable to just a number so set a variable to 0 and set to strike count -> only done on register
                     req.session.strikes = initialStrikes; // Not sure we want to store our strikes in session data
                 });
@@ -199,8 +198,6 @@ app.post("/home", (req, res) => {
                 throw err;
             }
             
-            // console.log("---------------", result);
-
             if (result.length > 0) {
                 result.find((user, index) => {
                     if (user.username == username && user.password == password) {
@@ -255,7 +252,7 @@ app.get("/home", (req, res) => {
         console.log("strikes", req.session.strikes);
         res.sendFile(path.join(__dirname + "/Homepage.html"));
     } else {
-        console.log("should redirect")
+        console.log("user not logged in, redirecting to login page")
         res.writeHead(301, {
             Location: '/account/login'
         }).end();
@@ -564,7 +561,6 @@ io.sockets.on('connect', (socket) => {
     });
 
     socket.on("verify", (data) => {
-        console.log("password for the room", data.password);
         // If room no longer exists (most likely due to room deletion not updating client room list)
         if (rooms[data.roomName] == undefined) {
             socket.emit('roomNotFound', (data.roomName));
@@ -580,7 +576,6 @@ io.sockets.on('connect', (socket) => {
         socket.emit('roomNames', roomList.map(function (ro) {return ro.roomName}));
     });
 
-    // let roomList = new Array();
     handleRoomCreation();
 
     // Whiteboard stuff
@@ -596,6 +591,7 @@ io.sockets.on('connect', (socket) => {
 		x = result[0]; 
 	})
 
+    // TODO: Change the naming of this
 	console.log(x);
 	socket.on("fat", () => {con.query("SELECT * FROM tags WHERE userID = ?", [x], (err, result) => {
         if (err) {
@@ -606,8 +602,8 @@ io.sockets.on('connect', (socket) => {
 	})});
 
     socket.on("canvasUpdate", (data, callback) => {
-        console.log(data.type,data);
 
+        // Switch case that handles each type of update
         switch(data.type) {
             // each type of call is sent in a slightly different way
             case "add":
@@ -641,7 +637,6 @@ io.sockets.on('connect', (socket) => {
     });
 
     socket.on("NewProfilePic", profilePic => {
-        console.log("proffff", profilePic);
         con.query("UPDATE users (profilePicture) VALUES = ?", [profilePic], (err, result) => {
             console.log("profile pic added", result);
         })
@@ -655,9 +650,7 @@ io.sockets.on('connect', (socket) => {
                     roomList[i].objIdCounter++;
                 }
                 
-                
                 roomList[i].objects.push(data);
-                console.log("newObj", data)
 
                 if (loadDesign) {
                     io.to(roomList[i].roomName).emit('canvasUpdate', {change: data, type: "add"});            
@@ -665,25 +658,15 @@ io.sockets.on('connect', (socket) => {
             }
         }
 
-        // if (ignore) { // this should be called on a user loading into the room, they need to add the objects but not assign new ids
-        //     // console.log("sending");
-        //     // socket.emit("idUpdate", data.id);
-        //     return null;
-        // }
-
         return data.id;
     }
 
     // This is for updating the objects that have been clipped by an eraser line
     function addErased(data) {
-        // for (var i in data.obj) {
-        //     console.log(data.obj[i].clipPath.objects);
-        // }
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
                 for (var j in roomList[i].objects) {
                     for (var n in data) {
-                        console.log("here",data[n])
                         if (data[n].id == roomList[i].objects[j].id) {
                             roomList[i].objects[j] = data[n];
                         }
@@ -709,7 +692,6 @@ io.sockets.on('connect', (socket) => {
                         delete roomList[i].objects[j];
                     }
                 }
-                console.log("roomObjs",roomList[i].objects);
             }
         }
     }
@@ -718,7 +700,6 @@ io.sockets.on('connect', (socket) => {
         for (var i in roomList) {
             if (roomList[i].roomName == roomName) {
                 for (var j in roomList[i].objects) {
-                    // console.log(roomList[i].objects[j], data.id);
                     if (roomList[i].objects[j].id == data.id) {
                         roomList[i].objects[j] = data;
                         roomList[i].objects[j].id = data.id;
@@ -752,12 +733,9 @@ io.sockets.on('connect', (socket) => {
         data.design += ", \"name\": \"" + designName + "\"";
         data.design += ", \"user\": \"" + socket.request.session.username + "\"}";
         const designJSON = JSON.parse(data.design);
-        console.log("this is our JSON string", designJSON);
         designs.collection("Designs").findOne({name: designName}, (err, res) => {
 
-            console.log(res, "----------------------------------")
             if(res === null){
-                console.log("what is this fucking shit");
                 designs.collection("Designs").insertOne(designJSON, (err, res) => {
                     if (err) throw err;
                     console.log("this is our responding", res.insertedId);
@@ -791,23 +769,16 @@ io.sockets.on('connect', (socket) => {
 
         con.query("SELECT design FROM saveddesigns WHERE savedBy = ?", [socket.request.session.userID], (err, result) => {
                 if (err) throw err;
-                // console.log("got this: -------------------------------", result);
-
                 
                 result.forEach(design => {
                     designs.collection("Designs").find({_id: new ObjectId(design.design)}, {projection: {_id: 0, name: 1, thumbnail: 1}}).toArray((err, result) => {
                         if (err) throw err;
-                        // console.log("from mongo", result);
-                        
                         _designList.push(result[0]); // Can hardcode the result to 0 because objectId's are unique so we only get 1 result
-                        // console.log("designList--------", _designList);
-
                         sendClientDesigns(_designList, data);
                         
                         // socket.emit("savedDesigns", _designList);
                     });
                 });
-                // console.log("designList--------", _designList);
                 
                 
         });
@@ -885,7 +856,6 @@ io.sockets.on('connect', (socket) => {
                 addObj(objs[i], true, true);
             }
             console.log("Design Loaded");
-            console.log(data._id);
             
             for (var i in roomList) {
                 if (roomList[i].roomName == roomName) {
@@ -985,6 +955,7 @@ io.sockets.on('connect', (socket) => {
                     roomToDelete = roomToDelete.valueOf();      // Use value of to convert roomName back to a primitive so it can be used as needed
                     roomList = roomList.filter(ro => ro.roomName != roomToDelete);  // Remove from roomList
                     clearInterval(this);        // Clear this interval
+                    console.log("DELETING ROOM: ", roomToDelete);
                     delete rooms[roomToDelete]; // Delete from the rooms tracker
                     io.emit("roomNames", roomList.map(function (ro) {return ro.roomName}));     // Emit the roomNames
                 }
@@ -998,8 +969,6 @@ io.sockets.on('connect', (socket) => {
 
         con.query("SELECT * FROM users", (err, result) => {
             if (err) throw err;
-            console.log("this is our resssssss", result);
-
             socket.emit("accountDetails", {username: socket.request.session.username});
         })
 
@@ -1098,15 +1067,11 @@ io.sockets.on('connect', (socket) => {
         con.query("SELECT postID, postName, postCaption, design, userID, likes FROM posts", (err, result) => {
             if (err) throw err;
             if (result.length == 0) {return}
-            console.log("resulllll", result);
-            console.log("this sis our result", result);
             for (let i = 0; i < result.length; i++) {
                 
                 con.query("SELECT username FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
                     if (err) console.log(err);
-                    console.log("r value", r);
                         designs.collection("Designs").find({_id: new ObjectId(result[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, res) => {
-                            // console.log("ressi", res);
                             let image = res[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             let name = r[0].username; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             if (result[i].likes == null) result[i].likes = 0;
@@ -1200,7 +1165,6 @@ io.sockets.on('connect', (socket) => {
     // Then adds the like to the likes table in the db to show that the user has liked the post
     // This also prevents a single user from liking then refreshing and liking again.
     socket.on("liked", data => {
-        console.log("data", data.id);
         con.query("UPDATE posts SET likes = ? WHERE postID = ?", [data.likes, data.id], (err, result) => {
             if (err) throw err;
             console.log("updated the table posts with likes ", result)
@@ -1278,20 +1242,16 @@ io.sockets.on('connect', (socket) => {
         });
     });
 
+    // Nested SQL queries that get information necessary to, and then, save a posted desgin
     socket.on("savePostedDesign", (data) => {
         con.query("SELECT userID from users WHERE username = ?", [data.creator], (err, result) => {
             if (err) throw err;
 
-            console.log("resuilt", result[0].userID);
-
             con.query("SELECT design FROM posts WHERE postID = ?", [data.design], (err, res) => {
                 if (err) throw err;
 
-                console.log("ressssss", res[0].design);
-
                 con.query("INSERT INTO saveddesigns (savedBy, design, creatorID) VALUES (?, ?, ?)", [socket.request.session.userID, res[0].design, result[0].userID], (err, r) => {
                     if (err) throw err;
-                    console.log("rrrrrrrrrrrr------------------", r);
                 });
              });
         });
@@ -1333,7 +1293,6 @@ io.sockets.on('connect', (socket) => {
         
         con.query("SELECT profilePicture FROM users WHERE username = ?", [data.username], (err, result) => {
             if (err) throw err;
-            console.log("what is this", result);
             if (result[0].profilePicture == undefined) result[0].profilePicture = "/public/assets/icons/empty-profile-picture.jpeg"
 
             result[0].profilePicture = Buffer.from(result[0].profilePicture).toString('base64');
@@ -1347,10 +1306,8 @@ io.sockets.on('connect', (socket) => {
     })
     // Flags a post and inserts into the flagged posts table
     socket.on("postFlagged", (data) => {
-        console.log("testing", data.postID);
         con.query("SELECT * FROM posts WHERE postID = ?", [data.postID], (err, result) => {
             if (err) throw err;
-            console.log("this is our result", result);
             con.query("INSERT INTO flaggedPosts (postID, postName, postCaption, likes, design, userID) VALUES (?, ?, ?, ?, ?, ?)", [
                 result[0].postID, 
                 result[0].postName,
@@ -1367,11 +1324,11 @@ io.sockets.on('connect', (socket) => {
         con.query("SELECT isMod FROM user_details WHERE userID = ?", [socket.request.session.userID], (err, result) => {
             if (err) throw err;
             console.log("mod status", result);
-            console.log("result[0].isMod", socket.request.session.userID);
             if (result.length === undefined) result[0].isMod = 0;
             socket.emit("returnModStatus", {isMod: result[0].isMod});
         })
     })
+
     // Gets all the flagged posts to display on moderator page
     socket.on("getFlagged", () => {
         let flaggedPost = {}
@@ -1393,6 +1350,7 @@ io.sockets.on('connect', (socket) => {
             }
         });
     });
+
     // Removes the post from the flaggedPosts table and it stays on the homepage
     socket.on("unflagPost", data => {
         con.query("DELETE FROM flaggedPosts WHERE postID = ?", [data.postID], (err, result) => {
@@ -1400,6 +1358,7 @@ io.sockets.on('connect', (socket) => {
             console.log("result from deletion", result);
         })
     })
+
     // Deletes the post from flaggedPosts and Posts, removing it from the homepage
     // Then strike against the user who posted it
     socket.on("deleteAndStrike", data => {
@@ -1416,10 +1375,8 @@ io.sockets.on('connect', (socket) => {
             con.query("SELECT strikes FROM user_details WHERE userID = ?", [result[0].userID], (err, r) => {
                 let strikes = r[0].strikes;
                 strikes++;
-                // console.log("strikes", socket.request.session.strikes)
                 con.query("UPDATE user_details SET strikes = ? WHERE userID = ?", [strikes, result[0].userID], (err, res) => {
                     if (err) throw err;
-                    console.log("idek", res);
                 })
             });
         })
