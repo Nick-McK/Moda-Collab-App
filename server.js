@@ -1141,15 +1141,10 @@ io.sockets.on('connect', (socket) => {
         });
         
     });
-<<<<<<< Updated upstream
     
     //Profile.js getting user posts to display on profile
     
      socket.on("getProfilePosts", () => {
-=======
-
-    socket.on("getProfilePosts", () => {
->>>>>>> Stashed changes
         let posts = [];
         let postsName = {};
 
@@ -1173,11 +1168,7 @@ io.sockets.on('connect', (socket) => {
                             postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
                             posts.push(postsName);
 
-<<<<<<< Updated upstream
-                            
-=======
                             console.log("success");
->>>>>>> Stashed changes
                             socket.emit("posts", posts);
                             
                             if (result[i].likes == 0) {

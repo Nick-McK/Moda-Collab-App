@@ -1,0 +1,85 @@
+.feed {
+    display: grid;
+    /* position: absolute; */
+    background-color: inherit;
+    margin-left: 100;
+    margin-right: 100;
+    margin-top: 150px; 
+    padding: 10;
+    padding-bottom: 10%;
+    grid-gap: 100px;
+    grid-template-columns: 24em 24em 24em;
+    /* grid-template-rows: 29.75em; */
+    text-align: center;
+  }
+
+  .flag {
+    display: flex;
+    height: 2em;
+    width: 2em;
+    margin-left: auto;
+    cursor: pointer;
+  }
+
+  .bar_img{
+    width: 2em;
+    height: 2em;
+    cursor: pointer;
+  }
+  
+  
+.post {
+    display: grid;
+    grid-template-rows: 2.75em 25em 2em;
+    position: relative;
+    transition: all 2s;
+  }
+
+  .grid-item {
+    /* background-color: white; */
+    margin: 0;
+    padding: 0;
+  }
+
+  .post-top {
+    background: rgba(0,0,0,255);
+    display: flex;
+    align-items: center;
+    opacity: 0;
+  }
+
+  .profile-pic {
+    display: flex;
+    flex-direction: row;
+    height: 2.75em;
+    width: auto;
+    align-items: center;
+    
+  }
+  .profile-pic img {
+    height: 2em;
+    width: 2em;
+    border-radius: 50%;
+    margin-left: 0.5em;
+  }
+  .account {
+    color: white;
+    padding-left: .5em;
+  }
+
+  .post-bar {
+    display: grid;
+    grid-template-columns: 5em 5em 5em;
+    justify-content: space-around;
+    background-color: rgba(0,0,0,255);
+    text-align: center;
+  }
+  .post_img {
+    margin-top: .125em;
+    width: 24em;
+    height: 25em;
+    cursor: pointer;
+    /* transition: transform 1s;
+    transition-delay: 1s; */
+  }
+  

@@ -1,4 +1,4 @@
-const socket = io();
+
 
 class Profile {
     constructor(username, tags) {
@@ -11,7 +11,7 @@ class Profile {
     }
 }
 
-document.onload = () => {
+window.onload = () => {
     console.log("getting posts");
     socket.emit('getProfilePosts');
 }
@@ -183,4 +183,4 @@ function displayPost(posts) {
         })
     }
 }
-export {Profile};
+//export {Profile};
