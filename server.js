@@ -1141,6 +1141,61 @@ io.sockets.on('connect', (socket) => {
         });
         
     });
+    
+    //Profile.js getting user posts to display on profile
+    
+     socket.on("getProfilePosts", () => {
+        let posts = [];
+        let postsName = {};
+
+        let postLikes = {};
+        let userIDs = {};
+        con.query("SELECT postID, postName, postCaption, design, userID, likes FROM posts WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+            if (err) throw err;
+            if (result.length == 0) {return}
+            console.log("resulllll", result);
+            console.log("this sis our result", result);
+            for (let i = 0; i < result.length; i++) {
+                
+                con.query("SELECT username FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
+                    if (err) console.log(err);
+                    console.log("r value", r);
+                        designs.collection("Designs").find({_id: new ObjectId(result[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, res) => {
+                            // console.log("ressi", res);
+                            let image = res[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                            let name = r[0].username; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                            if (result[i].likes == null) result[i].likes = 0;
+                            postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
+                            posts.push(postsName);
+
+                            
+                            socket.emit("posts", posts);
+                            
+                            if (result[i].likes == 0) {
+                                socket.emit("likedByUsers", {likes: 0})
+                            } else {
+                                
+                                con.query("SELECT * FROM likes WHERE postID = ?", [result[i].postID], (err, res) => {
+                                    if (err) throw err;
+                                    for (let i of res) {
+                                        
+                                        con.query("SELECT username FROM users WHERE userID = ?", [i.userID], (err, r) => {
+                                            postLikes[i.postID] = {userIDs: {}}
+                                            postLikes[i.postID].userIDs[i.userID] = i.userID
+                                            
+                                            socket.emit("likedByUsers", {likes: postLikes});
+                                        })
+                                        
+                                    }
+                                })
+                            }
+                            
+                        });
+                });
+            }
+        });
+        
+    });
     // Updates the likes for the post in the posts table
     // Then adds the like to the likes table in the db to show that the user has liked the post
     // This also prevents a single user from liking then refreshing and liking again.

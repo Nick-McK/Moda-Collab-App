@@ -369,7 +369,19 @@ body::-webkit-scrollbar {
   display: inline-block;
   align-items: center;
   justify-content: center;
+  border: none;
+  background-color: whitesmoke;
+  cursor: pointer;
+  transition-duration: 0.4s;
+  text-decoration: none;
 }
+
+#startCollaborating, #addCollaborators :hover{
+    color: white;
+    background-color: inherit;
+    border: 2px solid white;
+}
+
 #promptButtons, #promptAnswer {
   display: flex;
   align-items: center;
