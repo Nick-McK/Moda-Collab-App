@@ -63,7 +63,6 @@ ptInput.addEventListener('change', function() {setPtSize(recentlySelected);});  
 // Sets the ptSize of future and selected text to global ptSize value
 function setPtSize(objects) {
     pt = parseInt(ptInput.value);  // Update global var
-    console.log(objects)
     if (objects) {
         for (var i of objects) {
             if (i.get('type') == 'textbox') {
@@ -269,7 +268,6 @@ function changeTool(res, imgUrl) {
     if (obj) {    // If this obj needs to be sent to the server from here
         redoStack = [];      // Wipe the redoStack when normal move is made
         canvas.add(obj).renderAll();        // Add obj and render canvas
-        console.log("sending", obj);
         socket.emit('canvasUpdate', {"change": obj, "type" : "add"}, function(id) {
             if (id != null) {       // if there is an id returned from the callback, give the image that id
                 obj.id = id;
@@ -392,7 +390,6 @@ function straightMouseUp(o) {
     obj.setCoords();
 
     socket.emit('canvasUpdate', {"change": obj, "type" : "add"}, function(id) {
-        console.log(id);
         if (id != null) {
             obj.id = id;
         }
@@ -414,7 +411,6 @@ canvas.on("mouse:move", function (opt) {
                 if(view[5] > 0) {
                     view[5] = 0;
                 } else if (view[5] < canvas.getHeight() - canvasHeight * zoom) {
-                    console.log("here", view[5]);
                     view[5] = canvas.getHeight() - canvasHeight * zoom;
                 }
             }
@@ -602,10 +598,7 @@ imageSelect.addEventListener('change', function(){          // This is triggered
 
 // Emits to canvas whenever a change is made to any object so other clients can update
 canvas.on('object:modified', function (e) {
-    console.log("this is modified aaaaaaaaaaaa");
-    console.log(e);
-    var state = e.target.saveState();
-    console.log("state", state);
+    console.log("mod event: ",e);
     redoStack = [];         // Empty the redo stack when a normal move has been made
     if (e.transform && typeof e.transform != 'function') {
         if (e.transform.target._objects) {      // If the modified object is a group, add some relevant values to the transform section of the obj
@@ -624,7 +617,6 @@ canvas.on('object:modified', function (e) {
             var thisObj = JSON.parse(JSON.stringify(e.target._objects[i]));
             var group = e.target._objects[i].group;
 
-            console.log(group);
 
             // Calculate the new borders 
             thisObj.left = group.left + ((group.width + (2 * thisObj.left))/2)
@@ -634,7 +626,6 @@ canvas.on('object:modified', function (e) {
         }
         
     } else {
-        console.log(e.target.calcTransformMatrix());
         socket.emit('canvasUpdate', {"change": e.target, "type": 'mod', "id": e.target.id});
     }
     
@@ -657,7 +648,6 @@ function constructForUndoStack(o) {
     structureHelp["original"] = info;
     structureHelp["target"] = {id:o.id}
 
-    console.log({attributes: structureHelp, type : "mod"});
     undoStack.push({attributes: structureHelp, type : "mod"})    // push to the undo stack in the necessary format
 }
 
@@ -680,7 +670,6 @@ function undoRedoneUndo(group) {
     redoGroup.set("grouped", true);
     redoGroup.set("handledBefore", true);
     redoStack.push({attributes : redoGroup, type: "mod"});
-    console.log(redoGroup);
 
 
     for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
@@ -1183,6 +1172,9 @@ socket.on('canvasUpdate', (data) => {
         break;
 
         case 'deleteDesign':
+            // wipe the undo/redo stacks if a design is loaded or the design is deleted
+            undoStack = [];
+            redoStack = [];
             for (var i of canvas.getObjects()) {
                 if (i.id != 'DONTDELETE') { // this makes sure that the delete function doesn't remove the background rectangle that shows the borders
                     canvas.remove(i);
@@ -1203,8 +1195,6 @@ const whiteboard = document.getElementById("whiteboard");
 
 if (whiteboard != null) {
 
-    console.log("pathname", getRoom());
-
     let data = {roomName: getRoom()}
 
     socket.emit("joined", (data));
@@ -1212,7 +1202,6 @@ if (whiteboard != null) {
 let roomParticipants = new Array();
 // Add in a button that you can click to bring up a window to show all users in a room 
 socket.on("users", (roomData) => {
-    console.log(roomData.usernames);
     const collabRoomHeader = document.getElementById("collabRoomHeader");
     for (let user of roomData.usernames) {
         if (!document.getElementById(user)) {       // makes sure there is no duplicates
@@ -1264,10 +1253,18 @@ document.getElementById("newDesign").onclick = () => {
 
     // Force user to enter design name before sending design
     var dName = prompt("Name your design");
-    while(dName == "" || dName == null) {
-        dName = prompt("Name your design");
+    if (dName == "" || dName == null) {
+        alert("You must give your design a name");
+    } else {
+        var design  = canvas.toJSON(['id']);
+
+        // Remove the boundary rectangle from the canvas JSON
+        design.objects = design.objects.filter(function(obj) {
+            return obj.id != "DONTDELETE"
+        })
+
+        socket.emit('saveDesign', {design: JSON.stringify(design), thumbnail: canvas.toDataURL({format: 'jpeg'})}, dName);
     }
-    socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg'})}, dName);
 }
 var recordedSaveNames = [];
 
@@ -1280,17 +1277,21 @@ function saveDesign() {
     document.getElementById('save').style.display = "grid";
     socket.emit('getDesignNames');
     socket.on('retrieveDesignNames', (names) => {
-        console.log("design names got");
         names.forEach((name) => {
-            console.log("this is name", name)
-
             let currentName = document.createElement("div");
             let nameBut = document.createElement("button");
             nameBut.classList.add("saveButton");
             nameBut.innerHTML = name;
             nameBut.onclick = () => {
                 document.getElementById('save').style.display = "none";
-                socket.emit('saveDesign', {design: JSON.stringify(canvas), thumbnail: canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})}, name);     // the canvas.toDataUrl creates an image of the whole collab room, using logic to get the correct width and height
+                var design  = canvas.toJSON(['id']);
+
+                // Remove the boundary rectangle from the canvas JSON
+                design.objects = design.objects.filter(function(obj) {
+                    return obj.id != "DONTDELETE"
+                })
+
+                socket.emit('saveDesign', {design: JSON.stringify(design), thumbnail: canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})}, name);     // the canvas.toDataUrl creates an image of the whole collab room, using logic to get the correct width and height
             }
             if(!recordedSaveNames.includes(name)){
                 currentName.appendChild(nameBut);
@@ -1318,6 +1319,9 @@ socket.on('saveDesignResponse', (res) => {
 
 // Deletes all objects on canvas and sends emit telling other clients to do so as well
 function deleteDesign() {
+    // wipe the undo/redo stacks if a design is loaded, or the design is deleted
+    undoStack = [];
+    redoStack = [];
     socket.emit('canvasUpdate', {type: "deleteDesign"});
     for (var i of canvas.getObjects()) {
         if (i.id != 'DONTDELETE') {         // Ignores boundary rectangle
@@ -1426,7 +1430,8 @@ function removeTemplate(dontEmit) {
 
 
 window.onload = function() {
-    socket.emit('inRoom')   // This allows the socket to be marked as one that connects to a user within a room
+    console.log("this is the room you are in",getRoom())
+    socket.emit('inRoom', getRoom())   // This allows the socket to be marked as one that connects to a user within a room
 
     // Since templates will only be updated infrequently, request templates should only be called on page load rather than each time template window is opened
     socket.emit('requestTemplates');

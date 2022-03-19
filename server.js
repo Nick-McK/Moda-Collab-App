@@ -348,7 +348,7 @@ let roomList = new Array();
 function handleRoomCreation() {
     Object.keys(rooms).forEach(room => {
         if (!roomList.find(r => { return r.roomName === room; })) {
-            roomList.push({roomName: room, objects: [], objIdCounter: 0, background: ''});
+            roomList.push({roomName: room, objects: [], objIdCounter: 0, background: '', backgroundColor: ''});
             console.log("roomList", roomList);
             io.emit("roomNames", roomList.map(function (ro) {return ro.roomName}));
         }
@@ -505,18 +505,21 @@ io.sockets.on('connect', (socket) => {
 
         console.log("roompass", data.roomPass);
 
+        // Since joined has been sent to server, that means this socket must be in a collab room
+        socket.inRoom = true;
+        socket.roomName = data.roomName;
+
         // rooms[data.roomName].roomPass = data.roomPass;
 
-        if (rooms[data.roomName] == undefined || rooms[data.roomName].roomPass == undefined) {
+        if (rooms[socket.roomName] == undefined || rooms[socket.roomName].roomPass == undefined) {
             console.log("no room password, server would've crashed")
         } else {
-            console.log("room password", rooms[data.roomName].roomPass);
+            console.log("room password", rooms[socket.roomName].roomPass);
         }
-        
-        roomName = data.roomName;
 
         // If the room was in the process of being deleted because of no members in the room, stop the countdown
-        if (rooms[roomName] && rooms[roomName].TIMER) {
+        if (rooms[socket.roomName] && rooms[socket.roomName].TIMER) {
+            console.log("disabling delete countdown");
             roomDeleteTimer(true);
         }
 
@@ -527,24 +530,24 @@ io.sockets.on('connect', (socket) => {
 
         users[socket.request.session.id] = socket.request.session.username;
         console.log("users", users);
-        if (rooms[roomName]) {     // this might fix an error
-            rooms[roomName].users[socket.request.session.id] = socket.request.session.username;
+        if (rooms[socket.roomName]) {     // this might fix an error
+            rooms[socket.roomName].users[socket.request.session.id] = socket.request.session.username;
         } else {
-            console.log("rooms[roomName] where roomName = " + roomName + "was undefined and would've crashed the server")
+            console.log("rooms[roomName] where roomName = " + socket.roomName + "was undefined and would've crashed the server")
         }
         console.log("rooms", rooms)
-        socket.join(data.roomName);
+        socket.join(socket.roomName);
         
         
         // use rooms[roomToJoin].users instead of users to get only users in the given room
         let userVals = Object.values(rooms[data.roomName].users); // Pass this to the client and we can loop through to find the usernames
         
-        io.to(roomName).emit("users", {usernames: userVals, sessionID: socket.request.session.id, room: roomName});     //do we need to send session and room?
+        io.to(socket.roomName).emit("users", {usernames: userVals, sessionID: socket.request.session.id, room: socket.roomName});     //do we need to send session and room?
 
 
         // give new users existing collab room data
         for (var i in roomList) {
-            if (roomList[i].roomName == roomName) {
+            if (roomList[i].roomName == socket.roomName) {
                 for (var j in roomList[i].objects) {
                     socket.emit('canvasUpdate', {change: roomList[i].objects[j], type: "add"}); 
                 }
@@ -631,8 +634,8 @@ io.sockets.on('connect', (socket) => {
             break;
         }
 
-        console.log("roomName to console", roomName);
-        socket.to(roomName).emit("canvasUpdate", data);
+        console.log("roomName to console", socket.roomName);
+        socket.to(socket.roomName).emit("canvasUpdate", data);
  
     });
 
@@ -644,7 +647,7 @@ io.sockets.on('connect', (socket) => {
 
     function addObj(data, ignore, loadDesign) {     //ignore probably isn't needed anymore, not 100% sure though
         for (var i in roomList) {
-            if (roomList[i].roomName == roomName) {
+            if (roomList[i].roomName == socket.roomName) {
                 if (data.id == null) {      // if id is unassigned, assign it and increment id counter
                     data.id = roomList[i].objIdCounter;
                     roomList[i].objIdCounter++;
@@ -664,7 +667,7 @@ io.sockets.on('connect', (socket) => {
     // This is for updating the objects that have been clipped by an eraser line
     function addErased(data) {
         for (var i in roomList) {
-            if (roomList[i].roomName == roomName) {
+            if (roomList[i].roomName == socket.roomName) {
                 for (var j in roomList[i].objects) {
                     for (var n in data) {
                         if (data[n].id == roomList[i].objects[j].id) {
@@ -678,7 +681,7 @@ io.sockets.on('connect', (socket) => {
 
     function bgColourChange(data) {
         for (var i in roomList) {
-            if (roomList[i].roomName == roomName) {
+            if (roomList[i].roomName == socket.roomName) {
                 roomList[i].backgroundColor = data;
             }
         }
@@ -686,7 +689,7 @@ io.sockets.on('connect', (socket) => {
 
     function removeObj(data) {
         for (var i in roomList) {
-            if (roomList[i].roomName == roomName) {
+            if (roomList[i].roomName == socket.roomName) {
                 for (var j in roomList[i].objects) {
                     if (roomList[i].objects[j].id == data) {
                         delete roomList[i].objects[j];
@@ -698,7 +701,7 @@ io.sockets.on('connect', (socket) => {
 
     function modObj(data) {
         for (var i in roomList) {
-            if (roomList[i].roomName == roomName) {
+            if (roomList[i].roomName == socket.roomName) {
                 for (var j in roomList[i].objects) {
                     if (roomList[i].objects[j].id == data.id) {
                         roomList[i].objects[j] = data;
@@ -711,7 +714,7 @@ io.sockets.on('connect', (socket) => {
 
     function deleteDesign() {
         for (var i in roomList) {
-            if (roomList[i].roomName == roomName) {
+            if (roomList[i].roomName == socket.roomName) {
                 roomList[i].background = false;
                 roomList[i].objects = [];
             }
@@ -719,6 +722,9 @@ io.sockets.on('connect', (socket) => {
     }
 
     socket.on("saveDesign", (data, designName) => {
+
+        console.log("saveDesign", data);
+
         /*
         fs.writeFile("designsTemp/designTest.json", data.design, (err) => {
             socket.emit("saveDesignResponse", (!err));
@@ -843,11 +849,13 @@ io.sockets.on('connect', (socket) => {
         design.then((data) => {
 
             deleteDesign();     // remove previous design
-            io.to(roomName).emit("canvasUpdate", {type: "deleteDesign"}); // tell clients to remove previous design
+            io.to(socket.roomName).emit("canvasUpdate", {type: "deleteDesign"}); // tell clients to remove previous design
 
             socket.on("savePost", () => {
 
             })
+
+            console.log("loadThisBih",data)
 
             //find out how to get the objects from the json file
             var objs = data.objects
@@ -858,12 +866,18 @@ io.sockets.on('connect', (socket) => {
             console.log("Design Loaded");
             
             for (var i in roomList) {
-                if (roomList[i].roomName == roomName) {
+                if (roomList[i].roomName == socket.roomName) {
+                    // If design has a background saved to it, add it to the servers instance of the room and distribute it to the other room members
+                    if (data.background != '') {
+                        roomList[i].backgroundColor = data.background;
+                        io.to(roomList[i].roomName).emit("canvasUpdate", {change: roomList[i].backgroundColor, type:"bgColour"});
+                    }
                     if (data.backgroundImage) {
-                        roomList[i].background = data.backgroundImage;
+                        // Make sure the assign this to src, otherwise it tries to assign it to full image obj and server crashes
+                        roomList[i].background = data.backgroundImage.src;
                         io.to(roomList[i].roomName).emit("importTemplate", roomList[i].background);
                     }
-                    roomList[i].background = data;
+                    // roomList[i].background = data;
                 }
             }
         })
@@ -871,20 +885,20 @@ io.sockets.on('connect', (socket) => {
 
     socket.on("importTemplate", (data) => {
         for (var i in roomList) {
-            if (roomList[i].roomName == roomName) {
+            if (roomList[i].roomName == socket.roomName) {
                 roomList[i].background = data;
-                socket.to(roomName).emit("importTemplate", data);
+                socket.to(roomList[i].roomName).emit("importTemplate", data);
             }
         }
     });
 
     socket.on("removeTemplate", () => {
-        console.log("template delete request to room ", roomName)
+        console.log("template delete request to room ", socket.roomName)
         
         for (var i in roomList) {
-            if (roomList[i].roomName == roomName) {
+            if (roomList[i].roomName == socket.roomName) {
                 roomList[i].background = null;
-                socket.to(roomName).emit("removeTemplate");
+                socket.to(roomList[i].roomName).emit("removeTemplate");
             }
         }
     })
@@ -904,10 +918,12 @@ io.sockets.on('connect', (socket) => {
     })
 
     
-    socket.on('inRoom', () => {
-        // Give an inRoom value to this socket to denote that it connects to user within a collab room
-        socket.inRoom = true;       
-    })
+    // socket.on('inRoom', (thisRoom) => {
+    //     // Give an inRoom value to this socket to denote that it connects to user within a collab room
+    //     socket.inRoom = true;
+    //     console.log("thisRoom", thisRoom)
+    //     socket.roomName = thisRoom;       
+    // })
 
 
     // Don't think this is necessary because disconnect works
@@ -916,7 +932,7 @@ io.sockets.on('connect', (socket) => {
     // });
 
     socket.on('disconnect', function() {
-        console.log("InRoom?", socket.inRoom);
+        console.log("User left. They were in a room?", socket.inRoom);
         // If the socket connects to a user that was in a room, call the appropriate leaveRoom function
         if (socket.inRoom) {
             leaveRoom();
@@ -924,6 +940,7 @@ io.sockets.on('connect', (socket) => {
     })
 
     function leaveRoom() {
+        roomName = socket.roomName;
         socket.leave(roomName);
         console.log("leaving room:", rooms[roomName],"username leaving", rooms[roomName].users[socket.request.session.id])
         io.to(roomName).emit("userLeave", {username: rooms[roomName].users[socket.request.session.id]}); // allow other clients to update participants
@@ -938,7 +955,7 @@ io.sockets.on('connect', (socket) => {
     function roomDeleteTimer(cancel) {
         // Convert the roomName to a String object
         // This is necessary because roomName can become overwritten while still in the interval, thus deleting the wrong room
-        var roomToDelete = new String(roomName);        // Also, you have to create an object here, just doing = roomName is by reference, not by value
+        var roomToDelete = new String(socket.roomName);        // Also, you have to create an object here, just doing = roomName is by reference, not by value
 
         // If the call to this function requests the countdown for a room to be cancelled (this happens when someone enters the room that is counting down to deletion)
         // clear the interval and remove the timer
@@ -951,7 +968,7 @@ io.sockets.on('connect', (socket) => {
             rooms[roomToDelete].TIMER = setInterval(() => {
                 start++;
 
-                if (start == 300) { //300 for 5 mins
+                if (start == 10) { //300 for 5 mins
                     roomToDelete = roomToDelete.valueOf();      // Use value of to convert roomName back to a primitive so it can be used as needed
                     roomList = roomList.filter(ro => ro.roomName != roomToDelete);  // Remove from roomList
                     clearInterval(this);        // Clear this interval
