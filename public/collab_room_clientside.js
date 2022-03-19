@@ -710,6 +710,8 @@ function undo() {
     if (undoStack.length > 0) {             // Make sure there are changes to undo
         var change = undoStack.pop();       // Get most recent change
         console.log(change)
+
+        
         // Modded objects, for the most part, are stored as a collection of the primary attributes of the original object
         if (change.type == 'mod') {
             var moddedObj;
@@ -743,11 +745,6 @@ function undo() {
     
                                 // Deselect the group otherwise it gives the object coordinates in relation to their position within the group
                                 canvas.discardActiveObject().renderAll();
-    
-                                // Create a copy of the object before undo for the redo stack
-                                // canvas._objects[i].clone(function (o) {
-                                //     redoStack.push({attributes : o, type:"mod"});
-                                // }, ['id']);
     
                                 // 1 Calculate the top and left value differences between the group boundary and obj in the group
                                 console.log("Before undo group left val: ", change.attributes.left);
@@ -843,9 +840,14 @@ function undo() {
             socket.emit('canvasUpdate', {"change": canvas.backgroundColor, "type": 'bgColour'});    // need a socket emit for this one bc the others above are handled by event managers
 
         } else if (change.type == 'delete') {           // This means we need to re-add an object from the undo stack
-            for (var i in change.attributes) {
-                redoStack.push({attributes: change.attributes[i].id, type:"delete"});
+            console.log(change.attributes)
 
+            var ids = change.attributes.map(function (o) {return o.id});    // Get the ids of the selected objects
+
+            redoStack.push({attributes: ids, type:"delete"});
+
+
+            for (var i in change.attributes) {
                 addItemFromData(change.attributes[i].toJSON(['id']));   // need to covert to json for enliven objects to work
                 socket.emit('canvasUpdate', {'change': change.attributes[i].toJSON(['id']),type: "add"});  //don't know why we need to include id but we do
             }
@@ -876,14 +878,15 @@ function redo() {
     if (redoStack.length > 0) {
         var redoChange = redoStack.pop();
 
+        // Deselect the group otherwise it gives the object coordinates in relation to their position within the group
+        canvas.discardActiveObject().renderAll();
+        
         console.log(redoChange)
         switch (redoChange.type) {
             case 'mod':
                 var moddedObj;
-                
                 var listForGroup = [];
-                // Deselect the group otherwise it gives the object coordinates in relation to their position within the group
-                canvas.discardActiveObject().renderAll();
+
                 for (var i in canvas._objects) {
                     for (var j in redoChange.attributes._objects) {
                         if (canvas._objects[i].id == redoChange.attributes._objects[j].id) {
@@ -898,9 +901,10 @@ function redo() {
                 // redoToUndoConstructor({attributes : undoGroup, type: "mod"})
                 undoGroup.set("grouped", true);
                 undoGroup.set("handledBefore", true);
-                undoStack.push({attributes : undoGroup, type: "mod"});
-                console.log(undoGroup);
-
+                var nextStack = {attributes : undoGroup, type: "mod"} ;
+                if (JSON.stringify(undoStack[undoStack.length - 1]) != JSON.stringify(nextStack)) {
+                    undoStack.push(nextStack);
+                }
 
                 if (redoChange.attributes._objects) {
                     for (var i in canvas._objects) {            // Loop through canvas objects and find the one with the id matching the id in the change
@@ -916,6 +920,7 @@ function redo() {
                                 canvas._objects[i].set("left", leftVal);
                                 canvas._objects[i].set("top", topVal);
                                 canvas.renderAll();
+                                canvas._objects[i].setCoords();
     
                                 socket.emit('canvasUpdate', {"change": canvas._objects[i], "type": 'mod', "id": canvas._objects[i].id});
                             }
@@ -945,27 +950,46 @@ function redo() {
             break;
 
             case 'add':
-                undoStack.push({attributes:redoChange.attributes, type:"add"});
+                var nextStack = {attributes:redoChange.attributes, type:"add"};
+                if (JSON.stringify(undoStack[undoStack.length - 1]) != JSON.stringify(nextStack)) {
+                    undoStack.push(nextStack);
+                }
                 addItemFromData(redoChange.attributes.toJSON(['id']));   // need to covert to json for enliven objects to work
                 socket.emit('canvasUpdate', {'change': redoChange.attributes.toJSON(['id']),type: "add"});  //don't know why we need to include id but we do
             break;
 
             case 'bgColour':
-                console.log(canvas.backgroundColor);
-                undoStack.push({attributes: {bgColour: canvas.backgroundColor}, type:"bgColour"});
+                
+                var nextStack = {attributes: {bgColour: canvas.backgroundColor}, type:"bgColour"};
+                if (JSON.stringify(undoStack[undoStack.length - 1]) != JSON.stringify(nextStack)) {
+                    undoStack.push(nextStack);
+                }
+                
                 canvas.backgroundColor = redoChange.attributes;     // In this case, redoChange.attributes is just backgroundColor
                 canvas.renderAll();
                 socket.emit('canvasUpdate', {"change": canvas.backgroundColor, "type": 'bgColour'});    // need a socket emit for this one bc the others above are handled by event managers
             break;
 
             case 'delete':
+                var objList = [];
                 for (var i in canvas._objects) {
-                    if (canvas._objects[i].id == redoChange.attributes) {       // In this case, redoChange.attributes is just id
-                        undoStack.push({attributes:[canvas._objects[i]], type:"delete"});
-                        canvas.setActiveObject(canvas._objects[i]); // this is necessary so deleteItem knows which obj to delete
-                        deleteItem(true)    //true marks that we are using the undo feature, so don't re add this removal to the undo stack for infinite loop
-                        break;
+                    for (var j in redoChange.attributes) {
+                        if (canvas._objects[i].id == redoChange.attributes[j]) {       // In this case, redoChange.attributes is just id
+                            objList.push(canvas._objects[i]);
+                            canvas.setActiveObject(canvas._objects[i]); // this is necessary so deleteItem knows which obj to delete
+                            break
+                        }
                     }
+                }
+                var group = new fabric.ActiveSelection(objList);
+                group.setCoords();
+                canvas.setActiveObject(group);
+                deleteItem()    //true marks that we are using the undo feature, so don't re add this removal to the undo stack for infinite loop
+                var nextStack = {attributes:objList, type:"delete"} 
+
+                // This should prevent an ever expanding undoStack for alternating calls to undo and redo
+                if (JSON.stringify(undoStack[undoStack.length -1]) != JSON.stringify(nextStack)) {
+                    undoStack.push(nextStack);
                 }
             break;
 
@@ -991,10 +1015,14 @@ function redo() {
 // This is triggered by an onclick on the delete button and also the delete key
 function deleteItem(usingUndo) {
     obj = canvas.getActiveObjects();    // use Objects for group deletion
+
     var ids = obj.map(function (o) {return o.id});    // Get the ids of the selected objects
 
     if (!usingUndo) {       // Don't push this deletion to the undo stack if it is being popped from the undo stack, prevents infinite loops
         redoStack = [];     // There may be some use cases where this wipes the redo stack when it wasn't meant to
+        // Deselect the group otherwise it gives the object coordinates in relation to their position within the group
+        canvas.discardActiveObject().renderAll();
+        console.log(obj);
         undoStack.push({attributes: obj, type: "delete"})
     }
 
@@ -1071,7 +1099,7 @@ function addItemFromData(data) {
         fabric.util.enlivenObjects([data], function (enlivenObjects) {
             console.log(enlivenObjects[0]);
             canvas.add(enlivenObjects[0]);
-            canvas.renderAll()
+            canvas.renderAll();
         });
     }
 
