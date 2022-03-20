@@ -36,6 +36,11 @@ const postName = document.getElementById("_postName");
 const postCaption = document.getElementById("_postCaption");
 const posts = document.querySelectorAll(".post");
 
+const likedPost = document.getElementById("likedPost");
+const likedPostContainer = document.getElementById("likedPostsContainer");
+const likedPostContent = document.getElementById("likedPostsContent");
+const likedPostsList = document.getElementById("likedPostsList");
+const closeLikedPosts = document.getElementById("closeSavedPosts");
 
 const postdesign = document.getElementById("addPostDesignsContainer");
 const postDList = document.getElementById("addPostDesignsList");
@@ -158,6 +163,7 @@ addCollab.onclick = () => {
 
 }
 
+
 // Add post menu stuff
 
 addPost.onclick = () => {
@@ -273,6 +279,32 @@ socket.on("savedDesigns", (data) => {
     }
 });
 
+
+likedPost.onclick = () => {    
+    if (likedPostContainer.style.display == "flex") {
+        likedPostContainer.style.display = "none";
+    } else {
+        likedPostContainer.style.display = "flex";
+        likedPostContent.style.animation = "open 0.5s";
+        socket.emit("getLikedPosts");
+    }
+}   
+
+closeLikedPosts.onclick = () => {
+    likedPostContainer.style.display = "none";
+}
+
+socket.on("returnLikedPosts", (data) => {
+    console.log("liked posts?",data)
+    if (data.length == 0 || data == undefined) {
+        alert("No liked posts\nlike some posts from your Home Page for them to appear here");
+        closeLikedPosts.click();
+    } else {
+        displayPost(data, true);
+    }
+})
+
+
 postButton.onclick = () => {
     let tags = []
     if(postTags.selectedOptions.length > 0){
@@ -326,6 +358,8 @@ this.onload = () => {
 
 let posted = {};
 let commented = [];
+
+let displayedInLiked = {};
 socket.on("posts", posts => {
     console.log("posts", posts);
     console.log("what isthis", posts[0].id);
@@ -339,11 +373,19 @@ socket.on("posts", posts => {
  * 
  * We also add event listeners to play for our animations to work.
  */
-function displayPost(posts) {
+function displayPost(posts, forLiked) {
     for (let post of posts) {
-        if (posted[post.id] == post.caption) {
+        if (posted[post.id] == post.caption && !forLiked) {
             continue;
         }
+
+        if (forLiked && displayedInLiked[post.id] == post.id) {
+            continue;
+        }
+
+        // Add to a tracker so no posts appear twice in for liked
+        if (forLiked) displayedInLiked[post.id] = post.id;
+        
         posted[post.id] = post.caption;
         let postDiv = document.createElement("div");
         let gridItem = document.createElement("div");
@@ -366,7 +408,7 @@ function displayPost(posts) {
         flagImg.setAttribute("src", "assets/icons/flag-fill.png");
         flagDiv.appendChild(flagImg);
 
-        
+
 
         profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg")
         
@@ -395,44 +437,38 @@ function displayPost(posts) {
 
         barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
 
-        socket.on("likedByUsers", data => {
-            let likes = data.likes;
+        // Need this for when the post has just been added, as we create the userIDs part if the post has more than 0 likes
+        // And because it makes it work, kinda not sure why because it worked without it
+        if (post.likedBy == undefined && !forLiked) {
+            post.LIKED = false;
+        } else if (forLiked || Object.values(post.likedBy).includes(post.sessionID)) {
+            console.log("I exist!");
+            post.LIKED = true;
+            barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
+        } else {
+            post.LIKED = false;
+        }
+    
+        post.LIKES = post.likes; // Set this to the database value
+        likeCounter.innerHTML = post.LIKES;
 
-            // Need this for when the post has just been added, as we create the userIDs part if the post has more than 0 likes
-            // And because it makes it work, kinda not sure why because it worked without it
-            if (likes[post.id] == undefined) {
-                LIKED = false;
-            } else if (likes[post.id].userIDs[post.sessionID] == post.sessionID) {
-                console.log("I exist!");
-                var LIKED = true;
+        barImage1.addEventListener("click", () => {
+            console.log("liked",post.LIKED);
+            if (post.LIKED == true) {
+                post.LIKES--;
+                post.LIKED = false;
+                barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
+                socket.emit("liked", {likes: post.LIKES, id: post.id, liked: false});
+            } else if (post.LIKED == false) {
+                post.LIKES++;
+                post.LIKED = true;
                 barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
-            } else {
-                LIKED = false;
-                console.log("values");
+                socket.emit("liked", {likes: post.LIKES, id: post.id, liked: true});
             }
-        
-            let LIKES = post.likes; // Set this to the database value
-            const LIKES_BEFORE = post.likes;
-
-            likeCounter.innerHTML = LIKES;
-            
-            barImage1.addEventListener("click", () => {
-                if (LIKED == true) {
-                    LIKES--;
-                    LIKED = false;
-                    // likeCounter.style.color = 
-                    barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
-                    socket.emit("liked", {likes: LIKES, id: post.id, liked: LIKED});
-                } else if (LIKED == false) {
-                    LIKES++;
-                    LIKED = true;
-                    barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
-                    socket.emit("liked", {likes: LIKES, id: post.id, liked: LIKED});
-                }
-                likeCounter.innerHTML = LIKES;
-                
-            })
+            likeCounter.innerHTML = post.LIKES;
         })
+
+
         barImage2.setAttribute("src", "/public/assets/icons/archive-box-inverted.png");
 
         barImage2.addEventListener("click", () => {
@@ -451,17 +487,11 @@ function displayPost(posts) {
         div1.appendChild(likeCounter);
         div2.appendChild(barImage2);
         div3.appendChild(barImage3);
-        
 
         postBar.appendChild(div1);
         postBar.appendChild(div2);
         postBar.appendChild(div3);
 
-        
-
-        
-
-    
         gridItem.appendChild(postImage);
         postTop.appendChild(profilePic);
         postTop.appendChild(name);
@@ -470,11 +500,17 @@ function displayPost(posts) {
         postDiv.appendChild(postTop);
         postDiv.appendChild(gridItem);
         postDiv.appendChild(postBar);
-        const feed = document.getElementById("_feed");
-        postDiv.style.left = "0";
-        postDiv.style.top = "0";
-        feed.prepend(postDiv); // This is prepend as we want the newest posts at the top of the feed
 
+        if (forLiked == undefined || !forLiked) {
+            const feed = document.getElementById("_feed");
+            postDiv.style.left = "0";
+            postDiv.style.top = "0";
+            feed.prepend(postDiv); // This is prepend as we want the newest posts at the top of the feed
+        } else if (forLiked == true){
+            console.log("trying")
+            likedPostsList.prepend(postDiv);
+        }
+        
         const postComment = document.getElementById("postComment");
 
         postComment.onclick = () => {

@@ -808,8 +808,6 @@ io.sockets.on('connect', (socket) => {
         });
         
     });
-
-
     
     function sendClientDesigns(designList, data) {
         if (data == 0) {
@@ -818,6 +816,61 @@ io.sockets.on('connect', (socket) => {
             socket.emit("savedDesigns", ({designs: designList, id: data}));
         }
     }
+
+    socket.on('getLikedPosts', () => {
+        let _likedPostsList = new Array();
+        var userID = socket.request.session.userID;
+        con.query("SELECT postID FROM likes WHERE userID = ?", [userID], (err, likedPostsIDs) => {
+            if (err) throw err;
+
+            // Return nothing if user has not liked any posts
+            if(likedPostsIDs.length == 0) {
+                socket.emit("returnLikedPosts", []);
+            } else {
+                // Use a counter so the async function knows when to emit data
+                var processedCount = 0;
+                for (var likedPostID of likedPostsIDs) {
+                    con.query("SELECT * FROM posts WHERE postID = ?", [likedPostID.postID], (err, posts) => {
+
+                        // Create async function to get the username of the poster
+                        async function getPostData() {
+                            // Use a promise to wait until the username has returned before continuing
+                            var n = new Promise((resolve, reject) => {
+                                con.query("SELECT username FROM users WHERE userID = ?", [userID], (err, res) => {
+                                    resolve(res.map(function(ro) {return ro.username}));
+                                })
+                            });
+
+                            var name = await n;
+
+                            // This should only really loop once per design
+                            for (var post of posts) {
+                                // Create a promise that should return the details of the design
+                                var promise = designs.collection("Designs").findOne({_id: new ObjectId(post.design)}, {projection: {_id: 0, thumbnail: 1}});
+
+                                // Use another await to wait for the design details to return
+                                var des = await promise;
+
+                                // Increment processed counter
+                                processedCount++;
+
+                                // Build the post information
+                                var postInfo = {name: post.postName, caption: post.postCaption, design: des.thumbnail, user: name, likes: post.likes, id: post.postID, sessionID: socket.request.session.userID}
+                                _likedPostsList.push(postInfo);
+
+
+                                // Once all items have been processed, emit list of liked posts
+                                if (processedCount == likedPostsIDs.length) {
+                                    socket.emit("returnLikedPosts", _likedPostsList);
+                                }
+                            }
+                        }
+                        getPostData();
+                    });
+                }
+            }
+        });
+    });
 
 
 
@@ -1097,45 +1150,51 @@ io.sockets.on('connect', (socket) => {
         let posts = [];
         let postsName = {};
 
-        let postLikes = {};
-        let userIDs = {};
+        // Gets all relevant details for each post
         con.query("SELECT postID, postName, postCaption, design, userID, likes FROM posts", (err, result) => {
             if (err) throw err;
             if (result.length == 0) {return}
+            // For each post, get the usernames of the poster
             for (let i = 0; i < result.length; i++) {
-                
                 con.query("SELECT username FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
                     if (err) console.log(err);
-                        designs.collection("Designs").find({_id: new ObjectId(result[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, res) => {
-                            let image = res[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
-                            let name = r[0].username; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
-                            if (result[i].likes == null) result[i].likes = 0;
-                            postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
-                            posts.push(postsName);
+                    
+                    // Create a promise that returns the design info of a given design
+                    var promise = designs.collection("Designs").findOne({_id: new ObjectId(result[i].design)}, {projection: {_id: 0, thumbnail: 1}});
 
-                            
-                            socket.emit("posts", posts);
-                            
-                            if (result[i].likes == 0) {
-                                socket.emit("likedByUsers", {likes: 0})
-                            } else {
-                                
-                                con.query("SELECT * FROM likes WHERE postID = ?", [result[i].postID], (err, res) => {
-                                    if (err) throw err;
-                                    for (let i of res) {
-                                        
-                                        con.query("SELECT username FROM users WHERE userID = ?", [i.userID], (err, r) => {
-                                            postLikes[i.postID] = {userIDs: {}}
-                                            postLikes[i.postID].userIDs[i.userID] = i.userID
-                                            
-                                            socket.emit("likedByUsers", {likes: postLikes});
+                    // Use an async function to await for the return of the design search
+                    // So server can build up the list of posts and send them in one go
+                    async function anotherWait() {
+                        var p = await promise;
+                        let image = p.thumbnail;
+                        let name = r[0].username;
+
+                        if (result[i].likes == null) result[i].likes = 0;
+                        postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
+                        posts.push(postsName);    
+
+                        // When all of the posts have been found
+                        if (i == result.length-1) {
+                            // Loop through each post and, if it has any likes, get the ids of the users that have liked it
+                            for (var post of posts) {
+                                if (post.likes > 0) {       // If the post has likes
+                                    // Find all userIDs that have liked this post
+                                    var l = new Promise((resolve, reject) => {
+                                        con.query("SELECT * FROM likes WHERE postID = ?", [post.id], (err, res) => {
+                                        if (err) throw err;
+                                        // Add all userIds that have liked the post to the post
+                                        resolve(res.map(function(ro) {return ro.userID}));
                                         })
-                                        
-                                    }
-                                })
+                                    });
+                                    post.likedBy = await l;
+                                } 
                             }
-                            
-                        });
+
+                            // Emit the completed posts list
+                            socket.emit("posts", posts);
+                        }
+                    }
+                    anotherWait();
                 });
             }
         });

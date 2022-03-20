@@ -82,6 +82,18 @@
       </button>
     </div>
 
+    <!-- This is for the liked posts form -->
+    <div class="collabContainer" id="likedPostsContainer">
+      <div class="collabContent" id="likedPostsContent">
+        <p class="savedDesignTitle">Liked Posts</p>
+        <section class="collabList" id="likedPostsList"></section>
+      </div>
+      <button class="roundBtn_noBorder close" id="closeSavedPosts">
+        <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+      </button>
+    </div>
+
+
     <div class="collabContainer" id="commentsContainer">
       <div class="collabContent" id="commentsContent">
         <section class="postImage">
@@ -105,7 +117,7 @@
     </div>
   
     <div class="header flex">
-      <img id="logo" src="public/assets/icons/logo.png" alt="Moda Lab">
+      <img id="logo" src="public/assets/icons/logo-inverted.png" alt="Moda Lab">
         <div class = "topnav">
           <div class="nav-menu">
             <a href="/moderator/posts" id="mods" target="_self" data-text="&nbsp;Moderation">&nbsp;Moderation</a>
@@ -134,7 +146,7 @@
     </div>
     <div class="footer1">
       <div class="footer_item">
-        <button class="roundBtn_noBorder">
+        <button class="roundBtn_noBorder" id="likedPost">
           <img src="/public/assets/icons/thumbs-up-inverted.png" style="height: 4vh; width: auto"/>
         </button>
       </div>
