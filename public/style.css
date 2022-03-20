@@ -147,6 +147,13 @@ button:hover {
   z-index: 100;
 }
 
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+  .load, .save {
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(1rem);
+  }
+}
+
 .loadButton{
   text-align: center;
   background-color: transparent;
@@ -171,6 +178,23 @@ button:hover {
   background-color: rgb(29, 29, 29);
   color: blue;
 }
+
+#designLoadList, #designSaveList {
+  overflow: auto;
+  height: 800px;
+
+
+  /* This hides the scrollbar for some browsers */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* This hides the scrollbar for Chrome and other browsers */
+#designLoadList::-webkit-scrollbar, #designSaveList::-webkit-scrollbar {
+  display: none;
+}
+
+
 .close{
   position: fixed;
   top: 8%;

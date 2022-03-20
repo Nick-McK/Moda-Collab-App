@@ -9,6 +9,9 @@
 <!-- This is a popup that lets you start collaborating with others -->
     <div class="collabContainer" id="_collabContainer">
       <div class="collabContent" id="_collabContent">
+          <!-- This holds the list of the current rooms -->
+          <div class="collabList" id="_collabRoomList">
+          </div>
           <button class="roundBtn" id="startCollaborating">Start</button>
           <button class="roundBtn" id="addCollaborators">Add Collaborators</button>
       </div>
@@ -61,9 +64,8 @@
     </div>
     <div class="collabContainer" id="savedDesignsContainer">
       <div class="collabContent" id="savedDesignsContent">
-          <section class="designContainer" id="designContainer"></section>
-          <button class="roundBtn" id="startCollaborating">Start</button>
-          <button class="roundBtn" id="addCollaborators">Add Collaborators</button>
+        <p class="savedDesignTitle">Saved Designs</p>
+        <section class="collabList" id="designContainer"></section>
       </div>
       <button class="roundBtn_noBorder close" id="closeSavedDesigns">
         <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
@@ -71,7 +73,9 @@
     </div>
     <div class="collabContainer" id="addPostDesignsContainer">
       <div class="collabContent" id="addPostDesignsContent">
-        
+        <div class="collabList" id="addPostDesignsList">
+          
+        </div>
       </div>
       <button class="roundBtn_noBorder close" id="closePostSavedDesigns">
         <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>

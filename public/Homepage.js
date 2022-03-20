@@ -38,7 +38,7 @@ const posts = document.querySelectorAll(".post");
 
 
 const postdesign = document.getElementById("addPostDesignsContainer");
-const postDContent = document.getElementById("addPostDesignsContent");
+const postDList = document.getElementById("addPostDesignsList");
 const closePostSavedDesigns = document.getElementById("closePostSavedDesigns");
 const commentsContainer = document.getElementById("commentsContainer");
 const commentsContent = document.getElementById("commentsContent");
@@ -113,10 +113,10 @@ closePrompt.onclick = () => {
 let recordedRooms = new Array();
 // Adding rooms to the collab menu
 socket.on("roomNames", (roomList) => {
-    const collabContent = document.getElementById("_collabContent");
+    const collabRoomList = document.getElementById("_collabRoomList");
 
     // If the incoming roomList is less than the existing elements - 2 (for the buttons) remove all elements of class collabRoom from form
-    if (roomList.length < (collabContent.childElementCount - 2)) {
+    if (roomList.length < (collabRoomList.childElementCount - 2)) {
         var roomListings = document.querySelectorAll(".collabRoom")
         roomListings.forEach(room => {
             room.remove();
@@ -146,7 +146,7 @@ socket.on("roomNames", (roomList) => {
         }
         
         if (!recordedRooms.includes(room)) {
-            collabContent.appendChild(roomDiv);
+            collabRoomList.appendChild(roomDiv);
             recordedRooms.push(room);
         }
     }
@@ -215,54 +215,60 @@ socket.on("savedDesigns", (data) => {
     console.log("data", data.id);
 
     let designList = Object.values(data.designs);
-    
-    for (let design of designList) {     
-        // Check if the designs have been added to their respective pages thumbnails for savedPosts(id=0) page and names to the addPost page(id=1)
-        // If they have not been then add them to the checked list and then carry on with adding them to the page
-        // If none of that is true, then continue because the design has been added to both pages and we don't want to add it a second time 
-        if (data.id == 0 && !recordedPostDesigns.includes(design.thumbnail)) {
-            recordedPostDesigns.push(design.thumbnail);
-        } else if (data.id == 1 && !recordedDesigns.includes(design.name)) {
-            recordedDesigns.push(design.name);
-        } else {
-            continue;
-        }
-        
-        // Handles adding design images to the savedPosts section with id == 0 and for adding posts section with id == 1
-        if (data.id == 0) {
-            // let sectionContainer = document.createElement("section");
 
-            let sectionContent = document.createElement("section");
-            let sectionImage = document.createElement("img");
+    console.log("designList",designList);
 
-            // sectionContainer.classList.add("designContainer");
-            sectionContent.classList.add("designContent");
-            sectionImage.classList.add("designImage");
-            
-            sectionImage.setAttribute("src", design.thumbnail);
-
-            sectionContent.appendChild(sectionImage);
-            sectionContainer.appendChild(sectionContent);
-            // savedDesignsContent.appendChild(sectionContainer);
-        } else if (data.id == 1) {
-            console.log("are we here");
-            console.log("name", design.name);
-            let nameDiv = document.createElement("div");
-            let nameBut = document.createElement("button");
-
-            nameBut.innerHTML = design.name;
-
-            nameDiv.classList.add("collabRoom");
-            nameBut.classList.add("roundBtn_noBorder_room");
-
-            nameBut.onclick = () => {
-                designChoice.setAttribute("src", design.thumbnail);
-                // postThumb.value = design.thumbnail;
-                postdesign.style.display = "none";
+    // If user has no saved designs, give alert and close window
+    if (designList.length == 0) {
+        alert("You have no saved designs\nGo to the collaboration room to create and save a design");
+        savedDesignsContainer.style.display = "none";
+    } else {
+        for (let design of designList) {     
+            // Check if the designs have been added to their respective pages thumbnails for savedPosts(id=0) page and names to the addPost page(id=1)
+            // If they have not been then add them to the checked list and then carry on with adding them to the page
+            // If none of that is true, then continue because the design has been added to both pages and we don't want to add it a second time 
+            if (data.id == 0 && !recordedPostDesigns.includes(design.thumbnail)) {
+                recordedPostDesigns.push(design.thumbnail);
+            } else if (data.id == 1 && !recordedDesigns.includes(design.name)) {
+                recordedDesigns.push(design.name);
+            } else {
+                continue;
             }
-            nameDiv.appendChild(nameBut);
-
-            postDContent.appendChild(nameDiv);
+            
+            // Handles adding design images to the savedPosts section with id == 0 and for adding posts section with id == 1
+            if (data.id == 0) {
+                // let sectionContainer = document.createElement("section");
+    
+                let sectionContent = document.createElement("section");
+                let sectionImage = document.createElement("img");
+    
+                // sectionContainer.classList.add("designContainer");
+                sectionContent.classList.add("designContent");
+                sectionImage.classList.add("designImage");
+                
+                sectionImage.setAttribute("src", design.thumbnail);
+    
+                sectionContent.appendChild(sectionImage);
+                sectionContainer.appendChild(sectionContent);
+                // savedDesignsContent.appendChild(sectionContainer);
+            } else if (data.id == 1) {
+                let nameDiv = document.createElement("div");
+                let nameBut = document.createElement("button");
+    
+                nameBut.innerHTML = design.name;
+    
+                nameDiv.classList.add("collabRoom");
+                nameBut.classList.add("roundBtn_noBorder_room");
+    
+                nameBut.onclick = () => {
+                    designChoice.setAttribute("src", design.thumbnail);
+                    // postThumb.value = design.thumbnail;
+                    postdesign.style.display = "none";
+                }
+                nameDiv.appendChild(nameBut);
+    
+                postDList.appendChild(nameDiv);
+            }
         }
     }
 });

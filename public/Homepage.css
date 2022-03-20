@@ -336,6 +336,15 @@ body::-webkit-scrollbar {
   }
 }
 
+.savedDesignTitle {
+  font-family: inherit;
+  font-size: 32px;
+  position: relative;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+/* Could probably abstract the containers of the scrollable content in the popups to one class */
 .collabContent {
   width: 650px;
   height: 800px;
@@ -346,6 +355,22 @@ body::-webkit-scrollbar {
   background-color: rgb(29, 29, 29);
   color: blue;
 }
+
+.collabList {
+  width: auto;
+  height: 85%;
+  overflow: auto;
+
+  /* This hides the scrollbar for some browsers */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* This hides the scrollbar for Chrome and other browsers */
+.collabList::-webkit-scrollbar {
+  display: none;
+}
+
 #commentsContent {
   height: 80%;
   width: 30%;
@@ -362,7 +387,7 @@ body::-webkit-scrollbar {
 
 #startCollaborating, #addCollaborators {
   position: relative;
-  top: 88%;
+  top: 2.5%;
   left: 30%;
   display: inline-block;
   align-items: center;
@@ -386,7 +411,6 @@ body::-webkit-scrollbar {
   justify-content: center;
   width: 100%;
 }
-
 
 .promptContainer {
   z-index: 1000;
@@ -534,15 +558,16 @@ textarea {
 
 .designContainer {
   width: 600px;
-  height: 750px;
+  height: 700px;
   overflow-x: hidden;
   overflow-y: auto;
 }
 
 .designContent {
-  height: 300px;
-  width: 648px;
+  height: 450px;
+  width: fit-content;
   display: flex;
+  margin: auto;
   /* position: absolute; */
   border-radius: 20px;
   overflow-x: hidden;

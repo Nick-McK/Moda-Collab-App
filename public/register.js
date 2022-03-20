@@ -15,17 +15,17 @@ function checkPassMatch() {
         submit.disabled = false;
     } else {
         submit.disabled = true;
+        // Reset value to force user to reenter the second password, which should trigger this check again thus enabling the submit
+        document.getElementById('pass2').value = '';
         window.alert("Passwords do not match");
     }
   }
 
 
-  // Phone Num regex acquired from:
+  // Phone Num regex acquired from:  THIS IS NOT IN USE ANYMORE
   // https://stackoverflow.com/questions/26211225/validating-phone-numbers-using-javascript
   function checkPhoneNumber() {
     var submit = document.getElementById('submit');
-
-    console.log("aaaaaaaa")
 
     var regex = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im
     var num = document.getElementById('contactNo').value;

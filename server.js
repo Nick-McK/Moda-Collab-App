@@ -68,7 +68,7 @@ let options = {
     password: "modacollab",
     database: "moda collab",
     schema: {
-        tableNamme: "sessions",
+        tableName: "sessions",
         columnNames: {
             session_id: "session_id",
             expires: "expires",
@@ -652,7 +652,13 @@ io.sockets.on('connect', (socket) => {
                     data.id = roomList[i].objIdCounter;
                     roomList[i].objIdCounter++;
                 }
-                
+
+                // This deals with the case where a design has ids that are greater than the id counter, thus creating instances where two objs have the same id          
+                if (data.id >= roomList[i].objIdCounter++) {
+                    roomList[i].objIdCounter = data.id;
+                    roomList[i].objIdCounter++;
+                }
+
                 roomList[i].objects.push(data);
 
                 if (loadDesign) {
@@ -769,27 +775,41 @@ io.sockets.on('connect', (socket) => {
 
         
     });
-    
-    let _designList = new Array();
+
     socket.on("getSavedDesigns", (data) => {
+        let _designList = new Array();
+
 
         con.query("SELECT design FROM saveddesigns WHERE savedBy = ?", [socket.request.session.userID], (err, result) => {
                 if (err) throw err;
+                var itemsProcessed = 0;
                 
-                result.forEach(design => {
-                    designs.collection("Designs").find({_id: new ObjectId(design.design)}, {projection: {_id: 0, name: 1, thumbnail: 1}}).toArray((err, result) => {
-                        if (err) throw err;
-                        _designList.push(result[0]); // Can hardcode the result to 0 because objectId's are unique so we only get 1 result
-                        sendClientDesigns(_designList, data);
+                if (result.length != 0) {
+                    // This creates a promise for each search ofthe designs
+                    result.forEach((design, index, result) => {
+                        var promise = designs.collection("Designs").findOne({_id: new ObjectId(design.design)}, {projection: {_id: 0, name: 1, thumbnail: 1}});
                         
-                        // socket.emit("savedDesigns", _designList);
+                        // This async function awaits the result of the promise and if it returns any design, push it to the list
+                        // Once a counter for the items processed is equal to the length of the array being searched, send off the list to the client
+                        async function wait() {
+                            var des = await promise;
+                            itemsProcessed++;
+                            _designList.push(des);
+                            if (itemsProcessed == result.length) {
+                                sendClientDesigns(_designList, data);
+                            }
+                        }
+
+                        wait();
                     });
-                });
-                
-                
+                } else {        // if design list is empty, send it anyway so client can be informed
+                    sendClientDesigns(_designList, data);
+                }
         });
         
     });
+
+
     
     function sendClientDesigns(designList, data) {
         if (data == 0) {
@@ -854,8 +874,6 @@ io.sockets.on('connect', (socket) => {
             socket.on("savePost", () => {
 
             })
-
-            console.log("loadThisBih",data)
 
             //find out how to get the objects from the json file
             var objs = data.objects
@@ -968,7 +986,7 @@ io.sockets.on('connect', (socket) => {
             rooms[roomToDelete].TIMER = setInterval(() => {
                 start++;
 
-                if (start == 10) { //300 for 5 mins
+                if (start == 300) { //300 for 5 mins
                     roomToDelete = roomToDelete.valueOf();      // Use value of to convert roomName back to a primitive so it can be used as needed
                     roomList = roomList.filter(ro => ro.roomName != roomToDelete);  // Remove from roomList
                     clearInterval(this);        // Clear this interval

@@ -170,7 +170,7 @@ function changeBgColour() {
 // This is for debugging and getting recently selected object for attribute manipulation
 canvas.on('selection:created', function() {
     recentlySelected = canvas.getActiveObjects();
-    console.log(JSON.parse(JSON.stringify(recentlySelected)));
+    console.log(recentlySelected);
 })
 
 // Uses a switch case to perform actions for each tool, triggered by onclick when selecting any tool
@@ -1263,7 +1263,12 @@ document.getElementById("newDesign").onclick = () => {
             return obj.id != "DONTDELETE"
         })
 
-        socket.emit('saveDesign', {design: JSON.stringify(design), thumbnail: canvas.toDataURL({format: 'jpeg'})}, dName);
+        // This is used to get the correct dataURL output based off of the viewport the client has
+        var view = canvas.viewportTransform;
+        var pixDense = window.devicePixelRatio;
+
+
+        socket.emit('saveDesign', {design: JSON.stringify(design), thumbnail: canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom())/pixDense, height:(canvasHeight*canvas.getZoom())/pixDense, left:view[4], top:view[5]})}, dName);     // the canvas.toDataUrl creates an image of the whole collab room, using logic to get the correct width and height
     }
 }
 var recordedSaveNames = [];
@@ -1280,22 +1285,30 @@ function saveDesign() {
         names.forEach((name) => {
             let currentName = document.createElement("div");
             let nameBut = document.createElement("button");
-            nameBut.classList.add("saveButton");
+            nameBut.classList.add("loadButton");
             nameBut.innerHTML = name;
             nameBut.onclick = () => {
-                document.getElementById('save').style.display = "none";
-                var design  = canvas.toJSON(['id']);
+                var conf = confirm("Are you sure you want to overwrite " + name + "?\nThis cannot be undone");
+                if (conf) {
+                    document.getElementById('save').style.display = "none";
+                    var design  = canvas.toJSON(['id']);
+    
+                    // Remove the boundary rectangle from the canvas JSON
+                    design.objects = design.objects.filter(function(obj) {
+                        return obj.id != "DONTDELETE"
+                    })
+                    
 
-                // Remove the boundary rectangle from the canvas JSON
-                design.objects = design.objects.filter(function(obj) {
-                    return obj.id != "DONTDELETE"
-                })
+                    // This is used to get the correct dataURL output based off of the viewport the client has
+                    var view = canvas.viewportTransform;
+                    var pixDense = window.devicePixelRatio;
 
-                socket.emit('saveDesign', {design: JSON.stringify(design), thumbnail: canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom()), height:(canvasHeight*canvas.getZoom())})}, name);     // the canvas.toDataUrl creates an image of the whole collab room, using logic to get the correct width and height
+                    socket.emit('saveDesign', {design: JSON.stringify(design), thumbnail: canvas.toDataURL({format: 'jpeg', width:(canvasWidth*canvas.getZoom())/pixDense, height:(canvasHeight*canvas.getZoom())/pixDense, left:view[4], top:view[5]})}, name);     // the canvas.toDataUrl creates an image of the whole collab room, using logic to get the correct width and height
+                }
             }
             if(!recordedSaveNames.includes(name)){
                 currentName.appendChild(nameBut);
-                document.getElementById("saveContent").appendChild(currentName);
+                document.getElementById("designSaveList").appendChild(currentName);
             }
             recordedSaveNames.push(name);
         });
@@ -1319,17 +1332,20 @@ socket.on('saveDesignResponse', (res) => {
 
 // Deletes all objects on canvas and sends emit telling other clients to do so as well
 function deleteDesign() {
-    // wipe the undo/redo stacks if a design is loaded, or the design is deleted
-    undoStack = [];
-    redoStack = [];
-    socket.emit('canvasUpdate', {type: "deleteDesign"});
-    for (var i of canvas.getObjects()) {
-        if (i.id != 'DONTDELETE') {         // Ignores boundary rectangle
-            canvas.remove(i);
-        }
-    }    
-    canvas.backgroundImage = false; // remove any possible background image
-    canvas.renderAll();
+    var conf = confirm("Are you sure you want to delete the current design?\nThis cannot be undone");
+    if (conf) {
+        // wipe the undo/redo stacks if a design is loaded, or the design is deleted
+        undoStack = [];
+        redoStack = [];
+        socket.emit('canvasUpdate', {type: "deleteDesign"});
+        for (var i of canvas.getObjects()) {
+            if (i.id != 'DONTDELETE') {         // Ignores boundary rectangle
+                canvas.remove(i);
+            }
+        }    
+        canvas.backgroundImage = false; // remove any possible background image
+        canvas.renderAll();
+    }
 }
 
 // CSS to close the form
@@ -1360,7 +1376,7 @@ function loadDesign() {
                 }
                 if(!recordedLoadNames.includes(name)){
                     currentName.appendChild(nameBut);
-                    document.getElementById("loadContent").appendChild(currentName);
+                    document.getElementById("designLoadList").appendChild(currentName);
                 }
                 recordedLoadNames.push(name);
             });
