@@ -173,6 +173,16 @@ body::-webkit-scrollbar {
   position: relative;
   transition: all 2s;
 }
+
+.liked-post {
+  display: grid;
+  position: relative;
+  transition: all 2s;
+  width: 384px;
+  margin: auto;
+  padding-top: 44px;
+}
+
 /* .post:hover {
   box-shadow: 0 0 1em .125em rgba(255, 255, 255, 255);
 } */

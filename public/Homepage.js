@@ -421,7 +421,11 @@ function displayPost(posts, forLiked) {
         barImage1.classList.add("bar_img");
         barImage2.classList.add("bar_img");
         barImage3.classList.add("bar_img");
-        postDiv.classList.add("post");
+        if (forLiked) {
+            postDiv.classList.add("liked-post");
+        } else {
+            postDiv.classList.add("post");
+        }
         gridItem.classList.add("grid-item");
         postTop.classList.add("post-top");
         profilePic.classList.add("profile-pic")
