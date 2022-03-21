@@ -38,7 +38,13 @@ body::-webkit-scrollbar {
   display: inline-block;
   font-size: 16px;
   margin: 4px 2px;
+  border-color: white;
   border-radius: 12px;
+}
+.roundBtn:hover{
+  color: black;
+  background-color: white;
+  border: 2px solid black;
 }
 .roundBtn1 {
   position: relative;
@@ -392,17 +398,13 @@ body::-webkit-scrollbar {
   display: inline-block;
   align-items: center;
   justify-content: center;
-  border: none;
-  background-color: whitesmoke;
   cursor: pointer;
   transition-duration: 0.4s;
   text-decoration: none;
 }
 
-#startCollaborating, #addCollaborators :hover{
-    color: white;
-    background-color: inherit;
-    border: 2px solid white;
+#startCollaborating, #addCollaborators{
+ 
 }
 
 #promptButtons, #promptAnswer {
