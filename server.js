@@ -22,6 +22,13 @@ const { isBuffer, forEach } = require("lodash");
 const { createSocket } = require("dgram");
 const { emitWarning } = require("process");
 
+const EventEmitter = require("events")
+const eventEmitter = new EventEmitter();
+const redis = require("redis");
+const redisStore = redis.createClient();
+
+
+
 // Use files from within the file structure
 app.use(express.static(__dirname)); // Serves html files
 app.use(express.static(__dirname + "/public")); //serving style sheets and js files
@@ -261,7 +268,8 @@ app.get("/home", (req, res) => {
     
 })
 // Get request to show the users profile - Will need to make this user specific 
-app.get("/profile", (req, res) => {
+app.get("/profile/:user", (req, res) => {
+    console.log("we are now at profile: ", req.params.user);
     res.sendFile(path.join(__dirname + "/profile.html"));
 })
 
@@ -366,7 +374,7 @@ app.post("/collab_room", (req, res) => {
         return res.redirect("/home");   // This closes the collab menu currently, figure out way to keep it open
     }
     rooms[req.body.roomName] = {users: {}, roomPass: {}};
-    console.log(rooms);
+    console.log("----------------------------", rooms);
     rooms[req.body.roomName].roomPass = req.body.roomPass;
     res.redirect("/collab_room/" + req.body.roomName);
     // This is duplicated lower down, for some reason when using only 1 the rooms dont load until a refresh or
@@ -374,7 +382,6 @@ app.post("/collab_room", (req, res) => {
     // handleRoomCreation();
 
 })
-// Gobal session variable to add to the users list in rooms in sockets
 
 
 let usersSocketMap = new Map();
@@ -448,7 +455,7 @@ updateTemplateTable();  //Initial function call at start
 
 const connectedUsers = [];
 
-let roomName; // Used to assign the users room to a global variable to be used outside of just the join update
+//let roomName; // Used to assign the users room to a global variable to be used outside of just the join update
 
 let usersInRoom;
 // When we connect give every use the rooms available
@@ -476,6 +483,91 @@ io.sockets.on('connect', (socket) => {
     //         socket.join(req.params.roomName);
     //     })
 
+    // When we connect emit an event so we can look up in the database the current users friend list
+
+    socket.on("getFriendsAndPotential", () => {
+        let friendList = {friendName: {}};
+        
+        con.query("SELECT * FROM friends WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+            if (err) throw err;
+
+            con.query("SELECT username FROM users", (err, res) => {
+                if (err) throw err;
+
+                console.log("friends list for user:", socket.request.session.userID, " ->", result);
+
+
+                for (let friend of result) {
+                    friendList.friendName[friend.friendName] = friend.friendName; 
+
+                    for (let i in res) {
+                        if (res[i].username == friendList.friendName[friend.friendName] || res[i].username == socket.request.session.username) {
+                            console.log("we are friends with", friend.friendName);
+                            res.splice(i, 1);
+                        }
+                    }
+                }
+                console.log("real friends list", friendList);
+
+                socket.emit("returnFriends", result);
+
+            // Create a place in the redis store to store the friends of each user
+            // MAYBE USE REDIS
+                console.log("THIS IS OUR RES ARRAY", res);
+                socket.emit("returnPotentialFriends", res);
+            
+            // redisStore.hSet(socket.request.session.userID, friendList);
+            // redisStore.hGetAll(socket.request.session.userID, (err, result) => {
+            //     console.log("we got this from redis", result);
+            // });
+            
+            
+            
+
+            })
+
+        })
+    })
+
+    // Sends a friend request to a user by storing it in the database -> this is cleared when the recipient accepts  or declines the request
+    socket.on("friendRequested", user => {
+        console.log("this is our friend request to", user.user);
+
+        con.query("SELECT userID FROM users WHERE username = ?", [user.user], (err, result) => {
+            if (err) throw err;
+
+            con.query("INSERT INTO friendRequests (userID, requestorName) VALUES (?, ?)", [result[0].userID, socket.request.session.username], (err, res) => {
+                if (err) throw err;
+
+
+            })
+        })
+
+        
+    })
+    // Gets all friend requests that have been sent to a user
+    socket.on("getFriendRequests", () => {
+        con.query("SELECT * FROM friendRequests WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+            if (err) throw err;
+            console.log("THIS IS OUR FRIEND REQUESTS", result);
+            socket.emit("returnFriendRequests", result);
+        })
+    })
+    // Accepts a friend request -> delete from friendRequest table and add the friendship to friends table
+    socket.on("friendAccepted", user => {
+        con.query("INSERT INTO friends (userID, friendName) VALUES (?, ?)", [socket.request.session.userID, user.user], (err, result) => {
+            if (err) throw err;
+        })
+        con.query("DELETE FROM friendRequests WHERE userID =? AND requestorName = ?", [socket.request.session.userID, user.user], (err, result) => {
+            if (err) throw err;
+        })
+    })
+    // Declines a friend request from a user => delete from friendRequest table
+    socket.on("friendDeclined", user => {
+        con.query("DELETE FROM friendRequests WHERE userID = ? AND requestorName = ?", [socket.request.session.userID, user.user], (err, result) => {
+            if (err) throw err;
+        })
+    })
 
     //     console.log(rooms);
 
@@ -1050,14 +1142,62 @@ io.sockets.on('connect', (socket) => {
             }, 1000);
         }
     }
-
+    // Get the users own profile by getting their session username and sending it to the client to make a get request with that name
+    socket.on("getUsersProfile", () => {
+        socket.emit("returnUsersProfile", ({username: socket.request.session.username}));
+    })
     
+    // Gets the details for the users profile (posts, username etc.)
+    socket.on("details", (data) => {
+        let posts = [];
 
-    socket.on("details", () => {
 
-        con.query("SELECT * FROM users", (err, result) => {
+        con.query("SELECT * FROM users WHERE username = ?", [data.user], (err, result) => {
             if (err) throw err;
-            socket.emit("accountDetails", {username: socket.request.session.username});
+            con.query("SELECT * FROM posts WHERE userID = ?", [result[0].userID], (err, res) => {
+                if (err) throw err;
+                // If the user has no posts then just send their username over so the profile still shows properly
+                if (res.length == 0) {
+                    post = {user: data.user}
+                    posts.push(post);
+                    socket.emit("accountDetails", posts);
+                } else {
+
+                    for (let i = 0; i < res.length; i++) {
+
+                        designs.collection("Designs").find({_id: new ObjectId(res[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, r) => {
+                            let image = r[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                            let name = data.user; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                            if (res[i].likes == null) res[i].likes = 0;
+                            post = {name: res[i].postName, caption: res[i].postCaption, design: image, user: name, likes: res[i].likes, id: res[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
+                            posts.push(post);
+
+                            socket.emit("accountDetails", posts);
+                            
+                            if (res[i].likes == 0) {
+                                socket.emit("likedByUsers", {likes: 0})
+                            } else {
+                                
+                                con.query("SELECT * FROM likes WHERE postID = ?", [res[i].postID], (err, res) => {
+                                    if (err) throw err;
+                                    for (let i of res) {
+                                        
+                                        con.query("SELECT username FROM users WHERE userID = ?", [i.userID], (err, r) => {
+                                            postLikes[i.postID] = {userIDs: {}}
+                                            postLikes[i.postID].userIDs[i.userID] = i.userID
+                                            
+                                            socket.emit("likedByUsers", {likes: postLikes});
+                                        })
+                                        
+                                    }
+                                })
+                            }
+                        
+                        });
+                    }
+                }
+
+            });
         })
 
         
@@ -1212,8 +1352,6 @@ io.sockets.on('connect', (socket) => {
         con.query("SELECT postID, postName, postCaption, design, userID, likes FROM posts WHERE userID = ?", [socket.request.session.userID], (err, result) => {
             if (err) throw err;
             if (result.length == 0) {return}
-            console.log("resulllll", result);
-            console.log("this sis our result", result);
             for (let i = 0; i < result.length; i++) {
                 
                 con.query("SELECT username FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
@@ -1387,12 +1525,13 @@ io.sockets.on('connect', (socket) => {
         
         con.query("SELECT profilePicture FROM users WHERE username = ?", [data.username], (err, result) => {
             if (err) throw err;
+            console.log("profile pic", result);
             if (result[0].profilePicture == undefined) result[0].profilePicture = "/public/assets/icons/empty-profile-picture.jpeg"
 
             result[0].profilePicture = Buffer.from(result[0].profilePicture).toString('base64');
             result[0].profilePicture = "data:image/png;base64," + result[0].profilePicture.toString("base64");
 
-            console.log("this is our picture stored", result);
+            // console.log("this is our picture stored", result);
 
             socket.emit("returnProfile", {picture: result[0].profilePicture});
         })
@@ -1475,8 +1614,15 @@ io.sockets.on('connect', (socket) => {
             });
         })
     })
+    // Searches for a friend in the current friends list
+    socket.on("searchForCurrentFriend", () => {
 
+    })
     
+    // Searches for a new friend
+    socket.on("searchForNewFriend", () => {
+
+    })
 });
 
 app.use(router);

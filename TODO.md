@@ -27,9 +27,9 @@
     * [X] ~~*Delete rooms after 5 minutes with nobody in them*~~ [2022-03-04]
 
 * [ ] Profile page
-    * [ ] Sort routing for profile page, go to /account/:username
-    * [ ] Add your posts to the page -> carousel of most recent posts
-    * [ ] Adding picture to your profile -> socket.io file upload instead of express file upload
+    * [X] ~~*Sort routing for profile page, go to /account/:username*~~ [2022-03-21]
+    * [X] ~~*Add your posts to the page -> carousel of most recent posts*~~ [2022-03-21]
+    * [X] ~~*Adding picture to your profile -> socket.io file upload instead of express file upload*~~ [2022-03-21]
     * [ ] Change tags somewhere either in here on in a settings page for editing profile
 
 * [ ] Settings page 
@@ -73,3 +73,14 @@ Bugs:
 
 * [X] ~~*Error handling for flagging posts twice.*~~ [2022-03-17]
 * [ ] If there are no posts in the second column of the feed then we get an error and the animation for viewing comments cannoy play
+
+* [X] ~~*Drawings printing to the most recent room drawn*~~ [2022-03-19]
+
+* [ ] Put a make mod button on each persons profile for moderators to see
+* [ ] Finish Friends
+* [X] ~~*Routing for profile page*~~ [2022-03-21]
+* [X] ~~*Clean up profile page*~~ [2022-03-21]
+* [ ] Browse for friends using a search bar -> just query the database and return the person with the username that the person searched for
+* [ ] Remove the ability to change a persons picture on their profile if its not the users own profile -> check if the pathname == username in session data
+* [ ] Search for adding collaborators using same method as searching for friends
+* [ ] 

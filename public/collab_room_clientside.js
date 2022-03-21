@@ -389,6 +389,8 @@ function straightMouseUp(o) {
     canvas.renderAll();
     obj.setCoords();
 
+    
+
     socket.emit('canvasUpdate', {"change": obj, "type" : "add"}, function(id) {
         if (id != null) {
             obj.id = id;
@@ -465,6 +467,7 @@ canvas.on("path:created", function (e) {
 
 function sendPath(e) {
     if (e) {
+        let room = getRoom();
         if (canvas.freeDrawingBrush.type == 'eraser') { // if the line drawn is an eraser line
             var intersectList = [];
 
@@ -487,7 +490,7 @@ function sendPath(e) {
             }
         } else {
             // If the line drawn is with the pencil tool, send the relevant object details to the server
-            socket.emit('canvasUpdate', {"change": {path: e.path, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add"}, function(id) {
+            socket.emit('canvasUpdate', {"change": {path: e.path, id: null, stroke: colour, lineWidth: lineWidth}, "type" : "add", roomName: room}, function(id) {
                 if (id != null) {       // Get the id of the line from the server callback
                     e.id = id;
                 }
@@ -1240,7 +1243,7 @@ function sendData() {
 
     var data = {date: Date.now(), roomName: room};
     console.log("room in data", data.roomName)
-
+    console.log("what is happening");
     socket.emit("canvasUpdate", (data));
 }
 

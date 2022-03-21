@@ -1,11 +1,16 @@
-body {
-    font-family: "fira code";
+html, body {
     margin: 0;
     padding: 0;
-    background-color: rgb(29, 29, 29);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background-color: black;
+    
+}
+
+h1{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: white;
+    font-weight: 600%;
+    text-align: center;
+    
 }
 
 /* Text CSS */
@@ -21,14 +26,17 @@ h2{
     font-weight: 500%;
 }
 
-button:hover {
-  cursor: pointer;
+h3{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: white;
+    font-weight: 300%;
 }
 
 /* Landing page text CSS */
 .comp_txt {
-    overflow: hidden;
+    overflow:hidden;
     text-decoration: none;
+    display: flex;
 }
 
 .comp_txt h2 {
@@ -39,13 +47,144 @@ button:hover {
 }
 
 .comp_txt p {
-    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-    font-size: 30px;
+    font-family:sans-serif;
+    font-size: 25px;
     position: fixed;
     margin-left: 20px;
-    top: 470px;
+    top: 400px;
     font-weight: lighter;
-    
+}
+
+/* Tags CSS */
+
+
+.tags_txt {
+    overflow:hidden;
+    text-decoration: none;
+    display: flex;
+}
+
+.tags_txt h2 {
+    font-size: 60px;
+    text-align: center;
+}
+
+.tags_txt p {
+    font-family:sans-serif;
+    font-size: 25px;
+    text-align: justify;
+    font-weight: lighter;
+}
+
+/*
+.select {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 3000px;
+  grid-gap: 1px;
+}
+
+.select__item {
+  padding: 100px;
+  cursor: pointer;
+  font-family: "Heebo", sans-serif;
+  text-align: center;
+  border-radius: 3px;
+  background: #eeeeee;
+  background-image: url(public/assets/tagAssets/games.jpg);*/
+/*
+  transition: background 0.3s;
+}
+
+.select__item--selected {
+  background: #009578;
+  color: #ffffff;
+}
+*/
+/*
+option .Streetwear{
+    background-image: url(public/assets/tagAssets/games.jpg);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+
+
+.column {
+  flex: 25%;
+  max-width: 25%;
+  padding: 0 4px;
+}
+
+.column img {
+  margin-top: 8px;
+  vertical-align: middle;
+  width: 100%;
+}
+*/
+
+.my-select-box{
+  display:grid !important;
+  width:100%;
+  overflow:hidden;
+  border:none;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;  
+  color: aliceblue;
+  font-size: 60px;
+  text-align: center;
+}
+
+.Streetwear{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Streetwear.png)
+}
+.Grunge{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Grunge.png)
+}
+.Formal{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Formal.png)
+}
+.Athletic{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Athletic.png)
+}
+.Urban{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Urban.png)
+}
+.Avante-Garde{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Avante-Garde.png)
+}
+.Runway{
+    padding:120px;
+    background-image:url(public/assets/tagAssets/Runway.png)
+}
+
+.tags_button #button{
+  border: none;
+  background-color: whitesmoke;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 20px;
+  text-decoration: none;
+  margin-left: 20px;
+  cursor: pointer;
+  position: relative;
+  transition-duration: 0.4s;
+}
+
+.tags_button #button:hover{
+    color: white;
+    background-color: inherit;
+    border: 2px solid white;
 }
 
 /* Landing page buttons CSS */
@@ -59,9 +198,8 @@ button:hover {
 .topnav img {
   width: 150;
   height: 75;
-  margin-left: 20;
-  position: fixed;
-  top: 20px;
+  text-align: justify;
+  justify-content: left;
 }
 
 .topnav a {
@@ -79,7 +217,7 @@ button:hover {
   color: black;
 }
 
-.start_button button{
+.start_button #button{
   border: none;
   background-color: whitesmoke;
   padding: 15px 32px;
@@ -91,11 +229,11 @@ button:hover {
   margin-left: 20px;
   cursor: pointer;
   position: fixed;
-  top: 630px;
+  top: 540px;
   transition-duration: 0.4s;
 }
 
-.start_button button:hover{
+.start_button #button:hover{
     color: white;
     background-color: inherit;
     border: 2px solid white;
@@ -107,215 +245,135 @@ button:hover {
     background-color: transparent;
     border: none;
     padding: 10px;
-    margin-top: 1%;
+    margin-top: 3.5vh;
     text-align: center;
 }
 
 /* CSS for upper and lower section of collab room */
-.collabRoomHeaderFooter{
+.headerFooter{
+    background-color: black;
     width: 100%;
-    height: 12%;
-    position: absolute;
-    border: 0px;
-}
-
-/* Users in the top right of the collab rooms */
-.participants {
-  padding: 5px;
-  margin-top: 1.75%;
-  float: right;
-  font-size: 24px;
-  color: white;
-}
-/* Images for users */
-.participants img {
-  height: 4vh;
-  width: auto;
-  background-color: transparent;
-  display: block;
-}
-
-.load, .save{
-  top: 0;
-  left: 0;
-  position: fixed;
-  height: 100vh;
-  width: 100vw;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
-  .load, .save {
-      -webkit-backdrop-filter: blur(6px);
-      backdrop-filter: blur(1rem);
-  }
-}
-
-.loadButton{
-  text-align: center;
-  background-color: transparent;
-  border: none;
-  color: white;
-  padding: 20px;
-  display: inline-block;
-  font-size: 16px;
-  margin: 4px 2px;
-  border-radius: 12px;
-  top: 0;
-
-}
-
-.loadContent, .saveContent{
-  width: 650px;
-  height: 900px;
-  max-width: 100%;
-  padding: 30px 50px;
-  margin: 0;
-  border-radius: 12px;
-  background-color: rgb(29, 29, 29);
-  color: blue;
-}
-
-#designLoadList, #designSaveList {
-  overflow: auto;
-  height: 800px;
-
-
-  /* This hides the scrollbar for some browsers */
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* This hides the scrollbar for Chrome and other browsers */
-#designLoadList::-webkit-scrollbar, #designSaveList::-webkit-scrollbar {
-  display: none;
-}
-
-
-.close{
-  position: fixed;
-  top: 8%;
-  right: 1%;
-  padding: 5px 5px;
-  border: none;
-  background-color: transparent;
-}
-#colourThicknessSelect{
-  z-index: 3;
-  top: 12.5%;
-  position: absolute;
-  background-color: white;
-  border: 3px solid black;
-  left: 5
-}
-
-#toolSelect {
-  background-color: white; 
-  border: 3px solid black; 
-  position: absolute; 
-  z-index: 3;
-  left: 5px;
-  top: 30%;
+    height: 12.5%;
 }
 
 #toolSelect table tr td button{
   width: 50px;
   height: 50px;
   color: black;
-  background-color: darkgrey;
 }
 
-#toolSelect table tr td button img {
-  width: 50px;
-  height: 50px;
-  margin-top: -2px;
-  margin-left: -8px;
-}
-
-.collabBtn img{
-  height: 5vh;
-  width: auto;
-  margin-left: auto;
-  margin-right: auto;
-  display: block;
-}
-
-.topnav {
-  --clr: #ff6492;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  
-  width: 100%;
-  gap: 20px;
-}
-
-.nav-menu {
-  position: relative;
-  display: grid;
-  grid-auto-columns: 5em;
-  /* grid-auto-flow: column; */
-  grid-template-columns: repeat(4, 1fr);
-  box-sizing: border-box;
-}
-
-
-
-.nav-menu > :nth-child(1):hover::before {
-  width: 145;
-  filter: drop-shadow(0 0 25px var(--clr));
-}
-.nav-menu > :nth-child(2):hover::before {
-  width: 84;
-  filter: drop-shadow(0 0 25px var(--clr));
-}
-.nav-menu > :nth-child(3):hover::before {
-  width: 88;
-}
-.nav-menu > :nth-child(4):hover::before {
-  width: 93;
-  filter: drop-shadow(0 0 25px var(--clr));
-}
-
-.nav-menu a {
-  font-size: 1.125em;
-  text-decoration: none;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255,255,255,0.5);
-}
-.nav-menu a:hover {
-  background: transparent;
-}
-.nav-menu a::before {
-  content: attr(data-text);
-  position: absolute;
-  color: var(--clr);
-  width: 0;
-  overflow: hidden;
-  transition: 1s;
-  -webkit-text-stroke: 1px var(--clr);
-}
-
-.header {
-  position: fixed;
-  z-index: 9999;
-  top: 0;
-  width: 100%;
-  height: 5%;
-  border-bottom: solid 0.5px;
-  border-color: rgb(75, 71, 71);
-}
-
-.flex {
-  display: flex;
-  gap: var(--gap, 2rem);
-}
-
+/* Profile Page CSS */
 /*
-CSS for the Tags page
+.profile_pic img {
+    height: 200px;
+}
 */
+
+.profile_pic img{
+    height: 200px;
+}
+
+.profile_pic {
+    height:200px;
+    width:200px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%); 
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid grey;
+}
+    
+
+
+#file{
+    display:none;
+}
+#submit {
+    display: none;
+}
+
+
+#uploadBtn{
+    height: 40px;
+    width: 10%;
+    position: absolute;
+    bottom: 0;
+    transform: translateX(-50%);
+    left: 25%;
+    text-align: center;
+    background: transparent;
+    line-height: 30px;
+    font-size: 15px;
+    cursor: pointer;
+    color: white;
+    
+}
+#finishBtn {
+    height: 40px;
+    width: 10%;
+    position: absolute;
+    bottom: 0;
+    transform: translateX(-50%);
+    left: 58%;
+    text-align: center;
+    background: transparent;
+    line-height: 30px;
+    font-size: 15px;
+    cursor: pointer;
+    color: white;
+}
+/* Centering username for profile page */
+.username {
+    padding-top: 15%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* Random shit cause bored */
+.ModaLab {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8rem;
+    margin-left: 20rem;
+    margin-top: 1rem;
+    padding: 0.25em 1em;
+    color: white;
+    display: inline-block;
+    border: currentColor 0.025em solid;
+    cursor: pointer;
+    background-color: transparent;
+    border-radius: 0.25em;
+
+    text-shadow: 0 0 0.4em rgb(109, 104, 108),0 0 0.2em currentColor;
+
+    box-shadow: inset 0 0 0.25em 0 white, 0 0 0.25em 0 white;
+    position: relative;
+}
+
+.ModaLab::before {
+    content: "";
+    position: absolute;
+    background: white;
+    top: 120%;
+    left: 0;
+    height: 100%;
+    width: 100%;
+
+    transform: perspective(1em) rotateX(40deg) scale(1, 0.35);
+    filter: blur(1em);
+}
+.ModaLab::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-shadow: 0 0 2em 0.25em currentColor;
+    border-radius: 0.25em;
+}
+
+.ModaLab:hover {
+    background: rgb(0, 0, 0);
+    text-shadow: 0;
+}

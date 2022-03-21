@@ -11,6 +11,7 @@
     grid-template-columns: 24em 24em 24em;
     /* grid-template-rows: 29.75em; */
     text-align: center;
+    padding-top: 10%;
   }
 
   .flag {
@@ -82,4 +83,3 @@
     /* transition: transform 1s;
     transition-delay: 1s; */
   }
-  
