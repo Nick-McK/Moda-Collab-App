@@ -274,7 +274,7 @@ app.get("/profile/:user", (req, res) => {
 })
 
 // Maybe make post request to profile page for x user for PP upload
-app.post("/profile", (req, res) => {
+app.post("/profile/:user", (req, res) => {
     let uploadPath;
 
     console.log("asasdfasdf", req.files);
@@ -686,15 +686,15 @@ io.sockets.on('connect', (socket) => {
 		x = result[0]; 
 	})
 
-    // TODO: Change the naming of this
-	console.log(x);
-	socket.on("fat", () => {con.query("SELECT * FROM tags WHERE userID = ?", [x], (err, result) => {
-        if (err) {
-            throw err;
-        }
-		socket.emit("fuckKnows", result);
-		console.log(result);
-	})});
+    
+	// console.log(x);
+	// socket.on("fat", () => {con.query("SELECT * FROM tags WHERE userID = ?", [x], (err, result) => {
+    //     if (err) {
+    //         throw err;
+    //     }
+	// 	socket.emit("fuckKnows", result);
+	// 	console.log(result);
+	// })});
 
     socket.on("canvasUpdate", (data, callback) => {
 
@@ -1151,6 +1151,8 @@ io.sockets.on('connect', (socket) => {
     socket.on("details", (data) => {
         let posts = [];
 
+        let postLikes = {};
+        let userIDs = {};
 
         con.query("SELECT * FROM users WHERE username = ?", [data.user], (err, result) => {
             if (err) throw err;
@@ -1533,7 +1535,7 @@ io.sockets.on('connect', (socket) => {
 
             // console.log("this is our picture stored", result);
 
-            socket.emit("returnProfile", {picture: result[0].profilePicture});
+            socket.emit("returnProfile", {picture: result[0].profilePicture, user: socket.request.session.username});
         })
         
     })
@@ -1553,12 +1555,35 @@ io.sockets.on('connect', (socket) => {
         });
     });
 
-    socket.on("getModStatus", () => {
-        con.query("SELECT isMod FROM user_details WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+    socket.on("getModAndAdminStatus", (data) => {
+        con.query("SELECT isMod, isAdmin FROM user_details WHERE userID = ?", [socket.request.session.userID], (err, result) => {
             if (err) throw err;
             console.log("mod status", result);
             if (result.length === undefined) result[0].isMod = 0;
-            socket.emit("returnModStatus", {isMod: result[0].isMod});
+            socket.emit("returnModAndAdminStatus", {isMod: result[0].isMod, isAdmin: result[0].isAdmin});
+        })
+        con.query("SELECT userID FROM users WHERE username = ?", [data.user], (err, result) => {
+            if (err) throw err;
+            con.query("SELECT isMod FROM user_details WHERE userID = ?", [result[0].userID], (err, result) => {
+                if (err) throw err;
+    
+                socket.emit("returnProfileModStatus", {isMod: result[0].isMod});
+            })
+        })
+        
+    })
+    // Makes a user a mod if an admin has decided it is okay
+    socket.on("makeMod", (data) => {
+        con.query("UPDATE user_details SET isMod = ? WHERE username = ?", [1, data.user], (err, result) => {
+            if (err) throw err;
+            console.log(data.user, " has been made a moderator");
+        })
+    })
+    // Removes mod status
+    socket.on("removeMod", (data) => {
+        con.query("UPDATE user_details SET isMod = ? WHERE username = ?", [0, data.user], (err, result) => {
+            if (err) throw err;
+            console.log(data.user, " is no longer a moderator");
         })
     })
 

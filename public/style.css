@@ -326,7 +326,7 @@ option .Streetwear{
 }
 /* Centering username for profile page */
 .username {
-    padding-top: 15%;
+    padding-top: 10%;
     display: flex;
     justify-content: center;
     align-items: center;

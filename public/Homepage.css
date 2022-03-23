@@ -564,7 +564,7 @@ sup {
 .friends-container {
   height: 90%;
   width: 15%;
-  display: flex;
+  display: none;
   justify-content: flex-start;
   flex-direction: column;
   background-color: inherit;
@@ -576,26 +576,33 @@ sup {
 
 /* The div that holds the name and any other information eg add, decline etc.. */
 .friend-content {
-  height: 3.5%;
+  height: 10%;
   display: flex;
   border-top: solid 1px;
   border-bottom: solid 1px;
   border-color: rgb(75, 71, 71);
+  background-color: black;
+  color: white;
   /* background-color: white; */
 }
-.addBtn {
-  
+.friends, .friend-recommendations, .friend-requests {
+  height: 33%;
+  width: 100%;
+  overflow-y: auto; /* Scroll bar if we have a lot of friends*/
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 
-@keyframes friends{
+/* @keyframes friends{
   0% {
     height: 0;
   }
   100% {
     height: 90%;
   }
-}
+} */
 @keyframes friends-reverse{
   0% {
     height: 90%;
@@ -617,15 +624,17 @@ sup {
 }
 /* Next 3 classes are for the search bar at the top of the friends container */
 .search-div {
-  padding-bottom: 15%;
+  padding-bottom: 4%;
 }
 .search-bar {
   position: absolute;
-  width: 80%;
+  height: 2%;
+  width: 90%;
   top: 1%;
-  left: 0;
-  background-color: rgb(75, 71, 71);
-  border-radius: 10px;
+  left: 5%;
+  /* background-color: rgb(75, 71, 71); */
+  border-radius: 5px;
+  border: none;
   font-size: 12px;
 
 }
@@ -635,8 +644,9 @@ sup {
   top: 1%;
   left: 80%;
   color: black;
-  background-color: rgb(75, 71, 71);
-  border-radius: 5px;
+  /* background-color: rgb(75, 71, 71); */
+  border-radius: 2px;
+  border: none;
   font-size: 12px;
 }
 .no-round {

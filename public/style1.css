@@ -2,7 +2,7 @@ body {
     font-family: "fira code";
     margin: 0;
     padding: 0;
-    background-color: rgb(29, 29, 29);
+    background-color: rgba(15, 15, 15, 255);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -13,6 +13,13 @@ p{
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
     font-size: 16px;
     color: white;
+}
+h1{
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  color: white;
+  font-weight: 600%;
+  text-align: center;
+  
 }
 
 h2{

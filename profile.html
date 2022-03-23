@@ -1,17 +1,21 @@
 <html lang="en">
     <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
         <title>Moda Lab</title>
         
+        <link rel="stylesheet" type="text/css" href="/public/style1.css" />
+        <!-- <link rel="stylesheet" type="text/css" href="/public/style.css" /> -->
         
-        <link rel="stylesheet" type="text/css" href="/public/style.css" />
-        <link rel="stylesheet" type="text/css" href="/public/Homepage.css" />
         <link rel="stylesheet" type="text/css" href="/public/profile.css" />
-        <!-- <link rel="stylesheet" type="text/css" href="./public/style1.css" /> -->
+        <!-- <link rel="stylesheet" type="text/css" href="/public/Homepage.css" /> -->
+        
+        
         
     </head>
     <body>
-
+      <div class="help" id="help">
+        <h1 class="username" id="username"></h1>
+      </div>
       <div class="collabContainer" id="commentsContainer">
         <div class="collabContent" id="commentsContent">
           <section class="postImage">
@@ -28,47 +32,59 @@
             </div>
           </form>
           
-        </div>
-        <button class="roundBtn_noBorder close" id="closeComments">
-          <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
-        </button>
-      </div>
-
-        <section class = "header">
-            <img id="logo" src="/public/assets/icons/logo-inverted.png" alt="Moda Lab">
-        </section>
-        
-        <section class = "profile_pic">
-            <img src="/public/assets/icons/empty-profile-picture.jpeg" id="photo">
-            <form method="post" action="/profile" enctype="multipart/form-data">
-                <input type="file" id="file" name="profilePic"/>
-                <input type="submit" id="submit" value="Upload!"/>
-                <label for="file" id="uploadBtn">Choose Photo</label>
-                <label for="submit" id="finishBtn">Finish</label>
-            </form>
-        </section>
-        <script src="/socket.io/socket.io.js"></script>
-        <script src ="/public/pic.js"></script>
-        <!-- <h1>Username</h1> -->
-        <div class = "text">
-            <h3>Fashion Interests inlcude:</h3>
-        </div>
-
-        
-        <div class="feed" id="_feed">
-            <!-- <div class="post">
-              <div class="post-top">
-                <div class="profile-pic"> <img class="profile-pic" src="/public/assets/icons/empty-profile-picture.jpeg"/></div>
-                <div class="account" style="color: white; padding-left: .5em"></div>
-              </div>
-              <div class="grid-item"> <img class="post_img" src="public\assets\icons\logo.png" alt="Moda Lab"></div>
-              <div class="post-bar">
-                <div><img class="bar_img" src="public\assets\icons\heart-inverted.png" alt="save"><sup>1</sup></div>
-                <div><img class="bar_img" src="public\assets\icons\archive-box-inverted.png" alt="archive"></div>
-                <div><img class="bar_img" src="public\assets\icons\chat-circle-inverted.png" alt="more"></div>
-              </div>
-            </div> -->
           </div>
+          <button class="roundBtn_noBorder close" id="closeComments">
+          <img src="/icons/x-inverted.png" style="height:4vh; width:auto; display: flex"/>
+          </button>
+        </div> 
+      <div class="header flex" id="header">
+        <img id="logo" src="/public/assets/icons/logo-inverted.png" alt="Moda Lab">
+          <div class = "topnav">
+            <div class="nav-menu">
+              <a href="/moderator/posts" id="mods" target="_self" data-text="&nbsp;Moderation">&nbsp;Moderation</a>
+              <a href="#" id="profile" class="" target="_self" data-text="&nbsp;Profile">&nbsp;Profile</a>
+              <a href="#" id="friends" target="_self" data-text="&nbsp;Friends">&nbsp;Friends</a>
+              
+              <a href="/account/login" class="" target="_self" data-text="&nbsp;Logout">&nbsp;Logout</a>
+              </div>             
+            </div>
+        </div>
+
+      
+
+        
+
+          <section class = "profile_pic">
+              <img src="/public/assets/icons/empty-profile-picture.jpeg" id="photo">
+              <form id="profilePicForm" method="post" action="/profile" enctype="multipart/form-data">
+                  <input type="file" id="file" name="profilePic"/>
+                  <input type="submit" id="submit" value="Upload!"/>
+                  <label for="file" id="uploadBtn">Choose Photo</label>
+                  <label for="submit" id="finishBtn">Finish</label>
+              </form>
+          </section>
+          
+          <div class="profile-buttons" id="_profile-buttons">
+            <button class="add-friend" id="_add-friend">Add Friend</button>
+            
+          </div>
+          <div class="separator"/>
+
+
+          <div class = "text">
+             <h3>Fashion Interests inlcude:</h3>
+          </div>
+          <!-- Im not sure why we need wrappers for this and the username but if we don't have it then they dont work -> DONT TOUCH -->
+          <div class="wrapper">
+            <div class="feed" id="_feed">
+              
+            </div>
+          </div>
+
+        
+        
+          <script src="/socket.io/socket.io.js"></script>
+          <script src ="/public/pic.js"></script>
           <!-- <script src="/public/Profile.js"></script> -->
     </body>
 </html>

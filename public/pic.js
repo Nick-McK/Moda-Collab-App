@@ -6,7 +6,6 @@ const uploadBtn = document.querySelector('#uploadBtn');
 
 const finishBtn = document.getElementById("finishBtn");
 
-const div = document.createElement("h1");
 let data;
 
 
@@ -25,6 +24,13 @@ const commentSection = document.getElementById("_comments")
 const commentText = document.getElementById("comment");
 
 const feed = document.getElementById("_feed");
+const header = document.getElementById("header");
+// let div = document.createElement("div");
+// const help = document.getElementById("help");
+const pictureForm = document.getElementById("profilePicForm");
+// const mod = document.getElementById("_mod");
+const addFriend = document.getElementById("_add-friend")
+
 
 
 function getUser() {
@@ -37,6 +43,7 @@ let posted = [];
 let commented = [];
 
 window.onload = () => {
+    socket.emit("getModAndAdminStatus", {user: getUser()});
     // Gets the username from the URL to send to the server and get all the relevant details
     let user = getUser();
 
@@ -46,18 +53,20 @@ window.onload = () => {
     
 
     socket.on("accountDetails", posts => {
-
+        
 
         console.log("posts", posts);
         for (let post of posts) {
             let username = post.user;
-
+            
             console.log("this is username", username);
             
+            let div = document.getElementById("username");
             
+            // div.classList.add("username");
             div.innerHTML = username;
-            div.classList.add("username");
-            document.body.prepend(div);
+            
+            // header.after(div);
             console.log("username", post.user);
 
             for (let post of posts) {
@@ -627,11 +636,76 @@ window.onload = () => {
         // newimg.setAttribute("src", data.picture);
     
         // div1.appendChild(newimg);
-    
-        img.setAttribute("src", data.picture);
+        if (data.picture != null) {
+            img.setAttribute("src", data.picture);
+        } else {
+            img.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg")
+        }
+        // This sets the post request to be to the current users profile
+        // Slightly redundant since you can only make a post request on your own profile
+        test.setAttribute("action", "/profile/" + getUser());
+
+        if (getUser() == data.user) {
+            console.log("THIS IS YOUR PROFILE");
+            uploadBtn.style.display = "flex";
+            finishBtn.style.display = "flex";
+        }
+
+
+    })
+
+    socket.on("returnModAndAdminStatus", data => {
+        if (data.isMod == 0) {
+            let mods = document.getElementById("mods");
+            mods.style.display = "none";
+            // modNav.style.display = "grid";
+        }
+        if (data.isAdmin == 1) {
+            // Make this using JS to better protect against people just changing the mod display value to flex and making themselves a mod
+            let mod = document.createElement("button");
+            mod.classList.add("mod");
+            let buttons = document.getElementById("_profile-buttons");
+            mod.innerHTML = "Make Moderator";
+            buttons.appendChild(mod);
+            // If we are an admin display make mod button and style it
+            // So that the add friend button is always on the right
+            // Prevents accidental modding of users
+            mod.style.display = "flex";
+            mod.style.top = "0";
+            mod.style.left = "-50%";
+            addFriend.style.left = "50%";
+            addFriend.style.top = "0";
+
+            mod.addEventListener("click", () => {
+                socket.emit("makeMod", {user: getUser()});
+            })
+
+            // Determines whether the profile we are on is a mod, so we can display a remove mod button instead of a make mod button
+            socket.on("returnProfileModStatus", profile => {
+                if (profile.isMod == 1) {
+                    mod.innerHTML = "Remove Moderator";
+
+                    mod.addEventListener("click", () => {
+                        socket.emit("removeMod", {user: getUser()});
+                    })
+                }
+            })
+        }
+        
     })
 
 }
+
+const profile = document.getElementById("profile");
+profile.onclick = () => {
+    socket.emit("getUsersProfile");
+}
+// Redirects the user to their own profile
+socket.on("returnUsersProfile", (user) => {
+    console.log("users", user.user)
+    window.location.href = "/profile/" + user.username;
+})
+
 
 
 

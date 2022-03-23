@@ -17,11 +17,11 @@
 * [ ] Tags
     * [X] ~~*Select tags*~~ [2022-03-09]
     * [X] ~~*Assign tags to profile*~~ [2022-03-09]
-    * [ ] Only see posts with tags you've flagged -> Daniel
+    * [ ] Only see posts with tags you've flagged
     * [ ] communities? -> lets you browse for different styles
 
 * [ ] Rooms
-    * [ ] Add collaborators to rooms with button
+    * [ ] Search for adding collaborators using same method as searching for friends
     * [ ] Search room names
     * [ ] Add required fields to name and password
     * [X] ~~*Delete rooms after 5 minutes with nobody in them*~~ [2022-03-04]
@@ -31,31 +31,38 @@
     * [X] ~~*Add your posts to the page -> carousel of most recent posts*~~ [2022-03-21]
     * [X] ~~*Adding picture to your profile -> socket.io file upload instead of express file upload*~~ [2022-03-21]
     * [ ] Change tags somewhere either in here on in a settings page for editing profile
+    * [X] ~~*Remove the ability to change a persons picture on their profile if its not the users own profile -> check if the pathname == username in session data*~~ [2022-03-23]
+    * [X] ~~*Clean up profile page*~~ [2022-03-23]
+    * [X] ~~*Put a make mod button on each persons profile for moderators to see*~~ [2022-03-23]
 
 * [ ] Settings page 
     * [ ] Change username
     * [ ] password
     * [ ] Bio
     * [ ] possible change real name
-    * [ ] Change profile pic -> move from just being on profile page maybe
+    * [X] ~~*Change profile pic -> move from just being on profile page maybe*~~ [2022-03-23]
 
 * [ ] Moderation
     * [X] ~~*Add a flagged status -> If a post is flagged its removed from homepage and placed on a mod page where it is decided if it should be removed*~~ [2022-03-17]
     * [X] ~~*If a post is removed after its flagged then add a strike to the users account*~~ [2022-03-17]
-    * [ ] Add a method to apply for moderation status to the site -> currently only available to people if its hacked into the table itself
+    * [X] ~~*Add a method to apply for moderation status to the site -> currently only available to people if its hacked into the table itself*~~ [2022-03-23]
 
 
-* [ ] Friends?
+* [ ] Friends
     * [ ] Messaging
     * [ ] Searching for new friends
+    * [X] ~~*Clean up friends css*~~ [2022-03-23]
+    * [ ] Remove friends + Messaging + add profile pictures to the friends list
+    * [ ] Browse for friends using a search bar -> just query the database and return the person with the username that the person searched for
 
 * [ ] Misc
     * [ ] Give focus to the saved designs scroll before the browser
     * [ ] Styling
     * [ ] Encryption on database
-    * [ ] Error handling -> stops server from crashing
+    * [X] ~~*Error handling -> stops server from crashing*~~ [2022-03-23]
     * [ ] Break shit
-    * [ ] 
+    * [ ] Rename aarons socket fuck knows
+    
 
 Bugs:
 * [ ] If you update a design in the collab room then it will automatically update on the feed -> Feature
@@ -75,12 +82,9 @@ Bugs:
 * [ ] If there are no posts in the second column of the feed then we get an error and the animation for viewing comments cannoy play
 
 * [X] ~~*Drawings printing to the most recent room drawn*~~ [2022-03-19]
+* [ ] If the session runs out and we are still in a collab room (anywhere else?) then server crashes
 
-* [ ] Put a make mod button on each persons profile for moderators to see
-* [ ] Finish Friends
-* [X] ~~*Routing for profile page*~~ [2022-03-21]
-* [X] ~~*Clean up profile page*~~ [2022-03-21]
-* [ ] Browse for friends using a search bar -> just query the database and return the person with the username that the person searched for
-* [ ] Remove the ability to change a persons picture on their profile if its not the users own profile -> check if the pathname == username in session data
-* [ ] Search for adding collaborators using same method as searching for friends
-* [ ] 
+
+
+
+

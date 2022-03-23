@@ -122,7 +122,7 @@
           <div class="nav-menu">
             <a href="/moderator/posts" id="mods" target="_self" data-text="&nbsp;Moderation">&nbsp;Moderation</a>
             <a href="#" id="profile" class="" target="_self" data-text="&nbsp;Profile">&nbsp;Profile</a>
-            <a href="#" id="friends" target="_self" data-text="&nbsp;Friends">&nbsp;Friends</a>
+            <a href="#friends" id="friends" target="_self" data-text="&nbsp;Friends">&nbsp;Friends</a>
             
             <a href="/account/login" class="" target="_self" data-text="&nbsp;Logout">&nbsp;Logout</a>
           </div>
@@ -165,6 +165,23 @@
           <img src="/public/assets/icons/bookmarks-inverted.png" style="height: 4vh; width: auto; display: block"/>
         </button>
       </div>      
+    </div>
+    <div class="friends-container" id="_friends-container">
+      <div class="search-div">
+        <form class="search">
+          <input class="search-bar" type="search" placeholder="Search for a friends username...">
+          <!-- <input class="search-btn" type="button" value="Search"> -->
+        </form>
+      </div>
+      <div class="friends" id="_friends">
+        <div class="friends-bar"></div>
+      </div>
+      <div class="friend-recommendations" id="_friend-recommendations">
+        <div class="friends-bar"></div>
+      </div>
+      <div class="friend-requests" id="_friend-requests">
+        <div class="friends-bar"></div>
+      </div>
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="Homepage.js"></script>
