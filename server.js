@@ -25,6 +25,7 @@ const { emitWarning } = require("process");
 const EventEmitter = require("events")
 const eventEmitter = new EventEmitter();
 const redis = require("redis");
+const { resolve } = require("path");
 const redisStore = redis.createClient();
 
 
@@ -151,7 +152,16 @@ app.get("/account/register", (req, res) => {
 })
 
 app.get("/account/tags", (req,res) => {
-    res.sendFile(__dirname + "/tags.html");
+    // If the user is logged in then redirect them to the home page as it would break the server if they can access the tags page
+    if (req.session.loggedIn) {
+        console.log("user not logged in, redirecting to login page")
+        res.writeHead(301, {
+            Location: '/home'
+        }).end();
+    } else {
+        res.sendFile(__dirname + "/tags.html");
+    }
+    
 });
 
 app.post("/account/tags", (req, res) => {
@@ -164,7 +174,13 @@ app.post("/account/tags", (req, res) => {
         // If password 1 and password 2 are matching then insert into the database and take to the tags page
         if (passCheck1 == passCheck2) {
             con.query("INSERT INTO users (username, password) VALUES (?, ?)", [req.body.username, req.body.pass1], (err, result) => {
-                if (err) throw err;
+                // Err should only occur when user refreshes page on tags page, just redirect to home page
+                if (err) {
+                    res.writeHead(301, {
+                        Location: '/home'
+                    }).end();
+                    return;
+                };
                 console.log("inserted into table users the username: " + req.body.username + " and password: " + req.body.pass1, "and ID: ", result.insertId);
                 req.session.userID = result.insertId; // This gives us the ID of the user so we dont need to query DB every time we want to know
                 req.session.save();
@@ -1173,11 +1189,14 @@ io.sockets.on('connect', (socket) => {
                     posts.push(post);
                     socket.emit("accountDetails", posts);
                 } else {
-
+                    console.log(res.length);
                     for (let i = 0; i < res.length; i++) {
 
-                        designs.collection("Designs").find({_id: new ObjectId(res[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, r) => {
-                            let image = r[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                        var promise = designs.collection("Designs").findOne({_id: new ObjectId(res[i].design)}, {projection: {_id: 0, thumbnail: 1}});
+                            
+                        async function waitForProfileDesigns() {
+                            var p = await promise;
+                            let image = p.thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             let name = data.user; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             
                             let pfp;
@@ -1187,33 +1206,29 @@ io.sockets.on('connect', (socket) => {
                                 pfp = "data:image/png;base64," + pfp.toString("base64");
                             }
 
-
                             if (res[i].likes == null) res[i].likes = 0;
                             post = {name: res[i].postName, pfp: pfp, caption: res[i].postCaption, design: image, user: name, likes: res[i].likes, id: res[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
                             posts.push(post);
 
-                            socket.emit("accountDetails", posts);
-                            
-                            if (res[i].likes == 0) {
-                                socket.emit("likedByUsers", {likes: 0})
-                            } else {
-                                
-                                con.query("SELECT * FROM likes WHERE postID = ?", [res[i].postID], (err, res) => {
-                                    if (err) throw err;
-                                    for (let i of res) {
-                                        
-                                        con.query("SELECT username FROM users WHERE userID = ?", [i.userID], (err, r) => {
-                                            postLikes[i.postID] = {userIDs: {}}
-                                            postLikes[i.postID].userIDs[i.userID] = i.userID
-                                            
-                                            socket.emit("likedByUsers", {likes: postLikes});
+                            // socket.emit("accountDetails", posts);
+                            if (posts.length == res.length) {
+                                for (post of posts) {
+                                    if (post.likes > 0) {
+                                        var l = new Promise((resolve, reject) => {
+                                            con.query("SELECT * FROM likes WHERE postID = ?", [post.id], (err, res) => {
+                                                if (err) throw err;
+                                                // Add all userIds that have liked the post to the post
+                                                resolve(res.map(function(ro) {return ro.userID}));
+                                            })
                                         })
-                                        
+                                        post.likedBy = await l;
                                     }
-                                })
+                                }
+
+                                socket.emit("accountDetails", posts);
                             }
-                        
-                        });
+                        }
+                        waitForProfileDesigns();
                     }
                 }
 
@@ -1340,21 +1355,22 @@ io.sockets.on('connect', (socket) => {
                         posts.push(postsName);    
 
                         // When all of the posts have been found
-                        if (i == result.length-1) {
+                        if (posts.length == result.length) {
                             // Loop through each post and, if it has any likes, get the ids of the users that have liked it
                             for (var post of posts) {
                                 if (post.likes > 0) {       // If the post has likes
                                     // Find all userIDs that have liked this post
                                     var l = new Promise((resolve, reject) => {
                                         con.query("SELECT * FROM likes WHERE postID = ?", [post.id], (err, res) => {
-                                        if (err) throw err;
-                                        // Add all userIds that have liked the post to the post
-                                        resolve(res.map(function(ro) {return ro.userID}));
+                                            if (err) throw err;
+                                            // Add all userIds that have liked the post to the post
+                                            resolve(res.map(function(ro) {return ro.userID}));
                                         })
                                     });
                                     post.likedBy = await l;
-                                } 
+                                }
                             }
+
 
                             // Emit the completed posts list
                             socket.emit("posts", posts);

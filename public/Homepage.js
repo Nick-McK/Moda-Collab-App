@@ -356,7 +356,6 @@ closePostSavedDesigns.onclick = () => {
 this.onload = () => {
     socket.emit("getPosts");
     socket.emit("getModStatus");
-    
 }
 
 let posted = {};
@@ -409,6 +408,7 @@ function displayPost(posts, forLiked) {
         flagDiv.classList.add("flag");
 
         flagImg.setAttribute("src", "assets/icons/flag-fill.png");
+        flagImg.setAttribute("title", "Flag for Moderation");
         flagDiv.appendChild(flagImg);
 
 
@@ -462,6 +462,8 @@ function displayPost(posts, forLiked) {
         post.LIKES = post.likes; // Set this to the database value
         likeCounter.innerHTML = post.LIKES;
 
+        barImage1.setAttribute("title", "Like");
+
         barImage1.addEventListener("click", () => {
             console.log("liked",post.LIKED);
             if (post.LIKED == true) {
@@ -480,12 +482,15 @@ function displayPost(posts, forLiked) {
 
 
         barImage2.setAttribute("src", "/public/assets/icons/archive-box-inverted.png");
+        barImage2.setAttribute("title", "Save Design");
 
         barImage2.addEventListener("click", () => {
             socket.emit("savePostedDesign", {design: post.id, creator: post.user});
+            alert("Design Saved!\nEnter a Collaboration Room and load the design to get started!");
         })
         
         barImage3.setAttribute("src", "/public/assets/icons/chat-circle-inverted.png");
+        barImage3.setAttribute("title", "Comment");
 
         barImage3.addEventListener("click", () => {
             showComments(postImage);

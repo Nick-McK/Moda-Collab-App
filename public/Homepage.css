@@ -48,7 +48,7 @@ body::-webkit-scrollbar {
 }
 .roundBtn1 {
   position: relative;
-  width: 5%;
+  width: 10%;
   height: 100%;
   background: white;
   border: none;
@@ -284,7 +284,7 @@ body::-webkit-scrollbar {
 
 
 #logo {
-  width: 7%;
+  width: auto;
   height: 5%;
   position: fixed;
   top: 0;
@@ -469,7 +469,7 @@ body::-webkit-scrollbar {
 }
 /* This is the container for the comments */
 .comments {
-  height: 45%;
+  height: 35%;
   width: 100%;
   /* border: 1px solid grey; */
   border-radius: 20px;
