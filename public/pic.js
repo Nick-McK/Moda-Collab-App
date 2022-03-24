@@ -92,12 +92,17 @@ window.onload = () => {
         
                 flagDiv.classList.add("flag");
         
-                flagImg.setAttribute("src", "assets/icons/flag-fill.png");
+                flagImg.setAttribute("src", "/public/assets/icons/flag-fill.png");
                 flagDiv.appendChild(flagImg);
-        
+
+                if (post.pfp != null) {
+                    profileImage.setAttribute("src", post.pfp);
+                } else {
+                    profileImage.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg");
+                }
+                profileImage.id = post.id+"-image";
+
                 
-        
-                profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg")
                 
                 
                 let div1 = document.createElement("div");
@@ -643,7 +648,7 @@ window.onload = () => {
         }
         // This sets the post request to be to the current users profile
         // Slightly redundant since you can only make a post request on your own profile
-        test.setAttribute("action", "/profile/" + getUser());
+        pictureForm.setAttribute("action", "/profile/" + getUser());
 
         if (getUser() == data.user) {
             console.log("THIS IS YOUR PROFILE");

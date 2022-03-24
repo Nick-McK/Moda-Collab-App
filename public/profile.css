@@ -169,7 +169,7 @@ h3{
     line-height: 30px;
     font-size: 15px;
     cursor: pointer;
-    color: white;
+    color: black;
     display: none;
     
 }
@@ -185,7 +185,7 @@ h3{
     line-height: 30px;
     font-size: 15px;
     cursor: pointer;
-    color: white;
+    color: black;
     display: none;
 }
 /* Centering username for profile page */
@@ -237,4 +237,24 @@ h3{
 }
 .mod {
   display: none;
+}
+
+.nav-menu > :nth-child(1):hover::before {
+  width: 145;
+  filter: drop-shadow(0 0 25px var(--clr));
+}
+.nav-menu > :nth-child(2):hover::before {
+  width: 66;
+  filter: drop-shadow(0 0 25px var(--clr));
+}
+.nav-menu > :nth-child(3):hover::before {
+  width: 84;
+  filter: drop-shadow(0 0 25px var(--clr));
+}
+.nav-menu > :nth-child(4):hover::before {
+  width: 88;
+}
+.nav-menu > :nth-child(5):hover::before {
+  width: 93;
+  filter: drop-shadow(0 0 25px var(--clr));
 }

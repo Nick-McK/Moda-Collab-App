@@ -270,7 +270,16 @@ app.get("/home", (req, res) => {
 // Get request to show the users profile - Will need to make this user specific 
 app.get("/profile/:user", (req, res) => {
     console.log("we are now at profile: ", req.params.user);
-    res.sendFile(path.join(__dirname + "/profile.html"));
+
+    if (req.session.loggedIn) {
+        res.sendFile(path.join(__dirname + "/profile.html"));
+    } else {
+        console.log("user not logged in, redirecting to login page")
+        res.writeHead(301, {
+            Location: '/account/login'
+        }).end();
+    }
+    
 })
 
 // Maybe make post request to profile page for x user for PP upload
@@ -1170,8 +1179,17 @@ io.sockets.on('connect', (socket) => {
                         designs.collection("Designs").find({_id: new ObjectId(res[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, r) => {
                             let image = r[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             let name = data.user; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                            
+                            let pfp;
+                            if (result[0].profilePicture != null) {
+                                pfp = result[0].profilePicture;
+                                pfp = Buffer.from(pfp).toString('base64');
+                                pfp = "data:image/png;base64," + pfp.toString("base64");
+                            }
+
+
                             if (res[i].likes == null) res[i].likes = 0;
-                            post = {name: res[i].postName, caption: res[i].postCaption, design: image, user: name, likes: res[i].likes, id: res[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
+                            post = {name: res[i].postName, pfp: pfp, caption: res[i].postCaption, design: image, user: name, likes: res[i].likes, id: res[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
                             posts.push(post);
 
                             socket.emit("accountDetails", posts);
@@ -1298,7 +1316,7 @@ io.sockets.on('connect', (socket) => {
             if (result.length == 0) {return}
             // For each post, get the usernames of the poster
             for (let i = 0; i < result.length; i++) {
-                con.query("SELECT username FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
+                con.query("SELECT username, profilePicture FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
                     if (err) console.log(err);
                     
                     // Create a promise that returns the design info of a given design
@@ -1310,9 +1328,15 @@ io.sockets.on('connect', (socket) => {
                         var p = await promise;
                         let image = p.thumbnail;
                         let name = r[0].username;
+                        let pfp;
+                        if (r[0].profilePicture != null) {
+                            pfp = r[0].profilePicture;
+                            pfp = Buffer.from(pfp).toString('base64');
+                            pfp = "data:image/png;base64," + pfp.toString("base64");
+                        }
 
                         if (result[i].likes == null) result[i].likes = 0;
-                        postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
+                        postsName = {name: result[i].postName, pfp: pfp, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
                         posts.push(postsName);    
 
                         // When all of the posts have been found
@@ -1528,11 +1552,12 @@ io.sockets.on('connect', (socket) => {
         con.query("SELECT profilePicture FROM users WHERE username = ?", [data.username], (err, result) => {
             if (err) throw err;
             console.log("profile pic", result);
-            if (result[0].profilePicture == undefined) result[0].profilePicture = "/public/assets/icons/empty-profile-picture.jpeg"
-
-            result[0].profilePicture = Buffer.from(result[0].profilePicture).toString('base64');
-            result[0].profilePicture = "data:image/png;base64," + result[0].profilePicture.toString("base64");
-
+            if (result[0].profilePicture == undefined) {
+                result[0].profilePicture = "/public/assets/icons/empty-profile-picture.jpeg"
+            } else {
+                result[0].profilePicture = Buffer.from(result[0].profilePicture).toString('base64');
+                result[0].profilePicture = "data:image/png;base64," + result[0].profilePicture.toString("base64");
+            }
             // console.log("this is our picture stored", result);
 
             socket.emit("returnProfile", {picture: result[0].profilePicture, user: socket.request.session.username});

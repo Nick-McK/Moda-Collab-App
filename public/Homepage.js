@@ -268,6 +268,9 @@ socket.on("savedDesigns", (data) => {
     
                 nameBut.onclick = () => {
                     designChoice.setAttribute("src", design.thumbnail);
+                    // This resizes the container of the image to fit with the form factor of the image
+                    designChoice.parentNode.style.width = "70%";
+                    designChoice.parentNode.style.height = "auto";
                     // postThumb.value = design.thumbnail;
                     postdesign.style.display = "none";
                 }
@@ -409,8 +412,11 @@ function displayPost(posts, forLiked) {
         flagDiv.appendChild(flagImg);
 
 
-
-        profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg")
+        if (post.pfp != null) {
+            profileImage.setAttribute("src", post.pfp);
+        } else {
+            profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg");
+        }
         
         
         let div1 = document.createElement("div");
