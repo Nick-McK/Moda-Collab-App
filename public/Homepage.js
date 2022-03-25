@@ -87,6 +87,13 @@ const feed = document.getElementById("_feed");
 // }
 
 
+// A parameter is returned if a user tries to create a room with the same name as an existing room
+const params = new Proxy(new URLSearchParams(window.location.search), {
+    get: (searchParams, prop) => searchParams.get(prop),
+  });
+  if (params.success == "failed") {
+    alert('Room name already in use, please choose another.');
+  }
 
 
 // Events for handling opening and closing the collaboration menu
@@ -120,8 +127,8 @@ let recordedRooms = new Array();
 socket.on("roomNames", (roomList) => {
     const collabRoomList = document.getElementById("_collabRoomList");
 
-    // If the incoming roomList is less than the existing elements - 2 (for the buttons) remove all elements of class collabRoom from form
-    if (roomList.length < (collabRoomList.childElementCount - 2)) {
+    // If the incoming roomList is less than the existing elements, remove all elements of class collabRoom from form
+    if (roomList.length < (collabRoomList.childElementCount)) {
         var roomListings = document.querySelectorAll(".collabRoom")
         roomListings.forEach(room => {
             room.remove();
@@ -156,8 +163,14 @@ socket.on("roomNames", (roomList) => {
         }
     }
 })
-socket.on("redirect", (roomName) => {
-    window.location.href = "/collab_room/" + roomName;
+socket.on("redirect", (roomName, wrongPass) => {
+    
+    // If user entered wrong password, give them an alert and dont redirect
+    if (wrongPass) {
+        alert("Incorrect Password");
+    } else {
+        window.location.href = "/collab_room/" + roomName;
+    }
 })
 addCollab.onclick = () => {
 
@@ -310,13 +323,24 @@ socket.on("returnLikedPosts", (data) => {
 
 postButton.onclick = () => {
     let tags = []
+
+    // Copy link of the design, and get the value following the final /
+    var checkValidDesign = new String(designChoice.src);
+    checkValidDesign = checkValidDesign.split("/");
+    checkValidDesign = checkValidDesign.pop();
+
+    // If that value games.jpg that means that the default image is still there and alert should be sent to user
+    if (checkValidDesign == "games.jpg") {
+        alert("Please select a design for the post.");
+        return;
+    }
+
     if(postTags.selectedOptions.length > 0){
 
     
         for(let i=0; i<postTags.selectedOptions.length; i++){
             tags.push(postTags.selectedOptions[i].innerHTML);
         };
-        console.log(tags);
         let postImage = designChoice.src;
         let name = postName.value;
         let caption = postCaption.value;
@@ -324,11 +348,9 @@ postButton.onclick = () => {
     
         let data = {postName: name, postCaption: caption, image: postImage, tagsList: tags};
 
-        console.log(data.image)
-
         socket.emit("post", (data));
     }else{
-        alert("please select at least 1 tag");
+        alert("Please select at least 1 tag");
     }
 }
 

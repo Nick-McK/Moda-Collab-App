@@ -395,8 +395,9 @@ function handleRoomCreation() {
 
 // this only runs when collab room is entered
 app.post("/collab_room", (req, res) => {
+    // This is called when user is creating a collab room, if there is already a room with the passed name give user an error alert and return them to the homepage
     if (rooms[req.body.roomName] != null) {
-        return res.redirect("/home");   // This closes the collab menu currently, figure out way to keep it open
+        return res.redirect('/home?success=' + encodeURIComponent('failed')); // This closes the collab menu currently, figure out way to keep it open
     }
     rooms[req.body.roomName] = {users: {}, roomPass: {}};
     console.log("----------------------------", rooms);
@@ -689,6 +690,9 @@ io.sockets.on('connect', (socket) => {
 
         if (data.password == rooms[data.roomName].roomPass) {
             socket.emit("redirect", (data.roomName));
+        } else {
+            // true represents the incorrect password. This will give user alert clientside and not redirect them
+            socket.emit("redirect", data.roomName, true);   
         }
     })
 
