@@ -54,6 +54,32 @@ let r = new fabric.Rect({
 canvas.add(r);  // Add to canvas
 
 
+// When the window is resized, recalculate the size of the canvas in relation to the window
+window.addEventListener('resize', () => {
+    setTimeout(() => {
+    // Set new size of canvas element
+    canvas.setHeight(window.innerHeight * 0.75);
+    canvas.setWidth(window.outerWidth);
+    
+    // Reset viewprot to 0,0
+    // Re-calculate the limit values for zooming
+    var view = canvas.viewportTransform;
+    limitZoom = false;
+    if (canvas.getHeight()/canvasHeight < canvas.getWidth() / canvasWidth) {
+        limitValue = canvas.getWidth()/canvasWidth;
+        widthHeightLimited = "width";
+    } else {
+        limitValue = canvas.getHeight()/canvasHeight;
+        widthHeightLimited = "height";
+    }    
+    view[4] = 0;
+    view[5] = 0;
+    canvas.setZoom(1);
+    }, 100);     // Set timeout to 100ms to make sure change can register properly
+});
+
+
+
 // Allows user to modify font size
 const ptInput = document.getElementById('ptSize');      // Gets ptSize input box element
 ptInput.setAttribute('size', ptInput.getAttribute('placeholder').length);   // Modifies the size of the inputbox to fit the placeholder text

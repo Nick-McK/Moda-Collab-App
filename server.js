@@ -248,8 +248,8 @@ app.post("/home", (req, res) => {
                             console.log("session stored");
                         })
 
-                        
-                        
+
+
                         res.sendFile(path.join(__dirname + "/Homepage.html"));
                         
                     }
@@ -689,10 +689,10 @@ io.sockets.on('connect', (socket) => {
         }
 
         if (data.password == rooms[data.roomName].roomPass) {
-            socket.emit("redirect", (data.roomName));
+            socket.emit("redirect", ({roomName: data.roomName, wrongPass: false}));
         } else {
             // true represents the incorrect password. This will give user alert clientside and not redirect them
-            socket.emit("redirect", data.roomName, true);   
+            socket.emit("redirect", ({roomName: data.roomName, wrongPass: true}));   
         }
     })
 

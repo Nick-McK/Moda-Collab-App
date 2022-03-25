@@ -144,3 +144,9 @@
   background-color: white;
   border: 2px solid black;
 }
+
+@-moz-document url-prefix() {
+  .canvas-container {
+    margin-top: 12.5%;
+  }
+}

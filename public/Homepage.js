@@ -163,13 +163,13 @@ socket.on("roomNames", (roomList) => {
         }
     }
 })
-socket.on("redirect", (roomName, wrongPass) => {
-    
+socket.on("redirect", (data) => {
+
     // If user entered wrong password, give them an alert and dont redirect
-    if (wrongPass) {
+    if (data.wrongPass == true) {
         alert("Incorrect Password");
     } else {
-        window.location.href = "/collab_room/" + roomName;
+        window.location.href = "/collab_room/" + data.roomName;
     }
 })
 addCollab.onclick = () => {
