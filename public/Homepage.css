@@ -454,7 +454,7 @@ body::-webkit-scrollbar {
   height: auto;
   /* width: 648px; */
   /* 455px is the width and height of a design at 70% width */
-  width: 100%;
+  width: 85%;
   flex-direction: row;
   display: flex;
   align-items: center;
@@ -469,7 +469,7 @@ body::-webkit-scrollbar {
 }
 /* This is the container for the comments */
 .comments {
-  height: 35%;
+  height: 28%;
   width: 100%;
   /* border: 1px solid grey; */
   border-radius: 20px;
