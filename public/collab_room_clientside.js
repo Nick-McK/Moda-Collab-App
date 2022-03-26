@@ -32,7 +32,9 @@ var fontFamily = "Times New Roman";
 
 
 // Create the canvas and set its attributes
-let canvas = new fabric.Canvas("whiteboard");
+let canvas = new fabric.Canvas("whiteboard", {
+    perPixelTargetFind: true        // This makes the selection box only appear when you select the actual body of the obj, not the surrounding area
+});
 canvas.setHeight(window.innerHeight * 0.75);
 canvas.setWidth(window.outerWidth);
 canvas.backgroundColor = backgroundColor;
@@ -310,6 +312,14 @@ function showToggledTool(inUse) {
 
     if (using.style.backgroundColor == selectedToolColour) {        // If the tool is already in use, and the user is unselecting it, change the colour back to default
         using.style.backgroundColor = normalToolColour;
+        canvas.selection = true;
+        
+        // This disables single object selection, issues with it using multiplayer though
+        // canvas.forEachObject((o) => {
+        //     if (o.id != "DONTDELETE") {
+        //         o.selectable = true;
+        //     }
+        // })
     } else {                                            // Otherwise, treat it as if the tool is being selected for use and set all other tools to default colour while setting the tool the different colour
         var allSelectableTools = ["pencil", "eraser", "pan", "line"];
         allSelectableTools.splice(allSelectableTools.indexOf(inUse), 1);
@@ -317,6 +327,12 @@ function showToggledTool(inUse) {
             document.getElementById(i).style.backgroundColor = normalToolColour;
         }
         using.style.backgroundColor = selectedToolColour;
+        canvas.selection = false;
+
+        // This disables single object selection, issues with it using multiplayer though
+        // canvas.forEachObject((o) => {
+        //     o.selectable = false;
+        // })
     }
 }
 

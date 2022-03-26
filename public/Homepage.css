@@ -337,7 +337,7 @@ body::-webkit-scrollbar {
 
 .collabList {
   width: auto;
-  height: 85%;
+  height: 75%;
   overflow: auto;
 
   /* This hides the scrollbar for some browsers */
@@ -403,9 +403,9 @@ body::-webkit-scrollbar {
 
 .promptContainer {
   z-index: 1000;
-  top: 40%;
+  top: 35%;
   position: fixed;
-  height: 200px;
+  height: 275px;
   width: 400px;
   border-radius: 12px;
   background-color: rgb(20,20,20);

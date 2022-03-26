@@ -715,15 +715,6 @@ io.sockets.on('connect', (socket) => {
 		x = result[0]; 
 	})
 
-    
-	// console.log(x);
-	// socket.on("fat", () => {con.query("SELECT * FROM tags WHERE userID = ?", [x], (err, result) => {
-    //     if (err) {
-    //         throw err;
-    //     }
-	// 	socket.emit("fuckKnows", result);
-	// 	console.log(result);
-	// })});
 
     socket.on("canvasUpdate", (data, callback) => {
 
