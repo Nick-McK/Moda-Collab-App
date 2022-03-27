@@ -32,7 +32,9 @@ var fontFamily = "Times New Roman";
 
 
 // Create the canvas and set its attributes
-let canvas = new fabric.Canvas("whiteboard");
+let canvas = new fabric.Canvas("whiteboard", {
+    perPixelTargetFind: true        // This makes the selection box only appear when you select the actual body of the obj, not the surrounding area
+});
 canvas.setHeight(window.innerHeight * 0.75);
 canvas.setWidth(window.outerWidth);
 canvas.backgroundColor = backgroundColor;
@@ -54,6 +56,32 @@ let r = new fabric.Rect({
 canvas.add(r);  // Add to canvas
 
 
+// When the window is resized, recalculate the size of the canvas in relation to the window
+window.addEventListener('resize', () => {
+    setTimeout(() => {
+    // Set new size of canvas element
+    canvas.setHeight(window.innerHeight * 0.75);
+    canvas.setWidth(window.outerWidth);
+    
+    // Reset viewprot to 0,0
+    // Re-calculate the limit values for zooming
+    var view = canvas.viewportTransform;
+    limitZoom = false;
+    if (canvas.getHeight()/canvasHeight < canvas.getWidth() / canvasWidth) {
+        limitValue = canvas.getWidth()/canvasWidth;
+        widthHeightLimited = "width";
+    } else {
+        limitValue = canvas.getHeight()/canvasHeight;
+        widthHeightLimited = "height";
+    }    
+    view[4] = 0;
+    view[5] = 0;
+    canvas.setZoom(1);
+    }, 100);     // Set timeout to 100ms to make sure change can register properly
+});
+
+
+
 // Allows user to modify font size
 const ptInput = document.getElementById('ptSize');      // Gets ptSize input box element
 ptInput.setAttribute('size', ptInput.getAttribute('placeholder').length);   // Modifies the size of the inputbox to fit the placeholder text
@@ -62,6 +90,7 @@ ptInput.addEventListener('change', function() {setPtSize(recentlySelected);});  
 
 // Sets the ptSize of future and selected text to global ptSize value
 function setPtSize(objects) {
+    console.log(objects)
     pt = parseInt(ptInput.value);  // Update global var
     if (objects) {
         for (var i of objects) {
@@ -73,7 +102,6 @@ function setPtSize(objects) {
             }
         }
     }
-    recentlySelected = [];
 }
 
 
@@ -97,7 +125,6 @@ function setLineWidth(objects) {
             }
         }
     }
-    recentlySelected = [];
 }
 
 // Allows user to modify font family
@@ -118,7 +145,6 @@ function setFontFamily(objects) {
             }
         } 
     }
-    recentlySelected = [];
 }
 
 
@@ -146,7 +172,6 @@ function changeColour(objects) {
             canvas.fire('object:modified', {target : i});
         }
     }
-    recentlySelected = [];
 }
 
 
@@ -169,6 +194,7 @@ function changeBgColour() {
 
 // This is for debugging and getting recently selected object for attribute manipulation
 canvas.on('selection:created', function() {
+    recentlySelected = [];
     recentlySelected = canvas.getActiveObjects();
     console.log(recentlySelected);
 })
@@ -215,12 +241,14 @@ function changeTool(res, imgUrl) {
 
             showToggledTool("line");    // Set the visual feedback of the buttons to show that the line tool is in use
             togglePan(true);            // disable panning, but make sure that selection is still off
-            canvas.selection = false;
 
             // Update the cursor to show that use has activated the straight line tool
             if (straightLineDraw.toggled) {
+                canvas.defaultCursor = "crosshair";
                 r.set({hoverCursor: "crosshair"});
+                canvas.selection = false;
             } else {
+                canvas.defaultCursor = "default";
                 r.set({hoverCursor: "default"});
             };
         break;
@@ -284,6 +312,14 @@ function showToggledTool(inUse) {
 
     if (using.style.backgroundColor == selectedToolColour) {        // If the tool is already in use, and the user is unselecting it, change the colour back to default
         using.style.backgroundColor = normalToolColour;
+        canvas.selection = true;
+        
+        // This disables single object selection, issues with it using multiplayer though
+        // canvas.forEachObject((o) => {
+        //     if (o.id != "DONTDELETE") {
+        //         o.selectable = true;
+        //     }
+        // })
     } else {                                            // Otherwise, treat it as if the tool is being selected for use and set all other tools to default colour while setting the tool the different colour
         var allSelectableTools = ["pencil", "eraser", "pan", "line"];
         allSelectableTools.splice(allSelectableTools.indexOf(inUse), 1);
@@ -291,6 +327,12 @@ function showToggledTool(inUse) {
             document.getElementById(i).style.backgroundColor = normalToolColour;
         }
         using.style.backgroundColor = selectedToolColour;
+        canvas.selection = false;
+
+        // This disables single object selection, issues with it using multiplayer though
+        // canvas.forEachObject((o) => {
+        //     o.selectable = false;
+        // })
     }
 }
 
@@ -298,10 +340,12 @@ function showToggledTool(inUse) {
 function togglePan(disable) {
     if (panning || disable) {
         panning = false;
+        canvas.defaultCursor = "default";
         r.set({hoverCursor: "default"});
         canvas.selection = true;
     } else {
         panning = true;
+        canvas.defaultCursor = "move";
         r.set({hoverCursor : "move"});
         canvas.freeDrawingBrush = false;
         canvas.selection = false;

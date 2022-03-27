@@ -48,7 +48,7 @@ body::-webkit-scrollbar {
 }
 .roundBtn1 {
   position: relative;
-  width: 5%;
+  width: 10%;
   height: 100%;
   background: white;
   border: none;
@@ -284,7 +284,7 @@ body::-webkit-scrollbar {
 
 
 #logo {
-  width: 7%;
+  width: auto;
   height: 5%;
   position: fixed;
   top: 0;
@@ -337,7 +337,7 @@ body::-webkit-scrollbar {
 
 .collabList {
   width: auto;
-  height: 85%;
+  height: 75%;
   overflow: auto;
 
   /* This hides the scrollbar for some browsers */
@@ -345,10 +345,24 @@ body::-webkit-scrollbar {
   scrollbar-width: none;
 }
 
-/* This hides the scrollbar for Chrome and other browsers */
+/* This customises the scrollbar for Chrome and other browsers */
 .collabList::-webkit-scrollbar {
-  display: none;
+  width: 10px;
 }
+
+.collabList::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.collabList::-webkit-scrollbar-thumb {
+  background-color: grey;
+  border-radius: 5px;
+}
+
+.collabList::-webkit-scrollbar-thumb:hover {
+  background-color: #0a0a0a;
+}
+
 
 #commentsContent {
   height: 80%;
@@ -389,9 +403,9 @@ body::-webkit-scrollbar {
 
 .promptContainer {
   z-index: 1000;
-  top: 40%;
+  top: 35%;
   position: fixed;
-  height: 200px;
+  height: 275px;
   width: 400px;
   border-radius: 12px;
   background-color: rgb(20,20,20);
@@ -437,10 +451,11 @@ body::-webkit-scrollbar {
 }
 
 .postImage {
-  height: 50%;
+  height: auto;
   /* width: 648px; */
-  width: 100%;
-  flex-direction: row;;
+  /* 455px is the width and height of a design at 70% width */
+  width: 85%;
+  flex-direction: row;
   display: flex;
   align-items: center;
   /* flex-wrap: wrap; */
@@ -449,10 +464,12 @@ body::-webkit-scrollbar {
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid grey;
+  margin: auto;
+  background-color: black;
 }
 /* This is the container for the comments */
 .comments {
-  height: 45%;
+  height: 28%;
   width: 100%;
   /* border: 1px solid grey; */
   border-radius: 20px;

@@ -25,6 +25,7 @@ const { emitWarning } = require("process");
 const EventEmitter = require("events")
 const eventEmitter = new EventEmitter();
 const redis = require("redis");
+const { resolve } = require("path");
 const redisStore = redis.createClient();
 
 
@@ -151,7 +152,16 @@ app.get("/account/register", (req, res) => {
 })
 
 app.get("/account/tags", (req,res) => {
-    res.sendFile(__dirname + "/tags.html");
+    // If the user is logged in then redirect them to the home page as it would break the server if they can access the tags page
+    if (req.session.loggedIn) {
+        console.log("user not logged in, redirecting to login page")
+        res.writeHead(301, {
+            Location: '/home'
+        }).end();
+    } else {
+        res.sendFile(__dirname + "/tags.html");
+    }
+    
 });
 
 app.post("/account/tags", (req, res) => {
@@ -164,7 +174,13 @@ app.post("/account/tags", (req, res) => {
         // If password 1 and password 2 are matching then insert into the database and take to the tags page
         if (passCheck1 == passCheck2) {
             con.query("INSERT INTO users (username, password) VALUES (?, ?)", [req.body.username, req.body.pass1], (err, result) => {
-                if (err) throw err;
+                // Err should only occur when user refreshes page on tags page, just redirect to home page
+                if (err) {
+                    res.writeHead(301, {
+                        Location: '/home'
+                    }).end();
+                    return;
+                };
                 console.log("inserted into table users the username: " + req.body.username + " and password: " + req.body.pass1, "and ID: ", result.insertId);
                 req.session.userID = result.insertId; // This gives us the ID of the user so we dont need to query DB every time we want to know
                 req.session.save();
@@ -232,8 +248,8 @@ app.post("/home", (req, res) => {
                             console.log("session stored");
                         })
 
-                        
-                        
+
+
                         res.sendFile(path.join(__dirname + "/Homepage.html"));
                         
                     }
@@ -270,7 +286,16 @@ app.get("/home", (req, res) => {
 // Get request to show the users profile - Will need to make this user specific 
 app.get("/profile/:user", (req, res) => {
     console.log("we are now at profile: ", req.params.user);
-    res.sendFile(path.join(__dirname + "/profile.html"));
+
+    if (req.session.loggedIn) {
+        res.sendFile(path.join(__dirname + "/profile.html"));
+    } else {
+        console.log("user not logged in, redirecting to login page")
+        res.writeHead(301, {
+            Location: '/account/login'
+        }).end();
+    }
+    
 })
 
 // Maybe make post request to profile page for x user for PP upload
@@ -370,8 +395,9 @@ function handleRoomCreation() {
 
 // this only runs when collab room is entered
 app.post("/collab_room", (req, res) => {
+    // This is called when user is creating a collab room, if there is already a room with the passed name give user an error alert and return them to the homepage
     if (rooms[req.body.roomName] != null) {
-        return res.redirect("/home");   // This closes the collab menu currently, figure out way to keep it open
+        return res.redirect('/home?success=' + encodeURIComponent('failed')); // This closes the collab menu currently, figure out way to keep it open
     }
     rooms[req.body.roomName] = {users: {}, roomPass: {}};
     console.log("----------------------------", rooms);
@@ -663,7 +689,10 @@ io.sockets.on('connect', (socket) => {
         }
 
         if (data.password == rooms[data.roomName].roomPass) {
-            socket.emit("redirect", (data.roomName));
+            socket.emit("redirect", ({roomName: data.roomName, wrongPass: false}));
+        } else {
+            // true represents the incorrect password. This will give user alert clientside and not redirect them
+            socket.emit("redirect", ({roomName: data.roomName, wrongPass: true}));   
         }
     })
 
@@ -686,15 +715,6 @@ io.sockets.on('connect', (socket) => {
 		x = result[0]; 
 	})
 
-    
-	// console.log(x);
-	// socket.on("fat", () => {con.query("SELECT * FROM tags WHERE userID = ?", [x], (err, result) => {
-    //     if (err) {
-    //         throw err;
-    //     }
-	// 	socket.emit("fuckKnows", result);
-	// 	console.log(result);
-	// })});
 
     socket.on("canvasUpdate", (data, callback) => {
 
@@ -1164,38 +1184,46 @@ io.sockets.on('connect', (socket) => {
                     posts.push(post);
                     socket.emit("accountDetails", posts);
                 } else {
-
+                    console.log(res.length);
                     for (let i = 0; i < res.length; i++) {
 
-                        designs.collection("Designs").find({_id: new ObjectId(res[i].design)}, {projection: {_id: 0, thumbnail: 1}}).toArray((err, r) => {
-                            let image = r[0].thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                        var promise = designs.collection("Designs").findOne({_id: new ObjectId(res[i].design)}, {projection: {_id: 0, thumbnail: 1}});
+                            
+                        async function waitForProfileDesigns() {
+                            var p = await promise;
+                            let image = p.thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
                             let name = data.user; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                            
+                            let pfp;
+                            if (result[0].profilePicture != null) {
+                                pfp = result[0].profilePicture;
+                                pfp = Buffer.from(pfp).toString('base64');
+                                pfp = "data:image/png;base64," + pfp.toString("base64");
+                            }
+
                             if (res[i].likes == null) res[i].likes = 0;
-                            post = {name: res[i].postName, caption: res[i].postCaption, design: image, user: name, likes: res[i].likes, id: res[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
+                            post = {name: res[i].postName, pfp: pfp, caption: res[i].postCaption, design: image, user: name, likes: res[i].likes, id: res[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
                             posts.push(post);
 
-                            socket.emit("accountDetails", posts);
-                            
-                            if (res[i].likes == 0) {
-                                socket.emit("likedByUsers", {likes: 0})
-                            } else {
-                                
-                                con.query("SELECT * FROM likes WHERE postID = ?", [res[i].postID], (err, res) => {
-                                    if (err) throw err;
-                                    for (let i of res) {
-                                        
-                                        con.query("SELECT username FROM users WHERE userID = ?", [i.userID], (err, r) => {
-                                            postLikes[i.postID] = {userIDs: {}}
-                                            postLikes[i.postID].userIDs[i.userID] = i.userID
-                                            
-                                            socket.emit("likedByUsers", {likes: postLikes});
+                            // socket.emit("accountDetails", posts);
+                            if (posts.length == res.length) {
+                                for (post of posts) {
+                                    if (post.likes > 0) {
+                                        var l = new Promise((resolve, reject) => {
+                                            con.query("SELECT * FROM likes WHERE postID = ?", [post.id], (err, res) => {
+                                                if (err) throw err;
+                                                // Add all userIds that have liked the post to the post
+                                                resolve(res.map(function(ro) {return ro.userID}));
+                                            })
                                         })
-                                        
+                                        post.likedBy = await l;
                                     }
-                                })
+                                }
+
+                                socket.emit("accountDetails", posts);
                             }
-                        
-                        });
+                        }
+                        waitForProfileDesigns();
                     }
                 }
 
@@ -1299,7 +1327,7 @@ io.sockets.on('connect', (socket) => {
             if (result.length == 0) {return}
             // For each post, get the usernames of the poster
             for (let i = 0; i < result.length; i++) {
-                con.query("SELECT username FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
+                con.query("SELECT username, profilePicture FROM users WHERE userID = ?", [result[i].userID], (err, r) => {
                     if (err) console.log(err);
                     
                     // Create a promise that returns the design info of a given design
@@ -1311,26 +1339,32 @@ io.sockets.on('connect', (socket) => {
                         var p = await promise;
                         let image = p.thumbnail;
                         let name = r[0].username;
+                        let pfp;
+                        if (r[0].profilePicture != null) {
+                            pfp = r[0].profilePicture;
+                            pfp = Buffer.from(pfp).toString('base64');
+                            pfp = "data:image/png;base64," + pfp.toString("base64");
+                        }
 
                         if (result[i].likes == null) result[i].likes = 0;
                         postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID, tag: result[i].tag} // Send over name of the user who created it so that we can show who posted it
                         posts.push(postsName);    
 
                         // When all of the posts have been found
-                        if (i == result.length-1) {
+                        if (posts.length == result.length) {
                             // Loop through each post and, if it has any likes, get the ids of the users that have liked it
                             for (var post of posts) {
                                 if (post.likes > 0) {       // If the post has likes
                                     // Find all userIDs that have liked this post
                                     var l = new Promise((resolve, reject) => {
                                         con.query("SELECT * FROM likes WHERE postID = ?", [post.id], (err, res) => {
-                                        if (err) throw err;
-                                        // Add all userIds that have liked the post to the post
-                                        resolve(res.map(function(ro) {return ro.userID}));
+                                            if (err) throw err;
+                                            // Add all userIds that have liked the post to the post
+                                            resolve(res.map(function(ro) {return ro.userID}));
                                         })
                                     });
                                     post.likedBy = await l;
-                                } 
+                                }
                             }
                             let tagMap = new Map();
                             con.query("SELECT * FROM tags WHERE userID = ?", [socket.request.session.userID], (err, result) => {
@@ -1547,11 +1581,12 @@ io.sockets.on('connect', (socket) => {
         con.query("SELECT profilePicture FROM users WHERE username = ?", [data.username], (err, result) => {
             if (err) throw err;
             console.log("profile pic", result);
-            if (result[0].profilePicture == undefined) result[0].profilePicture = "/public/assets/icons/empty-profile-picture.jpeg"
-
-            result[0].profilePicture = Buffer.from(result[0].profilePicture).toString('base64');
-            result[0].profilePicture = "data:image/png;base64," + result[0].profilePicture.toString("base64");
-
+            if (result[0].profilePicture == undefined) {
+                result[0].profilePicture = "/public/assets/icons/empty-profile-picture.jpeg"
+            } else {
+                result[0].profilePicture = Buffer.from(result[0].profilePicture).toString('base64');
+                result[0].profilePicture = "data:image/png;base64," + result[0].profilePicture.toString("base64");
+            }
             // console.log("this is our picture stored", result);
 
             socket.emit("returnProfile", {picture: result[0].profilePicture, user: socket.request.session.username});

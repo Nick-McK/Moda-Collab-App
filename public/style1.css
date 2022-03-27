@@ -188,7 +188,7 @@ button:hover {
 
 #designLoadList, #designSaveList {
   overflow: auto;
-  height: 800px;
+  height: 750px;
 
 
   /* This hides the scrollbar for some browsers */
@@ -198,9 +198,21 @@ button:hover {
 
 /* This hides the scrollbar for Chrome and other browsers */
 #designLoadList::-webkit-scrollbar, #designSaveList::-webkit-scrollbar {
-  display: none;
+  width: 10px;
 }
 
+#designLoadList::-webkit-scrollbar-track, #designSaveList::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+#designLoadList::-webkit-scrollbar-thumb, #designSaveList::-webkit-scrollbar-thumb {
+  background-color: grey;
+  border-radius: 5px;
+}
+
+#designLoadList::-webkit-scrollbar-thumb:hover, #designSaveList::-webkit-scrollbar-thumb:hover {
+  background-color: #0a0a0a;
+}
 
 .close{
   position: fixed;
@@ -212,11 +224,11 @@ button:hover {
 }
 #colourThicknessSelect{
   z-index: 3;
-  top: 12.5%;
+  top: 12.8%;
   position: absolute;
   background-color: white;
   border: 3px solid black;
-  left: 5
+  left: 5px;
 }
 
 #toolSelect {
@@ -316,6 +328,7 @@ button:hover {
   height: 5%;
   border-bottom: solid 0.5px;
   border-color: rgb(75, 71, 71);
+  background-color: black;
 }
 
 .flex {

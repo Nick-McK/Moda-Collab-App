@@ -87,6 +87,13 @@ const feed = document.getElementById("_feed");
 // }
 
 
+// A parameter is returned if a user tries to create a room with the same name as an existing room
+const params = new Proxy(new URLSearchParams(window.location.search), {
+    get: (searchParams, prop) => searchParams.get(prop),
+  });
+  if (params.success == "failed") {
+    alert('Room name already in use, please choose another.');
+  }
 
 
 // Events for handling opening and closing the collaboration menu
@@ -120,8 +127,8 @@ let recordedRooms = new Array();
 socket.on("roomNames", (roomList) => {
     const collabRoomList = document.getElementById("_collabRoomList");
 
-    // If the incoming roomList is less than the existing elements - 2 (for the buttons) remove all elements of class collabRoom from form
-    if (roomList.length < (collabRoomList.childElementCount - 2)) {
+    // If the incoming roomList is less than the existing elements, remove all elements of class collabRoom from form
+    if (roomList.length < (collabRoomList.childElementCount)) {
         var roomListings = document.querySelectorAll(".collabRoom")
         roomListings.forEach(room => {
             room.remove();
@@ -156,8 +163,15 @@ socket.on("roomNames", (roomList) => {
         }
     }
 })
-socket.on("redirect", (roomName) => {
-    window.location.href = "/collab_room/" + roomName;
+socket.on("redirect", (data) => {
+
+    // If user entered wrong password, give them an alert and dont redirect
+    if (data.wrongPass == true) {
+        alert("Incorrect Password");
+    } else {
+        // might need encodeURIComponent()?
+        window.location.replace(window.location.origin + "/collab_room/" + data.roomName);
+    }
 })
 addCollab.onclick = () => {
 
@@ -268,6 +282,9 @@ socket.on("savedDesigns", (data) => {
     
                 nameBut.onclick = () => {
                     designChoice.setAttribute("src", design.thumbnail);
+                    // This resizes the container of the image to fit with the form factor of the image
+                    designChoice.parentNode.style.width = "70%";
+                    designChoice.parentNode.style.height = "auto";
                     // postThumb.value = design.thumbnail;
                     postdesign.style.display = "none";
                 }
@@ -307,13 +324,24 @@ socket.on("returnLikedPosts", (data) => {
 
 postButton.onclick = () => {
     let tags = []
+
+    // Copy link of the design, and get the value following the final /
+    var checkValidDesign = new String(designChoice.src);
+    checkValidDesign = checkValidDesign.split("/");
+    checkValidDesign = checkValidDesign.pop();
+
+    // If that value games.jpg that means that the default image is still there and alert should be sent to user
+    if (checkValidDesign == "games.jpg") {
+        alert("Please select a design for the post.");
+        return;
+    }
+
     if(postTags.selectedOptions.length > 0){
 
     
         for(let i=0; i<postTags.selectedOptions.length; i++){
             tags.push(postTags.selectedOptions[i].innerHTML);
         };
-        console.log(tags);
         let postImage = designChoice.src;
         let name = postName.value;
         let caption = postCaption.value;
@@ -321,11 +349,9 @@ postButton.onclick = () => {
     
         let data = {postName: name, postCaption: caption, image: postImage, tagsList: tags};
 
-        console.log(data.image)
-
         socket.emit("post", (data));
     }else{
-        alert("please select at least 1 tag");
+        alert("Please select at least 1 tag");
     }
 }
 
@@ -353,7 +379,6 @@ closePostSavedDesigns.onclick = () => {
 this.onload = () => {
     socket.emit("getPosts");
     socket.emit("getModStatus");
-    
 }
 
 let posted = {};
@@ -388,6 +413,10 @@ function displayPost(posts, forLiked) {
         
         posted[post.id] = post.caption;
         let postDiv = document.createElement("div");
+        // Set the HTML id of the post element to resemble the database id,
+        // might not be the most secure but the only way to properly send
+        // comments to the db while knowing what post the comment was made on
+        postDiv.setAttribute("id", "post-"+post.id);
         let gridItem = document.createElement("div");
         let postTop = document.createElement("div");
         let profilePic = document.createElement("div");
@@ -406,11 +435,15 @@ function displayPost(posts, forLiked) {
         flagDiv.classList.add("flag");
 
         flagImg.setAttribute("src", "assets/icons/flag-fill.png");
+        flagImg.setAttribute("title", "Flag for Moderation");
         flagDiv.appendChild(flagImg);
 
 
-
-        profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg")
+        if (post.pfp != null) {
+            profileImage.setAttribute("src", post.pfp);
+        } else {
+            profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg");
+        }
         
         
         let div1 = document.createElement("div");
@@ -456,6 +489,8 @@ function displayPost(posts, forLiked) {
         post.LIKES = post.likes; // Set this to the database value
         likeCounter.innerHTML = post.LIKES;
 
+        barImage1.setAttribute("title", "Like");
+
         barImage1.addEventListener("click", () => {
             console.log("liked",post.LIKED);
             if (post.LIKED == true) {
@@ -474,12 +509,15 @@ function displayPost(posts, forLiked) {
 
 
         barImage2.setAttribute("src", "/public/assets/icons/archive-box-inverted.png");
+        barImage2.setAttribute("title", "Save Design");
 
         barImage2.addEventListener("click", () => {
             socket.emit("savePostedDesign", {design: post.id, creator: post.user});
+            alert("Design Saved!\nEnter a Collaboration Room and load the design to get started!");
         })
         
         barImage3.setAttribute("src", "/public/assets/icons/chat-circle-inverted.png");
+        barImage3.setAttribute("title", "Comment");
 
         barImage3.addEventListener("click", () => {
             showComments(postImage);
@@ -515,15 +553,6 @@ function displayPost(posts, forLiked) {
             likedPostsList.prepend(postDiv);
         }
         
-        const postComment = document.getElementById("postComment");
-
-        postComment.onclick = () => {
-            let commentValue = commentText.value;
-            console.log("content", commentValue);
-            commentText.value = "";
-            console.log("does this work", post.id);
-            socket.emit("postComment", {comment: commentValue, postID: post.id, name: post.name, caption: post.caption, user: post.user});
-        }
         // Flagging event
         flagImg.addEventListener("click", () => {
             socket.emit("postFlagged", {postID: post.id})
@@ -533,130 +562,272 @@ function displayPost(posts, forLiked) {
     socket.on("postAlreadyExists", (postName) => {
         alert("a post with the name " + postName + "already exists");
     })
-    // Adds event listeners to all the images so that we don't have growing posts
 
     const postImages = document.querySelectorAll(".post_img");
-    const postTop = document.querySelectorAll(".post-top");
-    const postBar = document.querySelectorAll(".post-bar")
-    // console.log("sfasdf", postImages)
+    // Adds required listeners to each post image
     for (let image of postImages) {
-        // console.log("image", image);
-        let post = image.parentElement.parentElement;
-        let child = post.children;
-        let postTop = child[0].children;
-        // console.log("posts", post);
-        // console.log("psot1", child);
-        // console.log("postTop", postTop);
-        image.addEventListener("mouseenter", mouseover(image))//() => {
-        //     post.style.transition = "transform 1s";
-        //     post.style.transitionDelay = "1s"
-        //     post.style.transform = "scale(1.15, 1.15)";
-        //     post.style.boxShadow = "0 0 2em white;"
-        //     post.style.left = "0";
-        //     post.style.top = "0";
-
-        //     // console.log("ethiasdhgtasd", post.getBoundingClientRect().left);
-
-        //     post.addEventListener("transitionend", () => {
-        //         child[0].style.transition = "opacity 1s ease-in-out";
-        //         child[0].style.opacity = "1";
-        //     })
-        // })
-        // image.addEventListener("mouseleave", () => {
-        //     post.style.transform = "scale(1,1)";
-        //     post.addEventListener("transitionend", () => {
-        //         child[0].style.transition = "opacity 1s ease-in-out";
-        //         child[0].style.opacity = "0";
-        //     })
-            
-        // });
-        
-        let imageOldLeft = post.offsetLeft;
-        let newLeftOffset = imageOldLeft - 384;
+        image.addEventListener("mouseenter", mouseover(image));
 
         // ANIMATION FOR OPENING COMMENTS
-        
+        console.log("click for " + image);
         image.addEventListener("click", () => {
-            image.removeEventListener("mouseenter", mouseover(image));
-            post.removeEventListener("transitionend", () => {
-                child[0].style.transition = "opacity 1s ease-in-out";
-                child[0].style.opacity = "1";
-                console.log("removed transition");
-            })
-            showComments(image, mouseover(image));
-            // callback(image);
+            showComments(image);
         })
 
         
     }
+
+    // This is the function called when a mouse is hovering over a post
+    // Use helper function instead of anonymised functions so events can be easily removed
     function mouseover(image) {
-        console.log("mousing over now");
         let post = image.parentElement.parentElement;
         let child = post.children
-        image.addEventListener("mouseenter", () => {
-            post.style.transition = "transform 1s";
-            post.style.transitionDelay = "1s"
-            post.style.transform = "scale(1.15, 1.15)";
-            post.style.boxShadow = "0 0 2em white;"
 
-            // console.log("ethiasdhgtasd", post.getBoundingClientRect().left);
-
-            post.addEventListener("transitionend", function postTransition() {
-                console.log("finished expanding");
-                child[0].style.transition = "opacity 1s ease-in-out";
-                child[0].style.opacity = "1";
-                // child[0].style.transitionDirection
-                // post.removeEventListener("transitionend", postTransition)
-            })
-        })
-        post.addEventListener("mouseleave", () => {
-            post.style.transform = "scale(1,1)";
-            post.addEventListener("transitionend", () => {
-                child[0].style.transition = "opacity 1s ease-in-out";
-                child[0].style.opacity = "0";
-            })
-            
-        });
+        // Remove the event before setting it to prevent event listener stacking when this is called multiple times
+        image.removeEventListener("mouseenter", helpForMouseEnter);
+        image.addEventListener("mouseenter", function() {helpForMouseEnter(post, child[0])});
+        post.removeEventListener("mouseleave", helpForMouseLeave);
+        post.addEventListener("mouseleave", function() {helpForMouseLeave(post, child[0])});
     }
 
-    function showComments(image, callback) {
+    function helpForMouseEnter(post, child) {
+        post.style.transition = "transform 1s";
+        post.style.transitionDelay = "1s"
+        post.style.transform = "scale(1.15, 1.15)";
+        post.style.boxShadow = "0 0 2em white;"
 
+        // Remove the event before setting it to prevent event listener stacking when this is called multiple times
+        post.removeEventListener("transitionend", postTransition);
+        post.addEventListener("transitionend", postTransition(child, false));
+    }
+
+    function helpForMouseLeave(post, child) {
+        post.style.transform = "scale(1,1)";
+
+        // Remove the event before setting it to prevent event listener stacking when this is called multiple times
+        post.removeEventListener("transitionend", postTransition);
+        post.addEventListener("transitionend", postTransition(child, true));
+    }
+
+
+    // If fade is true, that means that the animation is to play in reverse as the user has moved their mouse out of the post
+    function postTransition(child, fade) {
+        child.style.transition = "opacity 1s ease-in-out";
+        if (fade) {
+            child.style.opacity = "0";
+        } else {
+            child.style.opacity = "1";
+        }
+        // child.parentNode.removeEventListener("transitionend", postTransition);
+    }
+
+
+    socket.on("returnComments", data => {
+        // TODO: WRITE THE COMMENTS TO THE SCREEN, CURRENTLY DUPLICATING COMMENTS ON EACH VISIT
+
+        // Reset the commented tracker and empty the comments section element
+        // This is necessary because the form is reused for all posts
+        // If this wasn't in place there are issues with comments being duplicated and assigned to wrong posts
+        commented = [];
+        commentSection.innerHTML = "";
+
+        // Build up a comment container for each comment for the post
+        for (let comment of data.comments) {
+            let commentDiv = document.createElement("div");
+            let profilePicDiv = document.createElement("div");
+            let profilePicImg = document.createElement("img");
+            let commentContent = document.createElement("p");
+            commentContent.innerHTML = comment.comment;
+            commentDiv.classList.add("comment");
+            commentDiv.appendChild(profilePicDiv);
+            profilePicDiv.appendChild(profilePicImg);
+            profilePicDiv.classList.add("profile-pic");
+            profilePicImg.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg");
+            commentDiv.appendChild(commentContent);
+            if (!commented.includes(comment.comment)) {
+                commentSection.prepend(commentDiv);
+            }
+            commented.push(comment.comment);
+        }
+        console.log("commented", commented);
+    })
+
+    // Helper function for events, makes it so event can be removed to prevent stacking events
+    function cancelTransition(post, gridWidth) {
+        const postWidth = post.offsetWidth;
+        const postHeight = post.offsetHeight;
+
+        if (post.style.left == ((gridWidth - postWidth) / 2) - 10 + "px") {
+
+            post.style.animation = "shrink 1s";
+            post.style.animationFillMode = "forwards";
+
+            commentsContainer.style.display = "flex";
+            commentsContainer.style.animation = "opacity .75s";
+            commentsContainer.style.animationFillMode = "forwards";
+            commentsContainer.style.animationDelay = "1s";
+
+            const commentImage = document.getElementById("commentImage");
+
+            let postImage = post.children[1].children[0];
+
+            commentImage.setAttribute("src", postImage.src);
+            commentImage.style.width = "100%";
+            commentImage.style.height = "100%";
+            
+            const close = document.getElementById("closeComments");
+
+            close.addEventListener("click", (callback) => {
+                commentsContainer.style.animation = "opacity-reverse 1.75s" // Could try use animationDirection but this is easier
+                commentsContainer.style.display = "none";
+
+                post.style.animation = "grow 1s";
+                post.style.left = -((postWidth) / postWidth) + 1;
+                post.style.top = -(postHeight / postHeight) + 1;
+                post.style.transition = "all 2s";
+
+            });
+        }
+    }
+
+    // Helper function for events, makes it so event can be removed to prevent stacking events
+    // type modifies the movements needed depending on which column the post is moving from
+    function endTransition(post, type, gridWidth, callback) {
+        const clientY = window.innerHeight / 2;
+        const scrollTop = window.scrollY;
+        const postWidth = post.offsetWidth;
+        const postTop = post.offsetTop;
+        
+        // This is called if the post being transformed is in the left lane
+        if (type == "mid") {
+            if (post.style.top == scrollTop + (clientY - postTop) - 160 + "px") {
+                post.style.animation = "shrink 1s";
+                post.style.animationFillMode = "forwards";
+
+                commentsContainer.style.display = "flex";
+                commentsContainer.style.animation = "opacity .75s";
+                commentsContainer.style.animationFillMode = "forwards";
+                commentsContainer.style.animationDelay = "1s";
+
+                const commentImage = document.getElementById("commentImage");
+                let postImage = post.children[1].children[0];
+
+                // Set the image of the post
+                commentImage.setAttribute("src", postImage.src);
+                commentImage.style.width = "100%";
+                commentImage.style.height = "100%";
+
+                const close = document.getElementById("closeComments");
+                // Remove the event before setting it to prevent event listener stacking when this is called multiple times
+                // Call the helper funciton for the close comments button, specify the post is in the middle lane
+                close.removeEventListener("click", closeCommentsListeners);
+                close.addEventListener("click", function () {closeCommentsListeners("mid", post)});
+            }
+        } else if (type == "left"){
+            // If the post is in the middle of the screen then play the animation
+            if (post.style.left == ((gridWidth - postWidth) / 2) - 10 + "px") {
+                post.style.animation = "shrink 1s";
+                post.style.animationFillMode = "forwards";
+
+                commentsContainer.style.display = "flex";
+                commentsContainer.style.animation = "opacity .75s";
+                commentsContainer.style.animationFillMode = "forwards";
+                commentsContainer.style.animationDelay = "1s";
+
+                const commentImage = document.getElementById("commentImage");
+                let postImage = post.children[1].children[0];
+                
+                // Set the image of the post
+                commentImage.setAttribute("src", postImage.src);
+                commentImage.style.width = "100%";
+                commentImage.style.height = "100%";
+
+                const close = document.getElementById("closeComments");
+                // Remove the event before setting it to prevent event listener stacking when this is called multiple times
+                // Call the helper funciton for the close comments button, specify the post is in the left lane                close.removeEventListener("click", closeCommentsListeners);
+                close.addEventListener("click", function () {closeCommentsListeners("left", post)});
+            }
+        } else if (type == "right") {
+            // This is called if the post being transformed is in the right lane
+            if (post.style.left == -((gridWidth - postWidth) / 2) + 10 + "px") {
+                post.style.animation = "shrink 1s";
+                post.style.animationFillMode = "forwards";
+
+                commentsContainer.style.display = "flex";
+                commentsContainer.style.animation = "opacity .75s";
+                commentsContainer.style.animationFillMode = "forwards";
+                commentsContainer.style.animationDelay = "1s";
+
+                const commentImage = document.getElementById("commentImage");
+                let postImage = post.children[1].children[0];
+                
+                // Set the image of the post
+                commentImage.setAttribute("src", postImage.src);
+                commentImage.style.width = "100%";
+                commentImage.style.height = "100%";
+
+                const close = document.getElementById("closeComments");
+                // Remove the event before setting it to prevent event listener stacking when this is called multiple times
+                // Call the helper funciton for the close comments button, specify the post is in the right lane
+                close.removeEventListener("click", closeCommentsListeners);
+                close.addEventListener("click", function () {closeCommentsListeners("right", post)});
+            }
+        }
+    }
+
+    // Helper function for the close comments button, takes in the post and the left/right/mid lane the post is in
+    function closeCommentsListeners(type, post) {
+        const postWidth = post.offsetWidth;
+        const postHeight = post.offsetHeight;
+
+        if (type=="left") {
+            commentsContainer.style.animation = "opacity-reverse 1.75s" // Could try use animationDirection but this is easier
+            commentsContainer.style.display = "none";
+
+            post.style.animation = "grow 1s";
+            post.style.left = -((postWidth) / postWidth) + 1;
+            post.style.top = -(postHeight / postHeight) + 1;
+            post.style.transition = "all 2s";
+        } else if (type=="mid") {
+            commentsContainer.style.animation = "opacity-reverse 1.75s";
+            commentsContainer.style.display = "none";
+
+            post.style.animation = "grow 1s";
+            post.style.top = (postHeight / postHeight) - 1;
+            post.style.transition = "all 2s";
+        }else if (type=="right") {
+            commentsContainer.style.animation = "opacity-reverse 1.75s" // Could try use animationDirection but this is easier
+            commentsContainer.style.display = "none";
+
+            post.style.animation = "grow 1s";
+            post.style.left = -((postWidth) / postWidth) + 1;
+            post.style.top = -(postHeight / postHeight) + 1;
+            post.style.transition = "all 2s";
+        }
+    }
+
+
+    function showComments(image, callback) {
         let post = image.parentElement.parentElement;
         let child = post.children;
+
+        // Get the post id and use substring to get the acutal db id of the post
+        var postId = new String(post.id);
+        postId = postId.substring(postId.indexOf("-")+1);
+
+        // Use the id to update the postComment onclick to send the correct post id
+        const postComment = document.getElementById("postComment");
+        postComment.onclick = () => {
+            let commentValue = commentText.value;
+            commentText.value = "";
+            socket.emit("postComment", {comment: commentValue, postID: postId});
+        }
 
 
         // Retrieve the comments on click
         socket.emit("getComments", {postID: image.getAttribute("alt")});
         // If we don't do socket.on for the comments here, then they don't show on the first opening of a post
-        socket.on("returnComments", data => {
-            // TODO: WRITE THE COMMENTS TO THE SCREEN, CURRENTLY DUPLICATING COMMENTS ON EACH VISIT
-            console.log("here");
-            if (data.comments.length == 0) {
-                commentSection.innerHTML = "";
-            }
-            for (let comment of data.comments) {
-                console.log("comment", comment);
-                let commentDiv = document.createElement("div");
-                let profilePicDiv = document.createElement("div");
-                let profilePicImg = document.createElement("img");
-                let commentContent = document.createElement("p");
-                commentContent.innerHTML = comment.comment;
-                commentDiv.classList.add("comment");
-                commentDiv.appendChild(profilePicDiv);
-                profilePicDiv.appendChild(profilePicImg);
-                profilePicDiv.classList.add("profile-pic");
-                profilePicImg.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg");
-                commentDiv.appendChild(commentContent);
-                if (!commented.includes(comment.comment)) {
-                    commentSection.prepend(commentDiv);
-                    console.log("doesnt include");
-                }
-                console.log("commented", commented);
-                commented.push(comment.comment);
-                
-            
-            }
-        })
+        
         // Careful this will not work if there is no post in the second column of the feed!
         const col2 = document.querySelector(".feed > :nth-child(3n-1");
         const col1 = document.querySelector(".feed > :nth-child(3n-2");
@@ -665,9 +836,6 @@ function displayPost(posts, forLiked) {
         const col2All = document.querySelectorAll(".feed > :nth-child(3n-1");
         const col3All = document.querySelectorAll(".feed > :nth-child(3n)");
     
-        // columnNumber = getCols(post);
-        console.log("column 2", col2All);
-        console.log("column 3", col3All);
         let col = null;
         // Find column of post
         for (let p of col1All) {
@@ -684,270 +852,49 @@ function displayPost(posts, forLiked) {
             }
         }
     
-        
-        console.log("this is col value", col);
         const clientY = window.innerHeight / 2;
-        const scrollY = document.documentElement.scrollTop;
-        const clientH = document.documentElement.clientTop;
-    
         const scrollTop = window.scrollY;
         
-    
         const gridWidth = feed.offsetWidth;
-        const gridHeight = feed.offsetHeight;
         const postWidth = post.offsetWidth;
         const postLeft = post.offsetLeft
-        const postHeight = post.offsetHeight;
         const postTop = post.offsetTop;
     
         // If column is == 1 then move it to centre and if col is == 3 move to centre
         // Using if as we need to minus coords if the post is in col 3
         if (col == true) {
             if (postLeft != col2.offsetLeft) {
-                // post.style.right = "0";
-                // post.style.bottom = "0";
                 post.style.left = ((gridWidth - postWidth) / 2)- 10;
-                // post.style.top = ((gridHeight - postHeight) / 2) - 10;
-                // console.log("clientHeight: ", (clientY - postTop) - 160)
                 post.style.top = scrollTop + (clientY - postTop) - 160; // Calculates the centre of the screen (kinda) with scrolling included
-                // post.style.top = (scrollY - clientH) / 2;
                 post.style.transition = "all 2s ease-in-out";
 
-                
-                
-                post.addEventListener("transitioncancel", () => {
-                    console.log("transition cancelled");
-
-                    if (post.style.left == ((gridWidth - postWidth) / 2) - 10 + "px") {
-    
-                        post.style.animation = "shrink 1s";
-                        post.style.animationFillMode = "forwards";
-    
-                        commentsContainer.style.display = "flex";
-                        commentsContainer.style.animation = "opacity .75s";
-                        commentsContainer.style.animationFillMode = "forwards";
-                        commentsContainer.style.animationDelay = "1s";
-    
-                        const commentImage = document.getElementById("commentImage");
-    
-                        let postImage = post.children[1].children[0];
-                        
-    
-                        commentImage.setAttribute("src", postImage.src);
-                        commentImage.style.width = "100%";
-                        commentImage.style.height = "100%";
-                        console.log("commented", commented);
-                        
-                            
-                            
-                    
-    
-                        const close = document.getElementById("closeComments");
-    
-                        close.addEventListener("click", (callback) => {
-                            
-                            commentsContainer.style.animation = "opacity-reverse 1.75s" // Could try use animationDirection but this is easier
-                            // commentsContainer.style.animationDelay = "1s";
-                            commentsContainer.style.display = "none";
-    
-                            post.style.animation = "grow 1s";
-    
-                            post.style.left = -((postWidth) / postWidth) + 1;
-                            post.style.top = -(postHeight / postHeight) + 1;
-                            post.style.transition = "all 2s";
-                            mouseover(image);
-    
-                        });
-                        
-                        // post.style.animation = "grow 1.5s";
-                        // post.style.animationDelay = "0.25s";
-                        // post.style.animationDirection = "forwards";
-                    }
-                })
-    
+                post.removeEventListener("transitioncancel", cancelTransition);
+                post.addEventListener("transitioncancel", cancelTransition(post, gridWidth, callback));
     
                 // Only play the animation after we have transitioned to the middle of the screen
-                post.addEventListener("transitionend", () => {
-                    
-                    // If the post is in the middle of the screen then play the animation
-                    if (post.style.left == ((gridWidth - postWidth) / 2) - 10 + "px") {
-    
-                        post.style.animation = "shrink 1s";
-                        post.style.animationFillMode = "forwards";
-    
-                        commentsContainer.style.display = "flex";
-                        commentsContainer.style.animation = "opacity .75s";
-                        commentsContainer.style.animationFillMode = "forwards";
-                        commentsContainer.style.animationDelay = "1s";
-    
-                        const commentImage = document.getElementById("commentImage");
-    
-                        let postImage = post.children[1].children[0];
-                        
-    
-                        commentImage.setAttribute("src", postImage.src);
-                        commentImage.style.width = "100%";
-                        commentImage.style.height = "100%";
-                        console.log("commented", commented);
-                        
-                            
-                            
-                    
-    
-                        const close = document.getElementById("closeComments");
-    
-                        close.addEventListener("click", (callback) => {
-                            
-                            commentsContainer.style.animation = "opacity-reverse 1.75s" // Could try use animationDirection but this is easier
-                            // commentsContainer.style.animationDelay = "1s";
-                            commentsContainer.style.display = "none";
-    
-                            post.style.animation = "grow 1s";
-    
-                            post.style.left = -((postWidth) / postWidth) + 1;
-                            post.style.top = -(postHeight / postHeight) + 1;
-                            post.style.transition = "all 2s";
-                            mouseover(image);
-    
-                        });
-                        
-                        // post.style.animation = "grow 1.5s";
-                        // post.style.animationDelay = "0.25s";
-                        // post.style.animationDirection = "forwards";
-                    }
-                });
+                post.removeEventListener("transitionend", endTransition);
+                post.addEventListener("transitionend", endTransition(post, "left", gridWidth, callback));
             }
-            // if (postLeft == col2.offsetLeft) {
-            //     post.style.left = -((postWidth) / postWidth) + 1;
-            //     post.style.top = -(postHeight / postHeight) + 1;
-            //     post.style.transition = "all 2s";
-            //     post.style.zIndex = "1000";
-                
-            // }
         } else if (col == false) {
             if (postLeft != col2.offsetLeft || postLeft != col2.offsetLeft + 1) {
                 post.style.left = -((gridWidth - postWidth) / 2) + 10;
-                // post.style.top = ((gridHeight - postHeight) / 2) + 10;
                 post.style.top = scrollTop + (clientY - postTop) - 160; // Calculates the centre of the screen (kinda) with scrolling included
                 post.style.transition = "all 2s";
     
-                
-    
                 // Only play the animation after we have transitioned to the middle of the screen
-                post.addEventListener("transitionend", () => {
-                    // If the post is in the middle of the screen then play the animation grow
-                    if (post.style.left == -((gridWidth - postWidth) / 2) + 10 + "px") {
-    
-                        post.style.animation = "shrink 1s";
-                        post.style.animationFillMode = "forwards";
-    
-                        commentsContainer.style.display = "flex";
-                        commentsContainer.style.animation = "opacity .75s";
-                        commentsContainer.style.animationFillMode = "forwards";
-                        commentsContainer.style.animationDelay = "1s";
-    
-                        const commentImage = document.getElementById("commentImage");
-    
-                        let postImage = post.children[1].children[0];
-                        
-    
-                        commentImage.setAttribute("src", postImage.src);
-                        commentImage.style.width = "100%";
-                        commentImage.style.height = "100%";
-    
-                        const close = document.getElementById("closeComments");
-    
-                        close.addEventListener("click", () => {
-                            commentsContainer.style.animation = "opacity-reverse 1.75s" // Could try use animationDirection but this is easier
-                            // commentsContainer.style.animationDelay = "1s";
-                            commentsContainer.style.display = "none";
-    
-                            post.style.animation = "grow 1s";
-    
-                            post.style.left = -((postWidth) / postWidth) + 1;
-                            post.style.top = -(postHeight / postHeight) + 1;
-                            post.style.transition = "all 2s";
-                            callback(image);
-                        });
-                    }
-                });
+                post.removeEventListener("transitionend", endTransition);
+                post.addEventListener("transitionend", endTransition(post, "right", gridWidth,callback));
             }
-            // if (postLeft == col2.offsetLeft || postLeft == col2.offsetLeft + 1) {
-            //     post.style.left = ((postWidth) / postWidth) - 1;
-            //     post.style.top = (postHeight / postHeight) - 1;
-            //     post.style.transition = "all 2s";
-    
-            // }
         } else if (col == null) {
             if (postLeft == col2.offsetLeft) {
                 post.style.top = scrollTop + (clientY - postTop) - 160; // Calculates the centre of the screen (kinda) with scrolling included
                 post.style.transition = "all 2s";
-    
-                post.addEventListener("transitionend", () => {
-                    if (post.style.top == scrollTop + (clientY - postTop) - 160 + "px") {
-                        post.style.animation = "shrink 1s";
-                        post.style.animationFillMode = "forwards";
-    
-                        commentsContainer.style.display = "flex";
-                        commentsContainer.style.animation = "opacity .75s";
-                        commentsContainer.style.animationFillMode = "forwards";
-                        commentsContainer.style.animationDelay = "1s";
-    
-                        const commentImage = document.getElementById("commentImage");
-    
-                        let postImage = post.children[1].children[0];
-                        
-                        
-    
-                        commentImage.setAttribute("src", postImage.src);
-                        commentImage.style.width = "100%";
-                        commentImage.style.height = "100%";
-    
-                        const close = document.getElementById("closeComments");
-    
-                        close.addEventListener("click", () => {
-                            commentsContainer.style.animation = "opacity-reverse 1.75s";
-    
-                            commentsContainer.style.display = "none";
-    
-                            post.style.animation = "grow 1s";
-    
-                            post.style.top = (postHeight / postHeight) - 1;
-                            post.style.transition = "all 2s";
-                            callback(image);
-                        })
-                    }
-                })
+
+                post.removeEventListener("transitionend", endTransition);
+                post.addEventListener("transitionend", endTransition(post, "mid", gridWidth,callback));
             }
         }
-        // image.addEventListener("mouseenter", () => {
-        //     post.style.transition = "transform 1s";
-        //     post.style.transitionDelay = "1s"
-        //     post.style.transform = "scale(1.15, 1.15)";
-        //     post.style.boxShadow = "0 0 2em white;"
-        //     post.style.left = "0";
-        //     post.style.top = "0";
-
-        //     // console.log("ethiasdhgtasd", post.getBoundingClientRect().left);
-
-        //     post.addEventListener("transitionend", () => {
-        //         child[0].style.transition = "opacity 1s ease-in-out";
-        //         child[0].style.opacity = "1";
-        //     })
-        // })
-
-        
     }
-
-    // for (let bar of postBar) {
-    //     let barchildren = bar.children[2];
-    //     console.log("barchildren", barchildren);
-        
-    //     barchildren.addEventListener("click", () => {
-    //         showComments();
-    //     })
-    // }
-
 }
 
 socket.on('roomNotFound', (roomName) => {

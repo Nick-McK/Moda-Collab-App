@@ -23,6 +23,7 @@
 * [ ] Rooms
     * [ ] Search for adding collaborators using same method as searching for friends
     * [ ] Search room names
+    * [ ] Remove success parameter from homepage URL once alert has been given
     * [ ] Add required fields to name and password
     * [X] ~~*Delete rooms after 5 minutes with nobody in them*~~ [2022-03-04]
 

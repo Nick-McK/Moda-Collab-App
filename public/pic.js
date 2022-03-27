@@ -92,12 +92,18 @@ window.onload = () => {
         
                 flagDiv.classList.add("flag");
         
-                flagImg.setAttribute("src", "assets/icons/flag-fill.png");
+                flagImg.setAttribute("src", "/public/assets/icons/flag-fill.png");
+                flagImg.setAttribute("title", "Flag for Moderation");
                 flagDiv.appendChild(flagImg);
-        
+
+                if (post.pfp != null) {
+                    profileImage.setAttribute("src", post.pfp);
+                } else {
+                    profileImage.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg");
+                }
+                profileImage.id = post.id+"-image";
+
                 
-        
-                profileImage.setAttribute("src", "assets/icons/empty-profile-picture.jpeg")
                 
                 
                 let div1 = document.createElement("div");
@@ -123,53 +129,51 @@ window.onload = () => {
                 postImage.setAttribute("alt", post.id);
         
                 barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
+                barImage1.setAttribute("title", "Like");
         
-                socket.on("likedByUsers", data => {
-                    let likes = data.likes;
-        
-                    // Need this for when the post has just been added, as we create the userIDs part if the post has more than 0 likes
-                    // And because it makes it work, kinda not sure why because it worked without it
-                    if (likes[post.id] == undefined) {
-                        LIKED = false;
-                    } else if (likes[post.id].userIDs[post.sessionID] == post.sessionID) {
-                        console.log("I exist!");
-                        var LIKED = true;
+                // Need this for when the post has just been added, as we create the userIDs part if the post has more than 0 likes
+                // And because it makes it work, kinda not sure why because it worked without it
+                if (post.likedBy == undefined) {
+                    post.LIKED = false;
+                } else if (Object.values(post.likedBy).includes(post.sessionID)) {
+                    console.log("I exist!");
+                    post.LIKED = true;
+                    barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
+                } else {
+                    post.LIKED = false;
+                }
+            
+                post.LIKES = post.likes; // Set this to the database value
+                likeCounter.innerHTML = post.LIKES;
+
+                barImage1.setAttribute("title", "Like");
+
+                barImage1.addEventListener("click", () => {
+                    console.log("liked",post.LIKED);
+                    if (post.LIKED == true) {
+                        post.LIKES--;
+                        post.LIKED = false;
+                        barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
+                        socket.emit("liked", {likes: post.LIKES, id: post.id, liked: false});
+                    } else if (post.LIKED == false) {
+                        post.LIKES++;
+                        post.LIKED = true;
                         barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
-                    } else {
-                        LIKED = false;
-                        console.log("values");
+                        socket.emit("liked", {likes: post.LIKES, id: post.id, liked: true});
                     }
-                
-                    let LIKES = post.likes; // Set this to the database value
-                    const LIKES_BEFORE = post.likes;
-        
-                    likeCounter.innerHTML = LIKES;
-                    
-                    barImage1.addEventListener("click", () => {
-                        if (LIKED == true) {
-                            LIKES--;
-                            LIKED = false;
-                            // likeCounter.style.color = 
-                            barImage1.setAttribute("src", "/public/assets/icons/heart-inverted.png");
-                            socket.emit("liked", {likes: LIKES, id: post.id, liked: LIKED});
-                        } else if (LIKED == false) {
-                            LIKES++;
-                            LIKED = true;
-                            barImage1.setAttribute("src", "/public/assets/icons/heart-fill.png");
-                            socket.emit("liked", {likes: LIKES, id: post.id, liked: LIKED});
-                        }
-                        likeCounter.innerHTML = LIKES;
-                        
-                    })
+                    likeCounter.innerHTML = post.LIKES;
                 })
+
                 barImage2.setAttribute("src", "/public/assets/icons/archive-box-inverted.png");
-        
+                barImage2.setAttribute("title", "Save Design");
+
                 barImage2.addEventListener("click", () => {
                     socket.emit("savePostedDesign", {design: post.id, creator: post.user});
                 })
                 
                 barImage3.setAttribute("src", "/public/assets/icons/chat-circle-inverted.png");
-        
+                barImage3.setAttribute("title", "Comment");
+
                 barImage3.addEventListener("click", () => {
                     showComments(postImage);
                 });
