@@ -90,6 +90,7 @@ ptInput.addEventListener('change', function() {setPtSize(recentlySelected);});  
 
 // Sets the ptSize of future and selected text to global ptSize value
 function setPtSize(objects) {
+    console.log(objects)
     pt = parseInt(ptInput.value);  // Update global var
     if (objects) {
         for (var i of objects) {
@@ -101,7 +102,6 @@ function setPtSize(objects) {
             }
         }
     }
-    recentlySelected = [];
 }
 
 
@@ -125,7 +125,6 @@ function setLineWidth(objects) {
             }
         }
     }
-    recentlySelected = [];
 }
 
 // Allows user to modify font family
@@ -146,7 +145,6 @@ function setFontFamily(objects) {
             }
         } 
     }
-    recentlySelected = [];
 }
 
 
@@ -174,7 +172,6 @@ function changeColour(objects) {
             canvas.fire('object:modified', {target : i});
         }
     }
-    recentlySelected = [];
 }
 
 
@@ -197,6 +194,7 @@ function changeBgColour() {
 
 // This is for debugging and getting recently selected object for attribute manipulation
 canvas.on('selection:created', function() {
+    recentlySelected = [];
     recentlySelected = canvas.getActiveObjects();
     console.log(recentlySelected);
 })
@@ -243,12 +241,14 @@ function changeTool(res, imgUrl) {
 
             showToggledTool("line");    // Set the visual feedback of the buttons to show that the line tool is in use
             togglePan(true);            // disable panning, but make sure that selection is still off
-            canvas.selection = false;
 
             // Update the cursor to show that use has activated the straight line tool
             if (straightLineDraw.toggled) {
+                canvas.defaultCursor = "crosshair";
                 r.set({hoverCursor: "crosshair"});
+                canvas.selection = false;
             } else {
+                canvas.defaultCursor = "default";
                 r.set({hoverCursor: "default"});
             };
         break;
@@ -340,10 +340,12 @@ function showToggledTool(inUse) {
 function togglePan(disable) {
     if (panning || disable) {
         panning = false;
+        canvas.defaultCursor = "default";
         r.set({hoverCursor: "default"});
         canvas.selection = true;
     } else {
         panning = true;
+        canvas.defaultCursor = "move";
         r.set({hoverCursor : "move"});
         canvas.freeDrawingBrush = false;
         canvas.selection = false;
