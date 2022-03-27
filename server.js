@@ -1212,37 +1212,38 @@ io.sockets.on('connect', (socket) => {
             if (err) console.log(err);
             let image = result[0]._id;
             let design = image.toString();
+            // I think this is for adding multiple tags for each post -> depracated for now
             let tags = [];
-            if(postData.tagsList.length > 0){
+            // if(postData.tagsList.length > 0){
                
-                for(let i = 0; i<8; i++){
-                    tags[i] = 0;
-                }
-                if(postData.tagsList.includes('streetware')){
-                    tags[0] = 1;
-                }
-                if(postData.tagsList.includes('formal')){
-                    tags[1] = 1;
-                }
-                if(postData.tagsList.includes('casual')){
-                    tags[2] = 1;
-                }
-                if(postData.tagsList.includes('luxury')){
-                    tags[3] = 1;
-                }
-                if(postData.tagsList.includes('vintage')){
-                    tags[4] = 1;
-                }
-                if(postData.tagsList.includes('chic')){
-                    tags[5] = 1;
-                }
-                if(postData.tagsList.includes('punk')){
-                    tags[6] = 1;
-                }
-                if(postData.tagsList.includes('sportsware')){
-                    tags[7] = 1;
-                }
-            }
+            //     for(let i = 0; i<8; i++){
+            //         tags[i] = 0;
+            //     }
+            //     if(postData.tagsList.includes('streetware')){
+            //         tags[0] = 1;
+            //     }
+            //     if(postData.tagsList.includes('formal')){
+            //         tags[1] = 1;
+            //     }
+            //     if(postData.tagsList.includes('casual')){
+            //         tags[2] = 1;
+            //     }
+            //     if(postData.tagsList.includes('luxury')){
+            //         tags[3] = 1;
+            //     }
+            //     if(postData.tagsList.includes('vintage')){
+            //         tags[4] = 1;
+            //     }
+            //     if(postData.tagsList.includes('chic')){
+            //         tags[5] = 1;
+            //     }
+            //     if(postData.tagsList.includes('punk')){
+            //         tags[6] = 1;
+            //     }
+            //     if(postData.tagsList.includes('sportsware')){
+            //         tags[7] = 1;
+            //     }
+            // }
             // code that's commented out is tags stuff
             /* none of this works bruh 
             con.query("SELECT postID FROM posts WHERE postName = ?", [postData.postName], (err, result) => {
@@ -1254,7 +1255,7 @@ io.sockets.on('connect', (socket) => {
                }
             });
             */
-            con.query("INSERT INTO posts (postName, postCaption, likes, design, userID) VALUES (?, ?, ?, ?, ?)", [postData.postName, postData.postCaption, 0, design, socket.request.session.userID], (err, result) => {
+            con.query("INSERT INTO posts (postName, postCaption, likes, design, userID, tag) VALUES (?, ?, ?, ?, ?, ?)", [postData.postName, postData.postCaption, 0, design, socket.request.session.userID, postData.tag], (err, result) => {
                 if(err) throw err;
                 console.log("added post");
                 /* fixing this aint worth it bruh
@@ -1293,7 +1294,7 @@ io.sockets.on('connect', (socket) => {
         let postsName = {};
 
         // Gets all relevant details for each post
-        con.query("SELECT postID, postName, postCaption, design, userID, likes FROM posts", (err, result) => {
+        con.query("SELECT postID, postName, postCaption, design, userID, likes, tag FROM posts", (err, result) => {
             if (err) throw err;
             if (result.length == 0) {return}
             // For each post, get the usernames of the poster
@@ -1312,7 +1313,7 @@ io.sockets.on('connect', (socket) => {
                         let name = r[0].username;
 
                         if (result[i].likes == null) result[i].likes = 0;
-                        postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
+                        postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID, tag: result[i].tag} // Send over name of the user who created it so that we can show who posted it
                         posts.push(postsName);    
 
                         // When all of the posts have been found
@@ -1331,9 +1332,27 @@ io.sockets.on('connect', (socket) => {
                                     post.likedBy = await l;
                                 } 
                             }
+                            let tagMap = new Map();
+                            con.query("SELECT * FROM tags WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+                                if (err) throw err;
 
-                            // Emit the completed posts list
-                            socket.emit("posts", posts);
+                                console.log("tags------------------", result);
+                                
+                                tagMap.set("streetware", result[0].streetware);
+                                tagMap.set("formal", result[0].streetware); 
+                                tagMap.set("casual", result[0].streetware); 
+                                tagMap.set("luxury", result[0].streetware); 
+                                tagMap.set("vintage", result[0].streetware); 
+                                tagMap.set("chic", result[0].streetware); 
+                                tagMap.set("punk", result[0].streetware);    
+                                tagMap.set("sportsware", result[0].streetware);                             
+                            
+
+                                // Emit the completed posts list
+                                socket.emit("posts", posts);
+                                socket.emit("tags", {streetware: result[0].streetware, formal: result[0].formal, casual: result[0].casual, luxury: result[0].luxury, vintage: result[0].vintage, chic: result[0].chic, punk: result[0].punk, sportsware: result[0].sportsware});
+
+                            })
                         }
                     }
                     anotherWait();
@@ -1559,9 +1578,13 @@ io.sockets.on('connect', (socket) => {
         con.query("SELECT isMod, isAdmin FROM user_details WHERE userID = ?", [socket.request.session.userID], (err, result) => {
             if (err) throw err;
             console.log("mod status", result);
+            // This may need to be result === undefined to do anything if an error occurred from this as it is
+            // Trying to read .length which doesnt exist?
             if (result.length === undefined) result[0].isMod = 0;
             socket.emit("returnModAndAdminStatus", {isMod: result[0].isMod, isAdmin: result[0].isAdmin});
-        })
+        });
+        // This skips the below query if we are not on a users profile page
+        if (data === undefined) return;
         con.query("SELECT userID FROM users WHERE username = ?", [data.user], (err, result) => {
             if (err) throw err;
             con.query("SELECT isMod FROM user_details WHERE userID = ?", [result[0].userID], (err, result) => {

@@ -643,7 +643,7 @@ window.onload = () => {
         }
         // This sets the post request to be to the current users profile
         // Slightly redundant since you can only make a post request on your own profile
-        test.setAttribute("action", "/profile/" + getUser());
+        pictureForm.setAttribute("action", "/profile/" + getUser());
 
         if (getUser() == data.user) {
             console.log("THIS IS YOUR PROFILE");

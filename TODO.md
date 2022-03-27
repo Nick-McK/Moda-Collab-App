@@ -10,7 +10,7 @@
     * [X] ~~*Navbar*~~ [2022-03-02]
         * [ ] Add media control so phone users get burger menu's
     * [X] ~~*save designs from the posts menu*~~ [2022-03-10]
-    * [ ] Liked posts menu
+    * [X] ~~*Liked posts menu*~~ [2022-03-24]
     * [ ] Discover page? where you can see all posts not just posts with your tags
     * [ ] Delete posts -> Do this on the profile page, so we can easily tell if the post is yours
 
@@ -83,8 +83,18 @@ Bugs:
 
 * [X] ~~*Drawings printing to the most recent room drawn*~~ [2022-03-19]
 * [ ] If the session runs out and we are still in a collab room (anywhere else?) then server crashes
+* [ ] If we post the placeholder image we crash the server as its not in mongo
 
 
 
 
+* [ ] Final TODO
 
+* [X] ~~*Tags on posts -> insert tags column and then only display posts with the same tags as the user selected*~~ [2022-03-24]
+* [ ] Search for friends using the bar -> Add people to rooms with add collab
+* [ ] Try get friends display working so that if I add a friend from recommendations it is removed from that list and added to requests
+
+* [ ] Fix css for post page
+
+Maybe:
+* [ ] Delete posts
