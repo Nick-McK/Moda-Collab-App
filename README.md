@@ -6,14 +6,14 @@ Collaborative social media application
 2. Navigate to the Moda-Collab-App directory where server.js is located
 3. Run the command `npm install`
 4. Navigate to the node_modules folder
-5. Enter the fabic folder
+5. Enter the fabric folder
 6. Run `node build.js modules='ALL'`
 7. Download MySQL Workbench from https://dev.mysql.com/downloads/workbench/
 8. Run the setup launcher
 9. Setup a local instance running on localhost:3306
 10. Import the **Moda Collab MySQL Model** to the Workbench instance
 11. Download MongoDB Compass
-12. Add a New Conneciton with the connection string "mongodb://localhost:27017/?readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false"
+12. Add a New Connection with the connection string "mongodb://localhost:27017/?readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false"
 13. Run `node server.js`
 
 # Program Use
