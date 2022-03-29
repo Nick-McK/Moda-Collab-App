@@ -30,6 +30,7 @@ const header = document.getElementById("header");
 const pictureForm = document.getElementById("profilePicForm");
 // const mod = document.getElementById("_mod");
 const addFriend = document.getElementById("_add-friend")
+const tagsDiv = document.getElementById("tags");
 
 
 
@@ -44,6 +45,7 @@ let commented = [];
 
 window.onload = () => {
     socket.emit("getModAndAdminStatus", {user: getUser()});
+    socket.emit("getFriendStatus", {user: getUser()});
     // Gets the username from the URL to send to the server and get all the relevant details
     let user = getUser();
 
@@ -54,12 +56,24 @@ window.onload = () => {
 
     socket.on("accountDetails", posts => {
         
+        // let tag = document.createElement("p");
+        // tag.innerHTML = posts.tags[]
+        // tags.appendChild(tag);
 
-        console.log("posts", posts);
-        for (let post of posts) {
+        for (let [key, value] of posts.tags) {
+            console.log(key);
+            console.log(value);
+
+            let tag = document.createElement("p");
+            tag.innerHTML = key;
+            tagsDiv.appendChild(tag);
+        }
+
+
+
+        console.log("posts", posts.posts);
+        for (let post of posts.posts) {
             let username = post.user;
-            
-            console.log("this is username", username);
             
             let div = document.getElementById("username");
             
@@ -69,7 +83,7 @@ window.onload = () => {
             // header.after(div);
             console.log("username", post.user);
 
-            for (let post of posts) {
+            for (let post of posts.posts) {
                 if (posted[post.id] == post.caption) {
                     continue;
                 }
@@ -653,17 +667,19 @@ window.onload = () => {
             console.log("THIS IS YOUR PROFILE");
             uploadBtn.style.display = "flex";
             finishBtn.style.display = "flex";
+
+            addFriend.style.display = "none";
         }
 
 
     })
 
     socket.on("returnModAndAdminStatus", data => {
-        if (data.isMod == 0) {
-            let mods = document.getElementById("mods");
-            mods.style.display = "none";
-            // modNav.style.display = "grid";
-        }
+        // if (data.isMod == 0) {
+        //     let mods = document.getElementById("mods");
+        //     mods.style.display = "none";
+        //     // modNav.style.display = "grid";
+        // }
         if (data.isAdmin == 1) {
             // Make this using JS to better protect against people just changing the mod display value to flex and making themselves a mod
             let mod = document.createElement("button");
@@ -677,8 +693,9 @@ window.onload = () => {
             mod.style.display = "flex";
             mod.style.top = "0";
             mod.style.left = "-50%";
-            addFriend.style.left = "50%";
+            addFriend.style.left = "-50%";
             addFriend.style.top = "0";
+            
 
             mod.addEventListener("click", () => {
                 socket.emit("makeMod", {user: getUser()});
@@ -698,6 +715,14 @@ window.onload = () => {
         
     })
 
+    socket.on("returnFriendStatus", data => {
+        console.log("isFriend", data.isFriend);
+        if (data.isFriend == true) {
+            addFriend.style.display = "none";
+        } else {
+            addFriend.style.display = "flex";
+        }
+    })
 }
 
 const profile = document.getElementById("profile");
@@ -741,8 +766,10 @@ file.addEventListener('change', function(){
         alert("File not chosen or incompatible file type, please upload PNG or JPEG only.")
     }
 });
-
-
+// Adds a friend
+addFriend.addEventListener("click", () => {
+    socket.emit("friendRequested", {user: getUser()});
+})
 
 // finishBtn.onclick = () => {
 //     const imageURL = img.getAttribute("src");

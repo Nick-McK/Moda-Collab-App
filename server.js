@@ -298,75 +298,64 @@ app.get("/profile/:user", (req, res) => {
     
 })
 
-// Maybe make post request to profile page for x user for PP upload
+
 app.post("/profile/:user", (req, res) => {
     let uploadPath;
-
-    console.log("asasdfasdf", req.files);
+    let serverFolderPath = "./server/" + req.session.userID + "/";
 
     if (!req.files) {
         return res.status(400).send("No files were uploaded");
     }
-
+    // The unique folder for each user identified by their id
     const folderName = "./server/" + req.session.userID;
-
     try {
+        // If a folder does not exist then make one
         if (!fs.existsSync(folderName)) {
             fs.mkdirSync(folderName);
         }
     } catch (err) {
         console.error(err);
     }
-    
-
-    uploadPath = __dirname + "/server/" + req.session.userID + "/" + req.files.profilePic.name;
-
-    console.log("upload path", uploadPath);
-
-    req.files.profilePic.mv(uploadPath, (err) => {
-        if (err)
-            return res.status(500).send(err);
-
-        console.log("file uploaded");
-
-
-        // get all names of files in /public/assests/templates folder
-        serverFolder = [];
-        serverFolderPath = './server/' + req.session.userID + "/";
-        fs.readdirSync(serverFolderPath).forEach(file => {
-            serverFolder.push(file);
+    // Call our function and declare our second function which uploads the file to the database
+    prepForNewPP(() => {
+        const data = fs.readFileSync(serverFolderPath+req.files.profilePic.name, {encoding:'base64'})
+        const buf = Buffer.from(data,"base64");
+        
+        con.query("UPDATE users SET profilePicture = ? WHERE userID = ?", [buf, req.session.userID], (err, res) => {
+            if (err) throw err;
         });
-
-        // console.log("dataaaa", data.profileImg)
-
-        // con.query("SELECT userID FROM users WHERE username = ?", [data.username], (err, result) => {
-        //     if (err) throw err;
-        //     console.log("username from profile", result);
-
-            for (var i in serverFolder) {
-            
-                
-                const data = fs.readFileSync(serverFolderPath+serverFolder[i], {encoding:'base64'})
-                const buf = Buffer.from(data,"base64");
-                
-                con.query("UPDATE users SET profilePicture = ? WHERE userID = ?", [buf, req.session.userID], (err, res) => {
+    })
+    // Declare a function which will delete all pics in the users folder and then upload a new picture or just upload a new pic if there are no pics in there
+    function prepForNewPP(callback) {
+        fs.readdir(folderName, (err, files) => {
+            if (err) throw err;
+            console.log("files", files);
+            if (files) {
+                uploadPath = __dirname + "/server/" + req.session.userID + "/" + req.files.profilePic.name;
+                files.forEach(file => {
+                    console.log("file", uploadPath + file);
+                    fs.unlink(serverFolderPath + file, (err) => {
+                        if (err) throw err;
+                    });
+                    console.log("DELETED FILE");
+                })
+                req.files.profilePic.mv(uploadPath, (err) => {
                     if (err) throw err;
-    
-                    console.log("this is our new profile pic", res);
-                });
+                    console.log("file uploaded");
+                    callback();
+                })
+            } else {
+                uploadPath = __dirname + "/server/" + req.session.userID + "/" + req.files.profilePic.name;
+
+                req.files.profilePic.mv(uploadPath, (err) => {
+                    if (err) throw err;
+                    console.log("file uploaded");
+                    callback();
+                })
             }
-        // });
-
-
-
-
-
-
-
-        res.sendFile(path.join(__dirname + "/profile.html"));
-    });
-    
-    // res.sendFile(path.join(__dirname + "/profile.html"));
+        }) 
+    }
+    res.sendFile(path.join(__dirname + "/profile.html"));
 });
 
 app.get("/communities", (req, res) => {
@@ -513,49 +502,132 @@ io.sockets.on('connect', (socket) => {
 
     socket.on("getFriendsAndPotential", () => {
         let friendList = {friendName: {}};
+        let friendArray = [];
+        let resCount = 0;
         
-        con.query("SELECT * FROM friends WHERE userID = ?", [socket.request.session.userID], (err, result) => {
-            if (err) throw err;
+        let promise = new Promise((resolve, reject) => {
+            con.query("SELECT * FROM friends WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+                if (err) throw err;
 
+                console.log("resulty", result);
+                
+                resolve(result);
+                console.log("resolvey", resolve);
+            });
+        });
+            
+        async function friends() {
+            var p = await promise;
+            friendArray = p;
+            for (let friend of p) {
+                resCount++;
+                friendList.friendName[friend.friendName] = friend.friendName; 
+            }
+            console.log("friendsList", p);
+            if (resCount == p.length) {
+                socket.emit("returnFriends", p);
+                resCount = 0;
+            }
+                
+        }
+        
+        let FRIEND_LIST = friends();
+        let prom = new Promise((resolve, reject) => {
             con.query("SELECT username FROM users", (err, res) => {
                 if (err) throw err;
 
-                console.log("friends list for user:", socket.request.session.userID, " ->", result);
+                resolve(res);
+                
 
-
-                for (let friend of result) {
-                    friendList.friendName[friend.friendName] = friend.friendName; 
-
-                    for (let i in res) {
-                        if (res[i].username == friendList.friendName[friend.friendName] || res[i].username == socket.request.session.username) {
-                            console.log("we are friends with", friend.friendName);
-                            res.splice(i, 1);
-                        }
-                    }
-                }
+                
                 console.log("real friends list", friendList);
+                console.log("FRIEND ARRAY", friendArray);
 
-                socket.emit("returnFriends", result);
+                
 
             // Create a place in the redis store to store the friends of each user
             // MAYBE USE REDIS
                 console.log("THIS IS OUR RES ARRAY", res);
-                socket.emit("returnPotentialFriends", res);
+               
             
             // redisStore.hSet(socket.request.session.userID, friendList);
             // redisStore.hGetAll(socket.request.session.userID, (err, result) => {
             //     console.log("we got this from redis", result);
             // });
-            
-            
-            
+            });
+        });
+        async function recommendedFriends() {
+            let p1 = await prom;
+            // let friends = await currentFriends;
 
+            con.query("SELECT * FROM friendrequests WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+                if (err) throw err;
+                console.log("p1 before filter", p1);
+                let array = [];
+                // Find a way to remove all of the friends in our friend requests
+                if (friendArray.length == 0) {
+                    array = removeRequests(p1);
+
+                    p1 = array[0];
+
+                    // console.log("what is this", p1);
+                    // Do another check here to see if we have friend requests, if we do then remove the friend request names from the potential as below
+                    // If there is nothing in the requests array then emit the entire array of users
+                    socket.emit("returnPotentialFriends", p1);
+                } else {
+                    array = removeRequests(p1);
+                    p1 = array[0];
+                    let spliceCount = array[1];
+
+                    // console.log("WHAT IS THIS SPLICER88888888888888", spliceCount);
+                    for (let friend of friendArray) { 
+                        p1 = p1.filter(name => {
+                            // console.log("SPLICED AGAIN");
+                            spliceCount++;
+                            return name.username != friend.friendName;
+                            
+                        });
+                    }
+
+                    console.log("-----------", p1);
+                    console.log("-----------", p1.length);
+                    console.log("-----------", spliceCount);
+                    // This isnt very good cause if there is an error then it will still print it, but no time to fix now and idk about asyncs
+                    let something = true;
+                    if (something) {
+                        socket.emit("returnPotentialFriends", p1);
+                    }
+                }
+                
             })
+            
+            
+        }
+        recommendedFriends();
 
-        })
+        function removeRequests(p1) {
+            let spliceCount = 0;
+            // remove request names from the recommended
+            for (let i in p1.length) {
+                if (p1[i].username == result[i].requestorName) {
+                    p1 = p1.filter(name => {
+                        
+                        spliceCount++;
+                        return name.username != result[i].requestorName;
+                    })
+                }
+            }
+            p1 = p1.filter(name => {
+                return name.username != socket.request.session.username;
+            })
+            spliceCount++;
+            console.log("splicer", spliceCount);
+            return [p1, spliceCount];
+        }
     })
 
     // Sends a friend request to a user by storing it in the database -> this is cleared when the recipient accepts  or declines the request
+    // Making multiple requests to a friend is okay, however, if a lot of people do it can make the db big and can cause issues on a large scale
     socket.on("friendRequested", user => {
         console.log("this is our friend request to", user.user);
 
@@ -565,29 +637,74 @@ io.sockets.on('connect', (socket) => {
             con.query("INSERT INTO friendRequests (userID, requestorName) VALUES (?, ?)", [result[0].userID, socket.request.session.username], (err, res) => {
                 if (err) throw err;
 
-
+                socket.emit("moveToRequests", user);
             })
         })
-
-        
     })
     // Gets all friend requests that have been sent to a user
     socket.on("getFriendRequests", () => {
-        con.query("SELECT * FROM friendRequests WHERE userID = ?", [socket.request.session.userID], (err, result) => {
-            if (err) throw err;
-            console.log("THIS IS OUR FRIEND REQUESTS", result);
-            socket.emit("returnFriendRequests", result);
-        })
+        let promise = new Promise((resolve, reject) => {
+            con.query("SELECT * FROM friendRequests WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+                if (err) throw err;
+                resolve(result);
+            })
+         });
+            let processedCount = 0; // Counter for async function
+            async function friendRequests() {
+
+                let p = await promise;
+
+                console.log("what is P", p);
+                // Increment counter
+                processedCount++;
+                
+                // Only send friend requests once they have all been taken from db
+                if (processedCount == p.length) {
+                    console.log("what are we sending", p);
+                    socket.emit("returnFriendRequests", p);
+                }
+
+            }
+            friendRequests();
     })
     // Accepts a friend request -> delete from friendRequest table and add the friendship to friends table
     socket.on("friendAccepted", user => {
         con.query("INSERT INTO friends (userID, friendName) VALUES (?, ?)", [socket.request.session.userID, user.user], (err, result) => {
             if (err) throw err;
         })
+        // Get the friends userID from db so we can add it to the friends table as a friend of the user who just accepted
+        con.query("SELECT * FROM users where username = ?", [user.user], (err, res) => {
+            if (err) throw err;
+            con.query("INSERT INTO friends (userID, friendName) VALUES (?, ?)", [res[0].userID, socket.request.session.username], (err, r) => {
+                if (err) throw err;
+            })
+        })
+
+
         con.query("DELETE FROM friendRequests WHERE userID =? AND requestorName = ?", [socket.request.session.userID, user.user], (err, result) => {
             if (err) throw err;
         })
+
+        socket.emit("moveToFriends", user);
     })
+
+    // This could maybe do with some error handling as when we delete a friend its not
+    // Instantly removed from the other users interface, this means they can also
+    // Remove the first user, and if the data does not exist in the table then  this can cause errors
+    // Seems to work for the moment though
+    socket.on("removeFriend", data => {
+        con.query("DELETE FROM friends WHERE userID = ? AND friendName = ?", [socket.request.session.userID, data.user], (err, result) => {
+            if (err) throw err;
+        })
+        con.query("SELECT * FROM users where username = ?", [data.user], (err, res) => {
+            if (err) throw err;
+            con.query("DELETE FROM friends WHERE userID = ? AND friendName = ?", [res[0].userID, socket.request.session.username], (err, result) => {
+                if (err) throw err;
+            })
+        })
+        
+    })
+
     // Declines a friend request from a user => delete from friendRequest table
     socket.on("friendDeclined", user => {
         con.query("DELETE FROM friendRequests WHERE userID = ? AND requestorName = ?", [socket.request.session.userID, user.user], (err, result) => {
@@ -1178,55 +1295,68 @@ io.sockets.on('connect', (socket) => {
             if (err) throw err;
             con.query("SELECT * FROM posts WHERE userID = ?", [result[0].userID], (err, res) => {
                 if (err) throw err;
-                // If the user has no posts then just send their username over so the profile still shows properly
-                if (res.length == 0) {
-                    post = {user: data.user}
-                    posts.push(post);
-                    socket.emit("accountDetails", posts);
-                } else {
-                    console.log(res.length);
-                    for (let i = 0; i < res.length; i++) {
 
-                        var promise = designs.collection("Designs").findOne({_id: new ObjectId(res[i].design)}, {projection: {_id: 0, thumbnail: 1}});
-                            
-                        async function waitForProfileDesigns() {
-                            var p = await promise;
-                            let image = p.thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
-                            let name = data.user; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
-                            
-                            let pfp;
-                            if (result[0].profilePicture != null) {
-                                pfp = result[0].profilePicture;
-                                pfp = Buffer.from(pfp).toString('base64');
-                                pfp = "data:image/png;base64," + pfp.toString("base64");
-                            }
+                con.query("SELECT * FROM tags WHERE userID = ?", [result[0].userID], (err, r) => {
+                    console.log("rrrrrrrrr", r);
+                    let tagsArr = [];
+                    console.log("sdfasdfasdf", Object.values(r[0]))
 
-                            if (res[i].likes == null) res[i].likes = 0;
-                            post = {name: res[i].postName, pfp: pfp, caption: res[i].postCaption, design: image, user: name, likes: res[i].likes, id: res[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
-                            posts.push(post);
 
-                            // socket.emit("accountDetails", posts);
-                            if (posts.length == res.length) {
-                                for (post of posts) {
-                                    if (post.likes > 0) {
-                                        var l = new Promise((resolve, reject) => {
-                                            con.query("SELECT * FROM likes WHERE postID = ?", [post.id], (err, res) => {
-                                                if (err) throw err;
-                                                // Add all userIds that have liked the post to the post
-                                                resolve(res.map(function(ro) {return ro.userID}));
-                                            })
-                                        })
-                                        post.likedBy = await l;
-                                    }
+                    for (let [key, value] of Object.entries(r[0])) {
+                        if (value == 1 && key != "userID") {
+                            tagsArr.push([key, value])
+                        }
+                    }
+                
+                    // If the user has no posts then just send their username over so the profile still shows properly
+                    if (res.length == 0) {
+                        post = {user: data.user}
+                        posts.push(post);
+                        socket.emit("accountDetails", {posts: posts, tags: tagsArr});
+                    } else {
+                        console.log(res.length);
+                        for (let i = 0; i < res.length; i++) {
+
+                            var promise = designs.collection("Designs").findOne({_id: new ObjectId(res[i].design)}, {projection: {_id: 0, thumbnail: 1}});
+                                
+                            async function waitForProfileDesigns() {
+                                var p = await promise;
+                                let image = p.thumbnail; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                                let name = data.user; // Leave this as index 0 as we loop through the queries there can never be more than 1 entry
+                                
+                                let pfp;
+                                if (result[0].profilePicture != null) {
+                                    pfp = result[0].profilePicture;
+                                    pfp = Buffer.from(pfp).toString('base64');
+                                    pfp = "data:image/png;base64," + pfp.toString("base64");
                                 }
 
-                                socket.emit("accountDetails", posts);
-                            }
-                        }
-                        waitForProfileDesigns();
-                    }
-                }
+                                if (res[i].likes == null) res[i].likes = 0;
+                                post = {name: res[i].postName, pfp: pfp, caption: res[i].postCaption, design: image, user: name, likes: res[i].likes, id: res[i].postID, sessionID: socket.request.session.userID} // Send over name of the user who created it so that we can show who posted it
+                                posts.push(post);
 
+                                // socket.emit("accountDetails", posts);
+                                if (posts.length == res.length) {
+                                    for (post of posts) {
+                                        if (post.likes > 0) {
+                                            var l = new Promise((resolve, reject) => {
+                                                con.query("SELECT * FROM likes WHERE postID = ?", [post.id], (err, res) => {
+                                                    if (err) throw err;
+                                                    // Add all userIds that have liked the post to the post
+                                                    resolve(res.map(function(ro) {return ro.userID}));
+                                                })
+                                            })
+                                            post.likedBy = await l;
+                                        }
+                                    }
+
+                                    socket.emit("accountDetails", {posts: posts, tags: tagsArr});
+                                }
+                            }
+                            waitForProfileDesigns();
+                        }
+                    }
+                })
             });
         })
 
@@ -1296,7 +1426,17 @@ io.sockets.on('connect', (socket) => {
                     });
                 })
                 */
-                let post = {name: postData.postName, caption: postData.postCaption, design: postData.image, user: socket.request.session.username, likes: 0, id: result.insertId, sessionID: socket.request.session.userID}
+                con.query("SELECT * FROM tags WHERE userID = ?", [socket.request.session.userID], (err, result) => {
+                    if (err) throw err;
+
+                    console.log("tags------------------", result);
+                    // Emit the completed posts list
+                    socket.emit("tags2", {streetware: result[0].streetware, formal: result[0].formal, casual: result[0].casual, luxury: result[0].luxury, vintage: result[0].vintage, chic: result[0].chic, punk: result[0].punk, sportsware: result[0].sportsware});
+                });
+
+
+
+                let post = {name: postData.postName, caption: postData.postCaption, design: postData.image, user: socket.request.session.username, likes: 0, id: result.insertId, sessionID: socket.request.session.userID, tag: result.tag}
 
                 let posts = [];
                 posts.push(post);
@@ -1304,15 +1444,7 @@ io.sockets.on('connect', (socket) => {
                 // Use io.emit to give it to all connected clients
                 io.emit("postAdded", (posts));
             });
-        
-        
-            
-
-            
         })
-
-        
-        
     })
 
 
@@ -1347,7 +1479,7 @@ io.sockets.on('connect', (socket) => {
                         }
 
                         if (result[i].likes == null) result[i].likes = 0;
-                        postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID, tag: result[i].tag} // Send over name of the user who created it so that we can show who posted it
+                        postsName = {name: result[i].postName, caption: result[i].postCaption, design: image, user: name, likes: result[i].likes, id: result[i].postID, sessionID: socket.request.session.userID, tag: result[i].tag, pfp: pfp} // Send over name of the user who created it so that we can show who posted it
                         posts.push(postsName);    
 
                         // When all of the posts have been found
@@ -1385,15 +1517,13 @@ io.sockets.on('connect', (socket) => {
                                 // Emit the completed posts list
                                 socket.emit("posts", posts);
                                 socket.emit("tags", {streetware: result[0].streetware, formal: result[0].formal, casual: result[0].casual, luxury: result[0].luxury, vintage: result[0].vintage, chic: result[0].chic, punk: result[0].punk, sportsware: result[0].sportsware});
-
-                            })
+                            });
                         }
                     }
                     anotherWait();
                 });
             }
         });
-        
     });
     
     //Profile.js getting user posts to display on profile
@@ -1459,12 +1589,15 @@ io.sockets.on('connect', (socket) => {
         if (data.liked == true) {
             con.query("INSERT INTO likes (postID, userID) VALUES (?, ?)", [data.id, socket.request.session.userID], (err, result) => {
                 if (err) throw err;
+                io.emit("returnLiked", {id: data.id})
             })
         } else if (data.liked == false) {
             con.query("DELETE FROM likes WHERE postID = ? AND userID = ?", [data.id, socket.request.session.userID], (err, result) => {
                 if (err) throw err;
+                io.emit("returnLiked", {id: data.id})
             })
         }
+        
     })
     
     socket.on("sendTagData", (tagsList) => {
@@ -1511,7 +1644,21 @@ io.sockets.on('connect', (socket) => {
     socket.on("postComment", data => {
         con.query("INSERT INTO comments (postID, comment, userID) VALUES (?, ?, ?)", [data.postID, data.comment, socket.request.session.userID], (err, result) => {
             if (err) throw err;
-            console.log("updated table posts with:", result);
+            let pfp;
+            con.query("SELECT profilePicture FROM users WHERE userID = ?", [socket.request.session.userID], (err, res) => {
+                if (err) throw err;
+                // Set to null as by default users PP are set to NULL
+                if (res[0].profilePicture != null) {
+                    pfp = res[0].profilePicture;
+                    pfp = Buffer.from(pfp).toString('base64');
+                    pfp = "data:image/png;base64," + pfp.toString("base64");
+                }
+                let newData = {comment: data.comment, postID: data.postID, pfp: pfp}
+                console.log("updated table posts with:", result);
+                socket.emit("commentPosted", newData);
+
+            })
+                
         });
     });
 
@@ -1523,8 +1670,20 @@ io.sockets.on('connect', (socket) => {
             for (let i = 0; i< result.length; i++) {
                 comments.push(result[i]);
             }
-            console.log("comments", comments);
-            socket.emit("returnComments", {comments: comments});
+            let pfp;
+            con.query("SELECT profilePicture FROM users WHERE userID = ?", [socket.request.session.userID], (err, res) => {
+                if (err) throw err;
+                if (res[0].profilePicture != null) {
+                    pfp = res[0].profilePicture;
+                    pfp = Buffer.from(pfp).toString('base64');
+                    pfp = "data:image/png;base64," + pfp.toString("base64");
+                }
+                console.log("comments", comments);
+                socket.emit("returnComments", {comments: comments, pfp: pfp});
+            })
+
+
+
             
         });
     });
@@ -1608,6 +1767,28 @@ io.sockets.on('connect', (socket) => {
             });
         });
     });
+    // Checks if we are a friend with the person profile we are visiting
+    socket.on("getFriendStatus", data => {
+        // Get the userID of the profile we are visiting, and then check if we are a friend with this user
+        con.query("SELECT * FROM users WHERE username = ?", [data.user], (err, result) => {
+            if (err) throw err;
+            con.query("SELECT * FROM friends WHERE userID = ?", [result[0].userID], (err, res) => {
+                if (err) throw err;
+                for (let i of res) {
+                    console.log("what is this friend", i.friendName);
+                    if (i.friendName == socket.request.session.username) {
+                        socket.emit("returnFriendStatus", {isFriend: true});
+                        continue;
+                    } else {
+                        socket.emit("returnFriendStatus", {isFriend: false});
+                    }
+                }
+                
+            })
+        })
+
+        
+    })
 
     socket.on("getModAndAdminStatus", (data) => {
         con.query("SELECT isMod, isAdmin FROM user_details WHERE userID = ?", [socket.request.session.userID], (err, result) => {
@@ -1673,11 +1854,19 @@ io.sockets.on('connect', (socket) => {
             if (err) throw err;
             console.log("result from deletion", result);
         })
+        socket.emit("removePostFromMod", data);
     })
 
     // Deletes the post from flaggedPosts and Posts, removing it from the homepage
     // Then strike against the user who posted it
     socket.on("deleteAndStrike", data => {
+
+        con.query("DELETE FROM comments WHERE postID = ?", [data.postID], (err, result) => {
+            if (err) throw err;
+        })
+        con.query("DELETE FROM likes WHERE postID = ?", [data.postID], (err, result) => {
+            if (err) throw err;
+        })
         con.query("DELETE FROM flaggedPosts WHERE postID = ?", [data.postID], (err, result) => {
             if (err) throw err;
         })
@@ -1696,6 +1885,7 @@ io.sockets.on('connect', (socket) => {
                 })
             });
         })
+        io.emit("removePostFromMod", data);
     })
     // Searches for a friend in the current friends list
     socket.on("searchForCurrentFriend", () => {

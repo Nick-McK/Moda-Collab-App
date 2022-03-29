@@ -185,10 +185,14 @@ body::-webkit-scrollbar {
   opacity: 0;
 }
 .comment-text {
-  width: 100%;
-  height: 5%;
+  width: 30%;
+  height: 3%;
   display: flex;
   justify-content: flex-end;
+  position: absolute;
+  left: 35%;
+  bottom: 8%;
+
   /* border: 1px solid black; */
 }
 
@@ -325,8 +329,10 @@ body::-webkit-scrollbar {
 
 /* Could probably abstract the containers of the scrollable content in the popups to one class */
 .collabContent {
-  width: 650px;
-  height: 800px;
+  /* width: 650px;
+  height: 800px; */
+  width: 40%;
+  height: 85%;
   max-width: 100%;
   padding: 30px 50px;
   margin: 0;
@@ -441,7 +447,7 @@ body::-webkit-scrollbar {
   }
   100% {
     transform: scale(1);
-  }
+  } 
 }
 
 .postData {
@@ -451,10 +457,11 @@ body::-webkit-scrollbar {
 }
 
 .postImage {
-  height: auto;
+  height: 50%;
   /* width: 648px; */
   /* 455px is the width and height of a design at 70% width */
-  width: 85%;
+  /* width: 85%; */
+  width: 80%;
   flex-direction: row;
   display: flex;
   align-items: center;
@@ -469,8 +476,9 @@ body::-webkit-scrollbar {
 }
 /* This is the container for the comments */
 .comments {
-  height: 28%;
+  height: 50%;
   width: 100%;
+  
   /* border: 1px solid grey; */
   border-radius: 20px;
   color: white;
@@ -487,6 +495,9 @@ body::-webkit-scrollbar {
   display: flex;
   gap: 1em;
 
+}
+.commentForm {
+   
 }
 
 #selectImage {
@@ -598,9 +609,12 @@ sup {
   border-top: solid 1px;
   border-bottom: solid 1px;
   border-color: rgb(75, 71, 71);
-  background-color: black;
+  /* background-color: black; */
   color: white;
   /* background-color: white; */
+}
+.friend-content:hover {
+  background-color: black;
 }
 .friends, .friend-recommendations, .friend-requests {
   height: 33%;

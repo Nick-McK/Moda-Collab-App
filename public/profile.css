@@ -17,6 +17,12 @@ h3{
   color: white;
   font-weight: 300%;
 }
+/* Css for tags on this page as its not used for anything else */
+p {
+  padding: 5px;
+  margin: 2px;
+  display: inline-block;
+}
 .feed {
   display: grid;
   /* position: absolute; */
@@ -156,7 +162,8 @@ h3{
     display: none;
 }
 
-/* Styling for the labels representing the buttons for choosing and uploading a PP */
+/* Styling for the labels representing the buttons for choosing and uploading a PP
+Added a border around the text using text-shadow so that we can see the text no matter what the background of the image we uploading is */
 #uploadBtn{
     height: 40px;
     width: 10%;
@@ -169,7 +176,8 @@ h3{
     line-height: 30px;
     font-size: 15px;
     cursor: pointer;
-    color: black;
+    color: white;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
     display: none;
     
 }
@@ -185,7 +193,8 @@ h3{
     line-height: 30px;
     font-size: 15px;
     cursor: pointer;
-    color: black;
+    color: white;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
     display: none;
 }
 /* Centering username for profile page */
@@ -248,21 +257,25 @@ sup {
 }
 
 .nav-menu > :nth-child(1):hover::before {
-  width: 145;
-  filter: drop-shadow(0 0 25px var(--clr));
-}
-.nav-menu > :nth-child(2):hover::before {
   width: 66;
   filter: drop-shadow(0 0 25px var(--clr));
 }
-.nav-menu > :nth-child(3):hover::before {
+.nav-menu > :nth-child(2):hover::before {
   width: 84;
   filter: drop-shadow(0 0 25px var(--clr));
 }
-.nav-menu > :nth-child(4):hover::before {
+.nav-menu > :nth-child(3):hover::before {
   width: 88;
+  filter: drop-shadow(0 0 25px var(--clr));
+}
+.nav-menu > :nth-child(4):hover::before {
+  width: 93;
 }
 .nav-menu > :nth-child(5):hover::before {
   width: 93;
   filter: drop-shadow(0 0 25px var(--clr));
+}
+
+.text {
+  display: block;
 }

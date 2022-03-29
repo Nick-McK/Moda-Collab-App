@@ -52,6 +52,9 @@ const commentText = document.getElementById("comment");
 
 const feed = document.getElementById("_feed");
 
+const postComment = document.getElementById("postComment");
+const commentFormImg = document.getElementById("commentFormImg");
+
 // CODE FOR POST TRANSITIONS IF I CAN MAKE IT STOP HALF WAY THROUGH AND REVERSE
 // Currently will go to the full size if we move out before its finished and this is quite jarring
 // for (let post of posts) {
@@ -317,7 +320,7 @@ socket.on("returnLikedPosts", (data) => {
         alert("No liked posts\nlike some posts from your Home Page for them to appear here");
         closeLikedPosts.click();
     } else {
-        displayPost(data, true);
+        displayPost(data, true, null);
     }
 })
 
@@ -356,8 +359,11 @@ postButton.onclick = () => {
 }
 
 socket.on("postAdded", (posts) => {
-    console.log("new post")
-    displayPost(posts)
+    socket.on("tags2", tag => {
+        console.log("new post")
+    displayPost(posts, false, tag);
+    })
+    
 })
 
 
@@ -378,7 +384,7 @@ closePostSavedDesigns.onclick = () => {
 
 this.onload = () => {
     socket.emit("getPosts");
-    socket.emit("getModStatus");
+    socket.emit("getModAndAdminStatus");
 }
 
 let posted = {};
@@ -386,9 +392,15 @@ let commented = [];
 
 let displayedInLiked = {};
 socket.on("posts", posts => {
-    console.log("posts", posts);
-    console.log("what isthis", posts[0].id);
-    displayPost(posts);
+    socket.on("tags", tag => {
+
+        console.log("tags", tag);
+        
+
+
+        displayPost(posts, false, tag);
+    })
+    
 });
 /**
  * 
@@ -398,7 +410,7 @@ socket.on("posts", posts => {
  * 
  * We also add event listeners to play for our animations to work.
  */
-function displayPost(posts, forLiked) {
+function displayPost(posts, forLiked, tag) {
     for (let post of posts) {
         if (posted[post.id] == post.caption && !forLiked) {
             continue;
@@ -410,6 +422,12 @@ function displayPost(posts, forLiked) {
 
         // Add to a tracker so no posts appear twice in for liked
         if (forLiked) displayedInLiked[post.id] = post.id;
+
+        // Check to see if the user has the same tag as the post if they do not then skip this post
+        console.log("postTaga", post.tag)
+        if (tag != null && tag[post.tag] == 0) {
+            continue;
+        }
         
         posted[post.id] = post.caption;
         let postDiv = document.createElement("div");
@@ -421,7 +439,7 @@ function displayPost(posts, forLiked) {
         let postTop = document.createElement("div");
         let profilePic = document.createElement("div");
         let postBar = document.createElement("div");
-        let name = document.createElement("div");
+        let name = document.createElement("button");
         let postImage = document.createElement("img");
         let barImage1 = document.createElement("img");
         let barImage2 = document.createElement("img");
@@ -464,10 +482,15 @@ function displayPost(posts, forLiked) {
         profilePic.classList.add("profile-pic")
         profileImage.classList.add("profile-pic");
         name.classList.add("account");
+        name.classList.add("roundBtn_noBorder");
         postBar.classList.add("post-bar");
         postImage.classList.add("post_img");
 
         name.innerHTML = post.user;
+
+        name.addEventListener("click", () => {
+            window.location.href = "/profile/"+post.user;
+        })
 
         postImage.setAttribute("src", post.design);
         postImage.setAttribute("alt", post.id);
@@ -642,7 +665,16 @@ function displayPost(posts, forLiked) {
             commentDiv.appendChild(profilePicDiv);
             profilePicDiv.appendChild(profilePicImg);
             profilePicDiv.classList.add("profile-pic");
-            profilePicImg.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg");
+
+            if (data.pfp != null) {
+                // We would need to attatch the profile pic of the person who comments with each comment to be able to set the pictures of the comments that have already been posted
+                // profilePicImg.setAttribute("src", data.pfp);
+                
+                commentFormImg.setAttribute("src", data.pfp);
+            } else {
+                profilePicImg.setAttribute("src", "assets/icons/empty-profile-picture.jpeg");
+            }
+
             commentDiv.appendChild(commentContent);
             if (!commented.includes(comment.comment)) {
                 commentSection.prepend(commentDiv);
@@ -814,14 +846,45 @@ function displayPost(posts, forLiked) {
         // Get the post id and use substring to get the acutal db id of the post
         var postId = new String(post.id);
         postId = postId.substring(postId.indexOf("-")+1);
+       
 
-        // Use the id to update the postComment onclick to send the correct post id
-        const postComment = document.getElementById("postComment");
-        postComment.onclick = () => {
+        // Use the id to update the postComment onclick to send the correct post id   
+        postComment.addEventListener("click", () => {
             let commentValue = commentText.value;
-            commentText.value = "";
+            // commentText.value = "";
             socket.emit("postComment", {comment: commentValue, postID: postId});
-        }
+
+            socket.on("commentPosted", data => {
+            
+                let commentDiv = document.createElement("div");
+                let profilePicDiv = document.createElement("div");
+                let profilePicImg = document.createElement("img");
+                let commentContent = document.createElement("p");
+                commentContent.innerHTML = data.comment;
+                commentDiv.classList.add("comment");
+                commentDiv.appendChild(profilePicDiv);
+                profilePicDiv.appendChild(profilePicImg);
+                profilePicDiv.classList.add("profile-pic");
+                
+                if (data.pfp != null) {
+                    profilePicImg.setAttribute("src", data.pfp);
+                    commentFormImg.setAttribute("src", data.pfp);
+                } else {
+                    profilePicImg.setAttribute("src", "assets/icons/empty-profile-picture.jpeg");
+                }
+    
+                // console.log("datacomment", data.comment);
+    
+                commentDiv.appendChild(commentContent);
+                if (!commented.includes(data.comment)) {
+                    commentSection.prepend(commentDiv);
+                }
+                commented.push(data.comment);
+            })
+        })
+
+        
+            
 
 
         // Retrieve the comments on click
@@ -901,7 +964,7 @@ socket.on('roomNotFound', (roomName) => {
     alert('Room "' + roomName + '" not found. Please close form and reopen');
 })
 
-socket.on("returnModStatus", data => {
+socket.on("returnModAndAdminStatus", data => {
     if (data.isMod == 0) {
         let mods = document.getElementById("mods");
         mods.style.display = "none";
@@ -927,12 +990,14 @@ const friendsContainer = document.getElementById("_friends-container");
 friendsBtn.onclick = () => {
     if (friendsContainer.style.display == "flex") {
         friendsContainer.style.display = "none";
+        history.replaceState("", document.title, window.location.pathname);
     } else {
         // Placing the emit here means it only runs when we are opening the container
-        socket.emit("getFriendsAndPotential"); 
+        socket.emit("getFriendsAndPotential");
+        socket.emit("getFriendRequests");
         friendsContainer.style.display = "flex";
     }  
-}   
+}
     // ANIMATION FOR FRIENDS NOT WORKING RIGHT NOW
     
     // console.log("height", friendsDiv.style.height)
@@ -956,6 +1021,9 @@ friendsBtn.onclick = () => {
 let friendsAppended = new Array();
 let recommendedFriends = new Array();
 socket.on("returnFriends", friendsList => {
+
+    console.log("friends listtttt", friendsAppended);
+    console.log("recommended Friends", recommendedFriends);
     
     for (let f of friendsList) {
         let friendBar = document.createElement("div");
@@ -971,6 +1039,7 @@ socket.on("returnFriends", friendsList => {
             continue;
         }
         friend.innerHTML = f.friendName;
+        friendBar.setAttribute("id", "friend" + f.friendName);
         friendsAppended.push(f.friendName);
         friendBar.appendChild(friend);
         friends.appendChild(friendBar);
@@ -1001,6 +1070,14 @@ socket.on("returnFriends", friendsList => {
             console.log("removing friend", f.friendName);
             socket.emit("removeFriend", {user: f.friendName});
             
+            let id = document.getElementById("friend"+f.friendName);
+
+            friends.removeChild(id);
+
+            friendsAppended.filter(name => {
+                return name != f.friendName;
+            })
+
         })
     }
 
@@ -1033,120 +1110,202 @@ socket.on("returnFriends", friendsList => {
 
         searchBar.value = "";
     })
+})
     
+// Potential friends section, start with listing all usernames from the users table
+// Later if we had time we could add conditions to show friends of friends as recommended friends
+socket.on("returnPotentialFriends", (potentialFriends) => {
     
-    // Potential friends section, start with listing all usernames from the users table
-    // Later if we had time we could add conditions to show friends of friends as recommended friends
-    socket.on("returnPotentialFriends", (potentialFriends) => {
+    for (let p of potentialFriends) {
+        let friendBar = document.createElement("div");
+        let friend = document.createElement("button");
+    
+        friendBar.classList.add("friend-content");
+        friend.classList.add("roundBtn_noBorder");
+        friend.classList.add("no-round");
+
         
-        for (let p of potentialFriends) {
-            let friendBar = document.createElement("div");
-            let friend = document.createElement("button");
         
-            friendBar.classList.add("friend-content");
-            friend.classList.add("roundBtn_noBorder");
-            friend.classList.add("no-round");
+        // friendsDiv.appendChild(add);
+        console.log("recommmmmmm", recommendedFriends);
+        if (recommendedFriends.includes(p.username)) {
+            console.log("recommended friends already has name", p.username);
+            continue;
+        }
+        if (friendRequests.includes(p.username)) {
+            continue;
+        }
+        recommendedFriends.push(p.username);
+        friend.innerHTML = p.username;
+        friendBar.setAttribute("id", "recommended"+p.username);
+        friendBar.appendChild(friend);
+        friendRecommendations.appendChild(friendBar);
+        // friendsContent.appendChild(add);
+
+        friend.addEventListener("click", () => {
+            window.location.href = "/profile/" + p.username;
+            
+        })
+
+        let addFriend = document.createElement("button");
+        let decline = document.createElement("button");
+
+        addFriend.classList.add("addFriend");
+        decline.classList.add("decline");
+
+        addFriend.innerHTML = "Add";
+        decline.innerHTML = "Decline";
+
+        friendBar.appendChild(addFriend);
+        friendBar.appendChild(decline);
+        // Send a friend request to someone
+        addFriend.addEventListener("click", () => {
+            console.log("requesting to be friends with", p.username);
 
             
+            recommendedFriends = recommendedFriends.filter(x =>{
+                return x != p.username
+            });
             
-            // friendsDiv.appendChild(add);
-            console.log("recommmmmmm", recommendedFriends);
-            if (recommendedFriends.includes(p.username)) {
-                console.log("recommended friends already has name", p.username);
-                continue;
-            }
+            let id = document.getElementById("recommended"+p.username);
 
-            recommendedFriends.push(p.username);
-            friend.innerHTML = p.username;
-            friendBar.appendChild(friend);
-            friendRecommendations.appendChild(friendBar);
-            // friendsContent.appendChild(add);
+            friendRecommendations.removeChild(id);
 
-            friend.addEventListener("click", () => {
-                window.location.href = "/profile/" + p.username;
-                
+            friendRequests.push(p.username);
+
+
+            socket.emit("friendRequested", {user: p.username});
+
+            socket.on("moveToRequests", user => {
+
+                // friendBar.classList.add("friend-content");
+                // friend.classList.add("roundBtn_noBorder");
+                // friend.classList.add("no-round");
+
+                // addFriend.innerHTML = "N/A";
+                // decline.innerHTML = "N/A";
+
+                // friendBar.setAttribute("id", "request"+user.user);
+                // console.log("jaskdhfjklasdfhasjdf", user);
+                // console.log("jaskdhfjklasdfhasjdf", user.user);
+                // friend.innerHTML = user.user;
+                // friendBar.appendChild(friend);
+                // friendBar.appendChild(addFriend);
+                // friendBar.appendChild(decline);
+
+                // friendRequests.push(user);
+
+                // friendReqs.appendChild(friendBar);
             })
-
-            let addFriend = document.createElement("button");
-            let decline = document.createElement("button");
-
-            addFriend.classList.add("addFriend");
-            decline.classList.add("decline");
-
-            addFriend.innerHTML = "Add";
-            decline.innerHTML = "Decline";
-
-            friendBar.appendChild(addFriend);
-            friendBar.appendChild(decline);
-            // Send a friend request to someone
-            addFriend.addEventListener("click", () => {
-                console.log("requesting to be friends with", p.username);
-                socket.emit("friendRequested", {user: p.username});
-            })
-        }
-
-        socket.emit("getFriendRequests")
-    })
-    let friendRequests = new Array();
-    socket.on("returnFriendRequests", (requests) => {
-        
-        for (let request of requests) {
-            console.log("requests", requests);
-            let friendBar = document.createElement("div");
-            let friend = document.createElement("button");
-        
-            friendBar.classList.add("friend-content");
-            friend.classList.add("roundBtn_noBorder");
-            friend.classList.add("no-round");
-
-            friendBar.appendChild(friend);
-
-            if (friendRequests.includes(request.requestorName)) {
-                continue;
-            }
-
-            friendRequests.push(request.requestorName);
-
-            friend.innerHTML = request.requestorName;
-            friendReqs.appendChild(friendBar);
-            // friendsContent.appendChild(add);
-
-            friend.addEventListener("click", () => {
-                window.location.href = "/profile/" + request.requestorName;
-                
-            })
-
-            let accept = document.createElement("button");
-            let decline = document.createElement("button");
-
-            accept.classList.add("addFriend");
-            decline.classList.add("decline");
-
-            accept.innerHTML = "Accept";
-            decline.innerHTML = "Decline";
-
-            friendBar.appendChild(accept);
-            friendBar.appendChild(decline);
-            // Accepts a friend request from a user
-            accept.addEventListener("click", () => {
-                console.log("accepting request from", request.requestorName);
-                socket.emit("friendAccepted", {user: request.requestorName});
-            })
-            // Declines a friend request from a user
-            decline.addEventListener("click", () => {
-                console.log("declining request from", request.requestorName);
-                socket.emit("friendDeclined", {user: request.requestorName});
-            })
-
-            if (recommendedFriends.includes(request.requestorName)) {
-                friendRecommendations.removeChild()
-            }
-        }
-    })
-
+        })
+    }
 })
 
+let friendRequests = new Array();
+socket.on("returnFriendRequests", (requests) => {
+    console.log("reqrasidhgaiosdgadsfg", requests);
+    for (let request of requests) {
+        // If the person is our friend then skip the request -> This shouldnt be needed, but safe to have
+        if (friendsAppended.includes(request.requestorName)) {
+            console.log("hello")
+            continue;
+        }
+        console.log("requests", requests);
+        let friendBar = document.createElement("div");
+        let friend = document.createElement("button");
+    
+        friendBar.classList.add("friend-content");
+        friend.classList.add("roundBtn_noBorder");
+        friend.classList.add("no-round");
+
+        friendBar.setAttribute("id", "request"+request.requestorName);
+
+        friendBar.appendChild(friend);
+
+        if (friendRequests.includes(request.requestorName)) {
+            continue;
+        }
+
+        friendRequests.push(request.requestorName);
+
+        friend.innerHTML = request.requestorName;
+        
+        friendReqs.appendChild(friendBar);
+        // friendsContent.appendChild(add);
+
+        friend.addEventListener("click", () => {
+            window.location.href = "/profile/" + request.requestorName;
+            
+        })
+
+        let accept = document.createElement("button");
+        let decline = document.createElement("button");
+
+        accept.classList.add("addFriend");
+        decline.classList.add("decline");
+
+        accept.innerHTML = "Accept";
+        decline.innerHTML = "Decline";
+
+        friendBar.appendChild(accept);
+        friendBar.appendChild(decline);
+        // Accepts a friend request from a user
+        accept.addEventListener("click", () => {
+            console.log("accepting request from", request.requestorName);
 
 
+
+            // Remove from the requests array
+            friendRequests = friendRequests.filter(name => {
+                return name != request.requestorName;
+            });
+
+            console.log("what is this array now", friendRequests)
+            let id = document.getElementById("request"+request.requestorName);
+
+            friendReqs.removeChild(id);
+            socket.emit("friendAccepted", {user: request.requestorName});
+
+            socket.on("moveToFriends", user => {
+                // friendBar.classList.add("friend-content");
+                // friend.classList.add("roundBtn_noBorder");
+                // friend.classList.add("no-round");
+
+
+                // friendBar.setAttribute("id", "request"+user.user);
+                // friend.innerHTML = user.user;
+                // friendBar.appendChild(friend);
+                // friendBar.appendChild(accept);
+                // friendBar.appendChild(decline);
+
+                // accept.innerHTML = "Message";
+                // decline.innerHTML = "Remove Friend";
+
+                // friendsAppended.push(user.user);
+                // console.log("friends List", friendsAppended);
+
+                // friends.appendChild(friendBar);
+            })
+        })
+        // Declines a friend request from a user
+        decline.addEventListener("click", () => {
+            console.log("declining request from", request.requestorName);
+            let id = document.getElementById("request"+request.requestorName);
+            friendReqs.removeChild(id);
+
+
+            socket.emit("friendDeclined", {user: request.requestorName});
+        })
+
+        if (recommendedFriends.includes(request.requestorName)) {
+            let id = document.getElementById("recommended"+request.requestorName);
+            console.log("idasdasd", id);
+            if (id != null) {
+                friendRecommendations.removeChild(id);
+            }
+            
+        }
+    }
+})
 
 

@@ -77,6 +77,7 @@ socket.on("returnFlagged", posts => {
         let flagImg = document.createElement("img");
 
         flagDiv.classList.add("flag");
+        postDiv.setAttribute("id", "id: "+post.id);
 
         flagImg.setAttribute("src", "/public/assets/icons/flag-fill.png");
         flagDiv.appendChild(flagImg);
@@ -101,6 +102,8 @@ socket.on("returnFlagged", posts => {
 
         denyImg.addEventListener("click", () => {
             socket.emit("deleteAndStrike", ({postID: post.id, username: post.user}));
+
+            
         })
 
         profileImage.setAttribute("src", "/public/assets/icons/empty-profile-picture.jpeg")
@@ -625,3 +628,347 @@ socket.on("returnFlagged", posts => {
     // }
 
 });
+
+socket.on("removePostFromMod", data => {
+
+    let id = document.getElementById("id: "+data.postID);
+
+    feed.removeChild(id);
+})
+
+// Gets the users session username and returns it so we can redirect the user to their profile
+const profile = document.getElementById("profile");
+profile.onclick = () => {
+    socket.emit("getUsersProfile");
+}
+
+socket.on("returnUsersProfile", (user) => {
+    console.log("users", user.user)
+    window.location.href = "/profile/" + user.username;
+})
+
+// FRIENDS STUFF -> COPIED FROM HOMEPAGE
+const friendsBtn = document.getElementById("friends");
+let friends = document.getElementById("_friends");
+let friendRecommendations = document.getElementById("_friend-recommendations");
+let friendReqs = document.getElementById("_friend-requests");
+const friendsContainer = document.getElementById("_friends-container");
+friendsBtn.onclick = () => {
+    if (friendsContainer.style.display == "flex") {
+        friendsContainer.style.display = "none";
+    } else {
+        // Placing the emit here means it only runs when we are opening the container
+        socket.emit("getFriendsAndPotential");
+        socket.emit("getFriendRequests");
+        friendsContainer.style.display = "flex";
+    }  
+}   
+    // ANIMATION FOR FRIENDS NOT WORKING RIGHT NOW
+    
+    // console.log("height", friendsDiv.style.height)
+    // // friendsDiv.style.height = "90%";
+    // friendsDiv.style.animation = "friends 2s";
+    // friendsDiv.style.animationFillMode = "forwards";
+    
+    
+
+    // friendsDiv.addEventListener("animationend", () => {
+    //     friends.addEventListener("click", () => {
+    //         friendsDiv.style.animation = "friends-reverse 2s";
+    //         friendsDiv.style.animationFillMode = "forwards";
+    //         // friendsDiv.style.height = "0";
+    //         // friendsDiv.style.display = "none";
+    //         document.body.removeChild(friendsDiv);
+    //         window.location.href = "/home";
+    //     })
+    // })
+
+let friendsAppended = new Array();
+let recommendedFriends = new Array();
+socket.on("returnFriends", friendsList => {
+
+    console.log("friends listtttt", friendsAppended);
+    console.log("recommended Friends", recommendedFriends);
+    
+    for (let f of friendsList) {
+        let friendBar = document.createElement("div");
+        let friend = document.createElement("button");
+    
+        friendBar.classList.add("friend-content");
+        // friendContent.classList.add("friend-content");
+        friend.classList.add("roundBtn_noBorder");
+        friend.classList.add("no-round");
+
+        if (friendsAppended.includes(f.friendName)) {
+            console.log("Friends Appended Contains", f.friendName);
+            continue;
+        }
+        friend.innerHTML = f.friendName;
+        friendBar.setAttribute("id", "friend" + f.friendName);
+        friendsAppended.push(f.friendName);
+        friendBar.appendChild(friend);
+        friends.appendChild(friendBar);
+        friend.addEventListener("click", () => {
+            window.location.href = "/profile/" + f.friendName;
+            socket.emit("moving");
+        })
+
+        let removeFriend = document.createElement("button");
+        let message = document.createElement("button");
+
+        message.classList.add("addFriend");
+        removeFriend.classList.add("decline");
+
+        message.innerHTML = "message";
+        removeFriend.innerHTML = "Remove Friend";
+
+        friendBar.appendChild(message);
+        friendBar.appendChild(removeFriend);
+        // Accepts a friend request from a user
+        message.addEventListener("click", () => {
+            console.log("messaging:", f.friendName);
+            // socket.emit("friendDeclined", {user: f.friendName});
+        })
+        // Declines a friend request from a user
+        removeFriend.addEventListener("click", () => {
+            
+            console.log("removing friend", f.friendName);
+            socket.emit("removeFriend", {user: f.friendName});
+            
+            let id = document.getElementById("friend"+f.friendName);
+
+            friends.removeChild(id);
+
+            friendsAppended.filter(name => {
+                return name != f.friendName;
+            })
+
+        })
+    }
+
+    // Add search bar to friends list -> search for new friends and already added friends
+    let searchBar = document.createElement("input");
+    let searchBtn = document.createElement("input");
+    let searchDiv = document.createElement("div");
+
+    searchBar.setAttribute("type", "search");
+    searchBtn.setAttribute("type", "button");
+
+    searchBar.classList.add("search-bar");
+    searchBtn.classList.add("search-btn");
+    searchDiv.classList.add("search-div");
+
+    searchBtn.value = "Search";
+    searchBar.placeholder = "Search for a friends username...";
+
+    searchDiv.appendChild(searchBtn);
+    searchDiv.prepend(searchBar);
+
+    // friendsContainer.prepend(searchDiv);
+    // friendsDiv.prepend(searchBar);
+    
+    searchBtn.addEventListener("click", () => {
+        let searchName = searchBar.value;
+
+        console.log("searchName", searchName);
+        socket.emit("searchForCurrentFriend", ({name: searchName}));
+
+        searchBar.value = "";
+    })
+})
+    
+// Potential friends section, start with listing all usernames from the users table
+// Later if we had time we could add conditions to show friends of friends as recommended friends
+socket.on("returnPotentialFriends", (potentialFriends) => {
+    
+    for (let p of potentialFriends) {
+        let friendBar = document.createElement("div");
+        let friend = document.createElement("button");
+    
+        friendBar.classList.add("friend-content");
+        friend.classList.add("roundBtn_noBorder");
+        friend.classList.add("no-round");
+
+        
+        
+        // friendsDiv.appendChild(add);
+        console.log("recommmmmmm", recommendedFriends);
+        if (recommendedFriends.includes(p.username)) {
+            console.log("recommended friends already has name", p.username);
+            continue;
+        }
+        if (friendRequests.includes(p.username)) {
+            continue;
+        }
+        recommendedFriends.push(p.username);
+        friend.innerHTML = p.username;
+        friendBar.setAttribute("id", "recommended"+p.username);
+        friendBar.appendChild(friend);
+        friendRecommendations.appendChild(friendBar);
+        // friendsContent.appendChild(add);
+
+        friend.addEventListener("click", () => {
+            window.location.href = "/profile/" + p.username;
+            
+        })
+
+        let addFriend = document.createElement("button");
+        let decline = document.createElement("button");
+
+        addFriend.classList.add("addFriend");
+        decline.classList.add("decline");
+
+        addFriend.innerHTML = "Add";
+        decline.innerHTML = "Decline";
+
+        friendBar.appendChild(addFriend);
+        friendBar.appendChild(decline);
+        // Send a friend request to someone
+        addFriend.addEventListener("click", () => {
+            console.log("requesting to be friends with", p.username);
+
+            
+            recommendedFriends = recommendedFriends.filter(x =>{
+                return x != p.username
+            });
+            
+            let id = document.getElementById("recommended"+p.username);
+
+            friendRecommendations.removeChild(id);
+
+            friendRequests.push(p.username);
+
+
+            socket.emit("friendRequested", {user: p.username});
+
+            socket.on("moveToRequests", user => {
+
+                // friendBar.classList.add("friend-content");
+                // friend.classList.add("roundBtn_noBorder");
+                // friend.classList.add("no-round");
+
+                // addFriend.innerHTML = "N/A";
+                // decline.innerHTML = "N/A";
+
+                // friendBar.setAttribute("id", "request"+user.user);
+                // console.log("jaskdhfjklasdfhasjdf", user);
+                // console.log("jaskdhfjklasdfhasjdf", user.user);
+                // friend.innerHTML = user.user;
+                // friendBar.appendChild(friend);
+                // friendBar.appendChild(addFriend);
+                // friendBar.appendChild(decline);
+
+                // friendRequests.push(user);
+
+                // friendReqs.appendChild(friendBar);
+            })
+        })
+    }
+})
+
+let friendRequests = new Array();
+socket.on("returnFriendRequests", (requests) => {
+    console.log("reqrasidhgaiosdgadsfg", requests);
+    for (let request of requests) {
+        // If the person is our friend then skip the request -> This shouldnt be needed, but safe to have
+        if (friendsAppended.includes(request.requestorName)) {
+            console.log("hello")
+            continue;
+        }
+        console.log("requests", requests);
+        let friendBar = document.createElement("div");
+        let friend = document.createElement("button");
+    
+        friendBar.classList.add("friend-content");
+        friend.classList.add("roundBtn_noBorder");
+        friend.classList.add("no-round");
+
+        friendBar.setAttribute("id", "request"+request.requestorName);
+
+        friendBar.appendChild(friend);
+
+        if (friendRequests.includes(request.requestorName)) {
+            continue;
+        }
+
+        friendRequests.push(request.requestorName);
+
+        friend.innerHTML = request.requestorName;
+        
+        friendReqs.appendChild(friendBar);
+        // friendsContent.appendChild(add);
+
+        friend.addEventListener("click", () => {
+            window.location.href = "/profile/" + request.requestorName;
+            
+        })
+
+        let accept = document.createElement("button");
+        let decline = document.createElement("button");
+
+        accept.classList.add("addFriend");
+        decline.classList.add("decline");
+
+        accept.innerHTML = "Accept";
+        decline.innerHTML = "Decline";
+
+        friendBar.appendChild(accept);
+        friendBar.appendChild(decline);
+        // Accepts a friend request from a user
+        accept.addEventListener("click", () => {
+            console.log("accepting request from", request.requestorName);
+
+
+
+            // Remove from the requests array
+            friendRequests = friendRequests.filter(name => {
+                return name != request.requestorName;
+            });
+
+            console.log("what is this array now", friendRequests)
+            let id = document.getElementById("request"+request.requestorName);
+
+            friendReqs.removeChild(id);
+            socket.emit("friendAccepted", {user: request.requestorName});
+
+            socket.on("moveToFriends", user => {
+                // friendBar.classList.add("friend-content");
+                // friend.classList.add("roundBtn_noBorder");
+                // friend.classList.add("no-round");
+
+
+                // friendBar.setAttribute("id", "request"+user.user);
+                // friend.innerHTML = user.user;
+                // friendBar.appendChild(friend);
+                // friendBar.appendChild(accept);
+                // friendBar.appendChild(decline);
+
+                // accept.innerHTML = "Message";
+                // decline.innerHTML = "Remove Friend";
+
+                // friendsAppended.push(user.user);
+                // console.log("friends List", friendsAppended);
+
+                // friends.appendChild(friendBar);
+            })
+        })
+        // Declines a friend request from a user
+        decline.addEventListener("click", () => {
+            console.log("declining request from", request.requestorName);
+            let id = document.getElementById("request"+request.requestorName);
+            friendReqs.removeChild(id);
+
+
+            socket.emit("friendDeclined", {user: request.requestorName});
+        })
+
+        if (recommendedFriends.includes(request.requestorName)) {
+            let id = document.getElementById("recommended"+request.requestorName);
+            console.log("idasdasd", id);
+            if (id != null) {
+                friendRecommendations.removeChild(id);
+            }
+            
+        }
+    }
+})
