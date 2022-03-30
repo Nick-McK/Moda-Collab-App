@@ -26,6 +26,7 @@ const EventEmitter = require("events")
 const eventEmitter = new EventEmitter();
 const redis = require("redis");
 const { resolve } = require("path");
+const res = require("express/lib/response");
 const redisStore = redis.createClient();
 
 
@@ -1813,17 +1814,27 @@ io.sockets.on('connect', (socket) => {
     })
     // Makes a user a mod if an admin has decided it is okay
     socket.on("makeMod", (data) => {
-        con.query("UPDATE user_details SET isMod = ? WHERE username = ?", [1, data.user], (err, result) => {
+        con.query("SELECT userID FROM users WHERE username = ?", [data.user], (err, res) => {
             if (err) throw err;
-            console.log(data.user, " has been made a moderator");
-        })
+            con.query("UPDATE user_details SET isMod = ? WHERE userID = ?", [1, res[0].userID], (err, result) => {
+                if (err) throw err;
+                console.log(data.user, " has been made a moderator");
+                socket.emit('makeModResponse');
+            });
+        });
+
+
+        
     })
     // Removes mod status
     socket.on("removeMod", (data) => {
-        con.query("UPDATE user_details SET isMod = ? WHERE username = ?", [0, data.user], (err, result) => {
-            if (err) throw err;
-            console.log(data.user, " is no longer a moderator");
-        })
+        con.query("SELECT userID FROM users WHERE username = ?", [data.user], (err, res) => {
+            con.query("UPDATE user_details SET isMod = ? WHERE username = ?", [0, data.user], (err, result) => {
+                if (err) throw err;
+                console.log(data.user, " is no longer a moderator");
+                socket.emit('removeModResponse');
+            });
+        });
     })
 
     // Gets all the flagged posts to display on moderator page

@@ -771,6 +771,14 @@ addFriend.addEventListener("click", () => {
     socket.emit("friendRequested", {user: getUser()});
 })
 
+socket.on('makeModResponse', () => {
+    alert("Moderator Created");
+});
+
+socket.on('removeModResponse', () => {
+    alert("Moderator Removed");
+});
+
 // finishBtn.onclick = () => {
 //     const imageURL = img.getAttribute("src");
 //     console.log("imageURL", imageURL);
