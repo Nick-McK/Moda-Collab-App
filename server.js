@@ -29,6 +29,8 @@ const { resolve } = require("path");
 const res = require("express/lib/response");
 const redisStore = redis.createClient();
 
+const sha256 = require('js-sha256');
+
 
 
 // Use files from within the file structure
@@ -174,7 +176,7 @@ app.post("/account/tags", (req, res) => {
     if (userCheck && passCheck1 && passCheck2) {
         // If password 1 and password 2 are matching then insert into the database and take to the tags page
         if (passCheck1 == passCheck2) {
-            con.query("INSERT INTO users (username, password) VALUES (?, ?)", [req.body.username, req.body.pass1], (err, result) => {
+            con.query("INSERT INTO users (username, password) VALUES (?, ?)", [req.body.username, sha256(req.body.pass1)], (err, result) => {
                 // Err should only occur when user refreshes page on tags page, just redirect to home page
                 if (err) {
                     res.writeHead(301, {
@@ -214,7 +216,7 @@ app.post("/home", (req, res) => {
 
         const username = req.body.username;
 
-        const password = req.body.password;
+        const password = sha256(req.body.password);
         const sid = req.session.id;
 
         con.query("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, result) => {
